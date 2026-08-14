@@ -22,7 +22,7 @@ bash scripts/run-wasm-peer.sh
 python3 ports/cek-host-py/run_vectors.py crates/cek-contract/vectors
 node ports/cek-peer-js/run-vectors.mjs crates/cek-contract/vectors
 
-Expected: **131** Rust tests; **57** vectors; Python Host 48 pass (9 skip); JS Peer apply-only green.
+Expected: **147** Rust tests; **57** vectors; batteries (`./scripts/batteries.sh`) green.
 
 ## Current maturity
 

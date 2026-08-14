@@ -30,6 +30,7 @@ This file lists **what the reference runtime actually checks** and where.
 | 21 | Subject bind mismatch → zero Ops | `prop_subject_bind_never_effects_on_mismatch`, `subject-bind-*` |
 | 22 | Ed25519 missing/tamper/wrong key → zero Ops | `ed25519_*` tests + `ed25519-*` vectors |
 | 23 | Unknown/blank law generation → zero Ops | `law-gen-*` |
+| 24 | Batteries: refuse never leaks Ops | `batteries::*`, `scripts/batteries.sh` |
 
 ## Coverage
 

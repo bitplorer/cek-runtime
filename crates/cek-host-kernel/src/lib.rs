@@ -49,6 +49,8 @@ pub use sign::{parse_hex32, public_key as ed25519_public_from_seed};
 pub use store::*;
 
 #[cfg(test)]
+mod batteries;
+#[cfg(test)]
 mod fail_closed;
 #[cfg(test)]
 mod props;

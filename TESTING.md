@@ -18,6 +18,19 @@ cargo run -p cek-cli -- demo
 # Static never-regress greps
 ./scripts/invariants.sh
 
+# Stress / load / chaos / pen
+./scripts/batteries.sh
+```
+
+## Layers
+
+| Layer | Location | Proves |
+|-------|----------|--------|
+| **Unit** | `host::tests`, peer, durable | Refuse, once, sealed, receipt, double-end, idem, file reopen |
+| **Fail-closed** | `fail_closed.rs` | Store-down refuse; concurrent once (exactly one `ok`) |
+| **Batteries** | `batteries.rs`, `ports/*/test_batteries*`, `scripts/batteries.sh` | Stress, load, chaos, pen — refuse stays zero-Ops |
+| **Store contract** | `store::tests` | Memory backends satisfy trait contracts |
+| **Vectors** | `crates/cek-contract/vectors/*.json` | CORE families — **57** cases |
 # llvm-cov (optional install)
 cargo install cargo-llvm-cov
 cargo llvm-cov --workspace --summary-only
@@ -83,7 +96,7 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **128** `#[test]` + **57** vector fixtures + TS/WASM apply-only runners.
+Current inventory: **147** `#[test]` + **57** vector fixtures + TS/WASM/JS apply-only + Python Host + batteries.
 
 ```bash
 ./scripts/llvm-cov.sh   # coverage/summary.txt + coverage/html
