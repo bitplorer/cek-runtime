@@ -55,6 +55,8 @@ fn check_result_kind_mismatch() {
         peer_profile: None,
         expect_peer_ui: None,
         expect_lowered_ops: None,
+        hmac_key: None,
+        sign_cap: false,
     };
     let r = ResultMsg::authority_refusal("no");
     assert!(check_result(&case, &r).is_err());
@@ -87,6 +89,8 @@ fn check_result_rejects_refusal_with_ops() {
         peer_profile: None,
         expect_peer_ui: None,
         expect_lowered_ops: None,
+        hmac_key: None,
+        sign_cap: false,
     };
     let mut r = ResultMsg::authority_refusal("no");
     r.ops = vec![baseline::kv_set("k", json!(1))];
@@ -120,6 +124,8 @@ fn check_result_ops_empty_and_exact() {
         peer_profile: None,
         expect_peer_ui: None,
         expect_lowered_ops: None,
+        hmac_key: None,
+        sign_cap: false,
     };
     let with_ops = ResultMsg::ok(vec![baseline::kv_set("k", json!(1))]);
     assert!(check_result(&case, &with_ops).is_err());

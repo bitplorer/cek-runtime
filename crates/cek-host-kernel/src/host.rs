@@ -20,6 +20,8 @@ pub struct Host {
     clock: Box<dyn Fn() -> u64 + Send + Sync>,
     /// When true, sealed_args_bind mismatch refuses (always on for maturity).
     enforce_sealed: bool,
+    /// When set, mint attaches HMAC and verify refuses missing/invalid sigs.
+    signing_key: Option<[u8; 32]>,
 }
 
 impl Default for Host {
@@ -55,6 +57,7 @@ impl Host {
                     .unwrap_or(0)
             }),
             enforce_sealed: true,
+            signing_key: None,
         }
     }
 
@@ -81,7 +84,14 @@ impl Host {
             lineage,
             clock: Box::new(move || now),
             enforce_sealed: true,
+            signing_key: None,
         }
+    }
+
+    /// Enable Cap HMAC (Host policy). Mint attaches `sig`; verify refuses otherwise.
+    pub fn with_hmac_key(mut self, key: [u8; 32]) -> Self {
+        self.signing_key = Some(key);
+        self
     }
 
     /// Shared once backend.
@@ -104,7 +114,10 @@ impl Host {
         Manifest {
             law_generation: LAW_GENERATION.into(),
             profiles: vec![PROFILE_BASELINE.into(), PROFILE_PRODUCTION_V1.into()],
-            fail_closed: Default::default(),
+            fail_closed: cek_contract::FailClosed {
+                cap_signatures: self.signing_key.is_some(),
+                ..Default::default()
+            },
         }
     }
 
@@ -116,7 +129,7 @@ impl Host {
         once: bool,
         not_after: Option<u64>,
     ) -> Cap {
-        Cap {
+        let cap = Cap {
             id: id.into(),
             action: action.into(),
             sealed_args_bind: None,
@@ -124,7 +137,9 @@ impl Host {
             once,
             subject: None,
             scopes: Vec::new(),
-        }
+            sig: None,
+        };
+        self.attach_sig(cap)
     }
 
     /// Mint with sealed-args bind (digest of sealed map).
@@ -138,7 +153,8 @@ impl Host {
     ) -> Cap {
         let mut cap = self.mint(id, action, once, not_after);
         cap.sealed_args_bind = Some(sealed_args_digest(sealed));
-        cap
+        cap.sig = None;
+        self.attach_sig(cap)
     }
 
     /// Derive a narrower Cap. Widening scopes is refused (fail closed).
@@ -160,7 +176,16 @@ impl Host {
         let mut cap = parent.clone();
         cap.id = id;
         cap.scopes = scopes;
-        Ok(cap)
+        cap.sig = None;
+        Ok(self.attach_sig(cap))
+    }
+
+    /// Attach or refresh Host-policy HMAC. No-op when this Host has no key.
+    pub fn attach_sig(&self, mut cap: Cap) -> Cap {
+        if let Some(key) = &self.signing_key {
+            cap.sig = Some(cek_contract::cap_signature(key, &cap));
+        }
+        cap
     }
 
     /// Lower authorized Ops to Baseline (ui.* → kv.set). Does not change submit.
@@ -256,7 +281,21 @@ impl Host {
             return Err(HostError::Authority("empty Cap id is not allowed".into()));
         }
         crate::scope::check_scopes(intent)?;
+        self.verify_sig(&intent.cap)?;
         Ok(())
+    }
+
+    fn verify_sig(&self, cap: &Cap) -> HostResult<()> {
+        let Some(key) = &self.signing_key else {
+            return Ok(());
+        };
+        match cap.sig.as_deref() {
+            None => Err(HostError::Authority(
+                "Cap signature required".into(),
+            )),
+            Some(_) if cek_contract::cap_signature_valid(key, cap) => Ok(()),
+            Some(_) => Err(HostError::Authority("Cap signature invalid".into())),
+        }
     }
 
     /// Same key + same projected digest → cached Result.
@@ -1059,5 +1098,49 @@ mod tests {
         let rev = host.end_activity("act-del").unwrap();
         assert!(rev.ops.is_empty());
         assert!(!rev.non_reversible.is_empty());
+    }
+
+    const HMAC_KEY: [u8; 32] = [0x0b; 32];
+
+    #[test]
+    fn signed_cap_ok_unsigned_and_tamper_refuse() {
+        let host = Host::with_clock(1000).with_hmac_key(HMAC_KEY);
+        assert!(host.manifest().fail_closed.cap_signatures);
+        let cap = host.mint("c-sig", "kv.write", false, None);
+        assert!(cap.sig.as_deref().unwrap().starts_with("cek1:"));
+        let r = host.submit(intent_write(cap.clone(), "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert!(!r.ops.is_empty());
+
+        let mut unsigned = cap.clone();
+        unsigned.sig = None;
+        let r = host.submit(intent_write(unsigned, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+
+        let mut bad = cap;
+        bad.sig = Some("cek1:00".into());
+        let r = host.submit(intent_write(bad, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+
+    #[test]
+    fn unsigned_host_still_accepts_legacy_caps() {
+        let host = Host::with_clock(1000);
+        assert!(!host.manifest().fail_closed.cap_signatures);
+        let cap = host.mint("c-leg", "kv.write", false, None);
+        assert!(cap.sig.is_none());
+        let r = host.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+    }
+
+    #[test]
+    fn attenuate_resigns_child() {
+        let host = Host::with_clock(1000).with_hmac_key(HMAC_KEY);
+        let parent = host.mint("p", "kv.write", false, None);
+        let child = host.attenuate(&parent, "c", vec!["kv:a".into()]).unwrap();
+        assert_ne!(child.sig, parent.sig);
+        assert!(cek_contract::cap_signature_valid(&HMAC_KEY, &child));
     }
 }

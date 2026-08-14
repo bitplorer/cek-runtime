@@ -82,6 +82,8 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 12. `ui.morph` (action) with snapshot → reverse `ui.dom.restore` (Op); without → non_reversible  
 13. Empty idempotency key → refuse (not a global key)  
 14. `kv.delete` with `prior` on the Op → reverse `kv.set`; without → non_reversible  
+15. Host HMAC on → unsigned/forged Cap refuse; Host HMAC off → legacy Caps still work  
+16. Peer never verifies or issues signatures  
 
 See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 

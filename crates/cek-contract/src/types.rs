@@ -28,6 +28,9 @@ pub struct Cap {
     /// Narrowing scopes; never widen authority.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub scopes: Vec<String>,
+    /// Optional Host-policy MAC (`cek1:<hmac>`). Not law; verify is Host policy.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sig: Option<String>,
 }
 
 /// Sealed ask under a Cap.
@@ -236,6 +239,9 @@ pub struct FailClosed {
     /// Non-empty Cap.scopes is an allow-list.
     #[serde(default = "default_true")]
     pub scopes: bool,
+    /// Cap HMAC is required when this Host was constructed with a key.
+    #[serde(default)]
+    pub cap_signatures: bool,
 }
 
 impl Default for FailClosed {
@@ -245,6 +251,7 @@ impl Default for FailClosed {
             idem_store_down: true,
             sealed_args: true,
             scopes: true,
+            cap_signatures: false,
         }
     }
 }

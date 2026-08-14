@@ -552,3 +552,51 @@ fn prop_kv_delete_no_prior_non_reversible() {
         assert!(!rev.non_reversible.is_empty());
     }
 }
+
+/// ∀ Host with HMAC key: unsigned / tampered Cap → refuse ∧ ops=∅; minted → ok
+#[test]
+fn prop_cap_hmac_never_effects_on_bad_sig() {
+    let key = [0x11u8; 32];
+    let host = Host::with_clock(1_000).with_hmac_key(key);
+    for (i, k) in keys().iter().enumerate() {
+        let good = host.mint(format!("sig-{i}-{k}"), "kv.write", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("key".into(), json!(k));
+        args.insert("value".into(), json!(1));
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args: args.clone(),
+            cap: good.clone(),
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::Ok), "{k}");
+
+        let mut unsigned = good.clone();
+        unsigned.sig = None;
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args: args.clone(),
+            cap: unsigned,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal), "{k}");
+        assert!(r.ops.is_empty());
+
+        let mut tamper = good;
+        tamper.sig = Some("cek1:ff".into());
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args,
+            cap: tamper,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal), "{k}");
+        assert!(r.ops.is_empty());
+    }
+}

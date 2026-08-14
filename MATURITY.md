@@ -33,7 +33,7 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Receipt annotation  
 - [x] Landed-first reverse preference  
 - [x] Reverse classes (Inverse / Compensation / NonReversible)  
-- [x] Executable vectors (45)  
+- [x] Executable vectors (48)  
 - [x] Unknown-meta ignored on the wire  
 - [x] Peer no-mint (CI + `invariants.sh`, Rust + TS + WASM)  
 - [x] Domain `ui.*` with snapshot reverse  
@@ -41,7 +41,7 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Second Peer language port (TS apply-only)  
 - [x] Snapshot reverse for `kv.delete` prior value  
 - [x] WASM apply-only Peer  
-- [ ] Cap cryptographic signatures  
+- [x] Cap HMAC (optional Host policy; RFC 4231)  
 
 ## Consistency glossary (code ↔ law)
 
@@ -62,3 +62,4 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 | action | `cek_contract::actions` (`kv.write`, `ui.morph`) |
 | ui Op | `ui.dom.morph` / `ui.dom.restore` |
 | scope | `Cap.scopes` + `check_scopes` / `Host::attenuate` |
+| Cap HMAC | `Cap.sig` + `Host::with_hmac_key` |

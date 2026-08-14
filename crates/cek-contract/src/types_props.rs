@@ -27,6 +27,7 @@ fn prop_serde_roundtrip_core_types() {
         once: true,
         subject: Some("s".into()),
         scopes: vec!["narrow".into()],
+        sig: None,
     };
     let mut args = BTreeMap::new();
     args.insert("key".into(), json!("k"));
@@ -109,6 +110,10 @@ fn constants_and_defaults() {
     assert_eq!(PROFILE_PRODUCTION_V1, "production-v1");
     let fc = FailClosed::default();
     assert!(fc.once_store_down);
+    assert!(fc.idem_store_down);
+    assert!(fc.sealed_args);
+    assert!(fc.scopes);
+    assert!(!fc.cap_signatures);
     assert!(fc.idem_store_down);
     assert!(fc.sealed_args);
     assert!(fc.scopes);

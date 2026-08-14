@@ -109,6 +109,70 @@ fn sha256(message: &[u8]) -> [u8; 32] {
     out
 }
 
+/// HMAC-SHA256 (FIPS 198-1) over `msg` with `key`.
+pub fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
+    const B: usize = 64;
+    let mut kpad = [0u8; B];
+    if key.len() > B {
+        let hashed = sha256(key);
+        kpad[..32].copy_from_slice(&hashed);
+    } else {
+        kpad[..key.len()].copy_from_slice(key);
+    }
+    let mut ipad = [0x36u8; B];
+    let mut opad = [0x5cu8; B];
+    for i in 0..B {
+        ipad[i] ^= kpad[i];
+        opad[i] ^= kpad[i];
+    }
+    let mut inner = Vec::with_capacity(B + msg.len());
+    inner.extend_from_slice(&ipad);
+    inner.extend_from_slice(msg);
+    let ih = sha256(&inner);
+    let mut outer = Vec::with_capacity(B + 32);
+    outer.extend_from_slice(&opad);
+    outer.extend_from_slice(&ih);
+    sha256(&outer)
+}
+
+/// HMAC-SHA256 hex (no algorithm prefix).
+pub fn hmac_sha256_hex(key: &[u8], msg: &[u8]) -> String {
+    hmac_sha256(key, msg)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
+
+/// Canonical bytes of Cap authority fields (**excludes** `sig`).
+pub fn cap_sign_bytes(cap: &crate::Cap) -> Vec<u8> {
+    let v = json!({
+        "action": cap.action,
+        "id": cap.id,
+        "not_after": cap.not_after,
+        "once": cap.once,
+        "scopes": cap.scopes,
+        "sealed_args_bind": cap.sealed_args_bind,
+        "subject": cap.subject,
+    });
+    canonical_bytes(&v)
+}
+
+/// Host-policy Cap MAC: `cek1:<hmac-sha256 hex>` over authority fields.
+pub fn cap_signature(key: &[u8], cap: &crate::Cap) -> String {
+    format!(
+        "{DIGEST_ALG}:{}",
+        hmac_sha256_hex(key, &cap_sign_bytes(cap))
+    )
+}
+
+/// True iff `cap.sig` matches `key`.
+pub fn cap_signature_valid(key: &[u8], cap: &crate::Cap) -> bool {
+    match cap.sig.as_deref() {
+        Some(sig) => sig == cap_signature(key, cap),
+        None => false,
+    }
+}
+
 /// Canonical JSON bytes for digest input (BTreeMap order is stable).
 fn canonical_bytes(v: &Value) -> Vec<u8> {
     // serde_json preserves BTreeMap key order; we build only ordered maps.
@@ -222,5 +286,45 @@ mod tests {
         let a = baseline::kv_set("a", json!(1));
         let b = baseline::kv_delete("a");
         assert_ne!(ops_digest(&[a.clone(), b.clone()]), ops_digest(&[b, a]));
+    }
+
+    #[test]
+    fn hmac_sha256_rfc4231() {
+        // RFC 4231 Test Case 1
+        let key = [0x0bu8; 20];
+        assert_eq!(
+            hmac_sha256_hex(&key, b"Hi There"),
+            "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"
+        );
+        // RFC 4231 Test Case 2
+        assert_eq!(
+            hmac_sha256_hex(b"Jefe", b"what do ya want for nothing?"),
+            "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+        );
+    }
+
+    #[test]
+    fn cap_sig_ignores_existing_sig_field() {
+        use crate::Cap;
+        let key = [7u8; 32];
+        let mut cap = Cap {
+            id: "c".into(),
+            action: "kv.write".into(),
+            sealed_args_bind: None,
+            not_after: None,
+            once: false,
+            subject: None,
+            scopes: vec![],
+            sig: None,
+        };
+        let s1 = cap_signature(&key, &cap);
+        cap.sig = Some("cek1:dead".into());
+        let s2 = cap_signature(&key, &cap);
+        assert_eq!(s1, s2);
+        assert!(s1.starts_with("cek1:"));
+        cap.sig = Some(s1.clone());
+        assert!(cap_signature_valid(&key, &cap));
+        cap.action = "kv.delete".into();
+        assert!(!cap_signature_valid(&key, &cap));
     }
 }

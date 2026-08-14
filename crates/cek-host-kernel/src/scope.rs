@@ -156,6 +156,7 @@ mod tests {
                 once: false,
                 subject: None,
                 scopes: scopes.iter().map(|s| (*s).to_string()).collect(),
+                sig: None,
             },
             trace: None,
             idempotency_key: None,

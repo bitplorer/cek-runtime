@@ -36,4 +36,5 @@
 | Multi-process file lock | One `File*Store` instance per directory; flock/SQL later |
 | `kv.delete` with `prior` | Undo delete | Inverse `kv.set` from Op payload |
 | `kv.delete` without `prior` | Fake undo | `NonReversible` |
-| Cap crypto forge | Deferred (signatures) |
+| Cap HMAC missing / forged | Host has signing key | Refuse, zero Ops |
+| Cap HMAC off | Host has no key | Legacy unsigned Caps still work |

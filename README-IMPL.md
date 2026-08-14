@@ -12,4 +12,4 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-45 CORE vectors. 114 unit/property tests. TS + WASM apply-only Peers. `kv.delete` prior reverse. Domain pack `ui.*`.
+48 CORE vectors. 120 tests. Optional Cap HMAC. TS + WASM apply-only Peers.

@@ -19,22 +19,24 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-Expected: **114** unit/property tests; **45** vectors PASS; TS + WASM Peers apply-only green.
+Expected: **120** unit/property tests; **48** vectors PASS; TS + WASM Peers apply-only green.
 
 ## Current maturity
 
-**Stage C met** for domain pack + snapshot reverse. **Stage D started** — TS and WASM apply-only Peers.
+**Stage C met.** **Stage D underway** — TS + WASM Peers; Cap HMAC is optional Host policy (not law).
 
-## Done this session (2026-08-14, WASM Peer)
+## Done this session (2026-08-14, Cap HMAC)
 
-- `cek-peer-wasm`: JSON apply surface wrapping the Rust Peer. **No mint.**
-- `wasm32-unknown-unknown` cdylib + Node runner on the same `peer_result` vectors.
-- World snapshots (`kv` / `ui`) for port checks.
+- Optional Host policy: `Host::with_hmac_key`. Mint attaches `cek1:` HMAC; verify refuses missing/forged sigs.
+- Unsigned Caps still work when the Host has no key (existing vectors unchanged).
+- Attenuate re-signs the child. Peer never verifies or mints.
+- RFC 4231 HMAC-SHA256 known answers.
 
 ## Do next
 
-1. Cap cryptographic signatures (optional Host policy).
-2. llvm-cov HTML in CI.
+1. llvm-cov HTML in CI.
+2. Real DOM UI store (reference map is enough for now).
+3. Ed25519 / multi-key Host policy if a deployment needs it (HMAC is the v0.1 policy).
 
 ## Never regress
 

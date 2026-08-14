@@ -1,0 +1,17 @@
+{
+  "id": "cap-sig-ok",
+  "family": "cap_verify",
+  "description": "Host HMAC policy: minted/signed Cap projects normally",
+  "now": 1000,
+  "hmac_key": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+  "sign_cap": true,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 1 },
+    "cap": { "id": "cap-sig-ok", "action": "kv.write", "once": false }
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+  ]
+}

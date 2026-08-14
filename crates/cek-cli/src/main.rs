@@ -175,6 +175,37 @@ fn run_demo() {
     let _ = peer.apply(&ResultMsg::ok(rev.ops));
     println!("   kv[note] after reverse={:?}", peer.kv_get("note"));
 
+    // 7) Cap HMAC: unsigned refused when policy on
+    let signed = Host::with_clock(1_000).with_hmac_key([0x0b; 32]);
+    let cap = signed.mint("cap-hmac", "kv.write", false, None);
+    let mut args = BTreeMap::new();
+    args.insert("key".into(), json!("s"));
+    args.insert("value".into(), json!(1));
+    let ok = signed.submit(Intent {
+        action: "kv.write".into(),
+        args: args.clone(),
+        cap: cap.clone(),
+        trace: None,
+        idempotency_key: None,
+        activity_id: None,
+    });
+    let mut bare = cap;
+    bare.sig = None;
+    let no = signed.submit(Intent {
+        action: "kv.write".into(),
+        args,
+        cap: bare,
+        trace: None,
+        idempotency_key: None,
+        activity_id: None,
+    });
+    println!(
+        "\n7) Cap HMAC signed={:?} unsigned={:?} ops_unsigned={}",
+        ok.kind,
+        no.kind,
+        no.ops.len()
+    );
+
     println!("\n=== demo ok ===");
 }
 
@@ -188,12 +219,32 @@ fn make_peer(case: &VectorCase) -> Peer {
     }
 }
 
+fn parse_hmac_key(hex: &str) -> Result<[u8; 32], String> {
+    let hex = hex.trim();
+    if hex.len() != 64 {
+        return Err(format!("hmac_key must be 64 hex chars, got {}", hex.len()));
+    }
+    let mut key = [0u8; 32];
+    for i in 0..32 {
+        key[i] = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)
+            .map_err(|e| format!("hmac_key hex: {e}"))?;
+    }
+    Ok(key)
+}
+
 fn run_one(case: &VectorCase) -> Result<(), String> {
-    let host = Host::with_clock(case.now.unwrap_or(0));
+    let mut host = Host::with_clock(case.now.unwrap_or(0));
+    if let Some(ref hex) = case.hmac_key {
+        host = host.with_hmac_key(parse_hmac_key(hex)?);
+    }
     let peer = make_peer(case);
 
     if let Some(ref prior) = case.prior_intent {
-        let r0 = host.submit(prior.clone());
+        let mut prior = prior.clone();
+        if case.sign_cap {
+            prior.cap = host.attach_sig(prior.cap);
+        }
+        let r0 = host.submit(prior);
         if case.prior_must_ok && !matches!(r0.kind, ResultKind::Ok) {
             return Err(format!("prior_intent was {:?}, expected ok", r0.kind));
         }
@@ -205,10 +256,13 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
     let result = if let Some(ref pr) = case.peer_result {
         pr.clone()
     } else {
-        let intent = case
+        let mut intent = case
             .intent
             .clone()
             .ok_or_else(|| "no intent and no peer_result".to_string())?;
+        if case.sign_cap {
+            intent.cap = host.attach_sig(intent.cap);
+        }
         host.submit(intent)
     };
 

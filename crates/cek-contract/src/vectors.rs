@@ -79,6 +79,12 @@ pub struct VectorCase {
     /// Expected Baseline-lowered Ops of the Host Result (`ui.*` → `kv.set`).
     #[serde(default)]
     pub expect_lowered_ops: Option<Vec<Op>>,
+    /// Hex-encoded 32-byte HMAC key. When set, Host requires Cap signatures.
+    #[serde(default)]
+    pub hmac_key: Option<String>,
+    /// If true, runner attaches a valid Host HMAC before submit.
+    #[serde(default)]
+    pub sign_cap: bool,
 }
 
 /// Load a single vector JSON file.
