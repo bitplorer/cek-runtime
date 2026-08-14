@@ -3,6 +3,7 @@
 | Doc | Role |
 |-----|------|
 | [README.md](README.md) | Problems solved, what you get, definition of done |
+| [CONCEPTS.md](CONCEPTS.md) | **All implementation concepts at a glance** |
 | [TOPOLOGY.md](TOPOLOGY.md) | Runtime vs kernel; where they sit on the wire |
 | [SCOPE.md](SCOPE.md) | Law vs this repo |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution rules |
@@ -10,6 +11,7 @@
 | [COMPLETENESS.md](COMPLETENESS.md) | Coverage audit |
 | [diagrams/README.md](diagrams/README.md) | Flow diagrams |
 | [cek-framework](https://github.com/bitplorer/cek-framework) | Law |
+| [cek-framework CONCEPTS](https://github.com/bitplorer/cek-framework/blob/main/CONCEPTS.md) | Law concepts at a glance |
 
 ## Sections
 

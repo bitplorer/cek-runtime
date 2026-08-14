@@ -14,6 +14,17 @@
 
 ---
 
+## Start here
+
+| Doc | Why |
+|-----|-----|
+| **[CONCEPTS.md](CONCEPTS.md)** | All implementation concepts at a glance |
+| **[TOPOLOGY.md](TOPOLOGY.md)** | Runtime vs kernel; wire placement |
+| [00-contract/](00-contract/) | What `cek-contract` is |
+| [cek-framework CONCEPTS](https://github.com/bitplorer/cek-framework/blob/main/CONCEPTS.md) | Law concepts (Cap, Ops, lineage, …) |
+
+---
+
 ## Runtime vs kernel (glance)
 
 Kernels sit **inside** runtimes. No central broker kernel on the wire.
@@ -35,7 +46,7 @@ Kernels sit **inside** runtimes. No central broker kernel on the wire.
 └──────────────────────── Peer runtime ────────────────────────┘
 ```
 
-Full write-up: **[TOPOLOGY.md](TOPOLOGY.md)**.
+More: [TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md).
 
 ---
 
@@ -99,6 +110,7 @@ Cap refuse → **zero** mutate Ops.
 
 | Path | Role |
 |------|------|
+| [CONCEPTS.md](CONCEPTS.md) | All implementation concepts at a glance |
 | [TOPOLOGY.md](TOPOLOGY.md) | Runtime vs kernel; wire placement |
 | [SCOPE.md](SCOPE.md) | Law vs this repo |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to change this playbook |
