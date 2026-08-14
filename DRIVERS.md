@@ -15,22 +15,34 @@ Law: [cek-framework](https://github.com/bitplorer/cek-framework). Walkthrough: [
 
 ## Catalog
 
-| Driver | Crate / port | Ops it applies | World |
-|--------|--------------|----------------|-------|
-| **kv** | `crates/cek-ops-baseline` (`KvStore`) | `kv.set`, `kv.delete` | map of key → JSON |
-| **log** | Peer kernel (in-memory `Vec`) | `log.append` | append-only lines |
-| **ui (flat)** | `crates/cek-ops-ui` (`UiStore`) | `ui.dom.morph`, `ui.dom.restore` | map of target → JSON |
-| **DOM (tree)** | `crates/cek-ops-ui` (`DomTree`); JS `ports/cek-peer-js` | same two Ops | `{ tag, attrs, children, text? }` |
+- **kv**
+  - **Where:** `crates/cek-ops-baseline` (`KvStore`)
+  - **Ops:** `kv.set`, `kv.delete`
+  - **World:** map of key → JSON
+- **log**
+  - **Where:** Peer kernel (in-memory `Vec`)
+  - **Ops:** `log.append`
+  - **World:** append-only lines
+- **ui (flat)**
+  - **Where:** `crates/cek-ops-ui` (`UiStore`)
+  - **Ops:** `ui.dom.morph`, `ui.dom.restore`
+  - **World:** map of target → JSON
+- **DOM (tree)**
+  - **Where:** `crates/cek-ops-ui` (`DomTree`); JS `ports/cek-peer-js`
+  - **Ops:** `ui.dom.morph`, `ui.dom.restore`
+  - **World:** `{ tag, attrs, children, text? }`
 
 Baseline Peers ship **kv + log** only. Unknown Ops follow profile policy (`skip` / `fail_batch`).  
 A UI/DOM Peer is constructed with `Peer::with_ui()` (flat) or the JS `--profile dom` (tree).
 
 ## kv (`cek-ops-baseline`)
 
-| Op | Payload | Effect |
-|----|---------|--------|
-| `kv.set` | `{ key, value }` | write |
-| `kv.delete` | `{ key, prior? }` | remove. `prior` is **not** used at apply time — Host put it there for reverse |
+- **`kv.set`**
+  - **Payload:** `{ key, value }`
+  - **Effect:** write
+- **`kv.delete`**
+  - **Payload:** `{ key, prior? }`
+  - **Effect:** remove. `prior` is **not** used at apply time — Host put it there for reverse
 
 Host reverse:
 
@@ -42,9 +54,9 @@ Empty `key` is a Host **dispatch_error** (never reaches the driver).
 
 ## log
 
-| Op | Payload | Effect |
-|----|---------|--------|
-| `log.append` | `{ message }` | push a line |
+- **`log.append`**
+  - **Payload:** `{ message }`
+  - **Effect:** push a line
 
 No inverse. Activity end marks **non-reversible**. Missing `message` is a Host dispatch_error.
 
@@ -52,10 +64,12 @@ No inverse. Activity end marks **non-reversible**. Missing `message` is a Host d
 
 Used by the Rust Peer `with_ui()` profile and by vectors that check `expect_peer_ui`.
 
-| Op | Payload | Effect |
-|----|---------|--------|
-| `ui.dom.morph` | `{ target, patch, snapshot? }` | `store[target] = patch` |
-| `ui.dom.restore` | `{ target, snapshot }` | `store[target] = snapshot` |
+- **`ui.dom.morph`**
+  - **Payload:** `{ target, patch, snapshot? }`
+  - **Effect:** `store[target] = patch`
+- **`ui.dom.restore`**
+  - **Payload:** `{ target, snapshot }`
+  - **Effect:** `store[target] = snapshot`
 
 `snapshot` is ignored at apply of morph. Host copies it onto the inverse `ui.dom.restore`.  
 No snapshot → reverse is **non-reversible**.
@@ -70,23 +84,19 @@ Same two Ops. The world is a forest of nodes:
 
 **Address a node** (all of these are the `target` string):
 
-| Form | Meaning |
-|------|---------|
-| `root` | `attrs.id == "root"` |
-| `#root` | same |
-| `/0` | first root |
-| `/0/1` | second child of the first root |
+- **`root`** — `attrs.id == "root"`
+- **`#root`** — same
+- **`/0`** — first root
+- **`/0/1`** — second child of the first root
 
 **Driver helpers** (not Ops — tests and the JS runtime use them):
 
-| Method | Does |
-|--------|------|
-| `morph` / `restore` | replace the addressed node |
-| `insert_child` | append under a parent |
-| `remove` | take the node out; returns the snapshot |
-| `set_text` / `set_attr` | mutate in place |
-| `html` | string render (not a browser) |
-| `by_id` | deterministic id → node map |
+- **`morph` / `restore`** — replace the addressed node
+- **`insert_child`** — append under a parent
+- **`remove`** — take the node out; returns the snapshot
+- **`set_text` / `set_attr`** — mutate in place
+- **`html`** — string render (not a browser)
+- **`by_id`** — deterministic id → node map
 
 Missing target → apply **fails** that Op (receipt `failed`). Fail closed. The driver does not invent a node.
 

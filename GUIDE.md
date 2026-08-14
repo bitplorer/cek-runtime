@@ -25,7 +25,7 @@ There is **no third kernel**. A bus only moves messages.
 | Contract | `crates/cek-contract` | Intent, Cap, Op, Result, vectors |
 | Host kernel | `crates/cek-host-kernel` | mint, verify, project, once, reverse |
 | Peer kernel | `crates/cek-peer-kernel` | apply loop — **no mint** |
-| Peer driver | `crates/cek-ops-baseline`, `cek-ops-ui` | kv world, UI/DOM world |
+| Peer driver | kv, log, UI/DOM — see [DRIVERS.md](DRIVERS.md) |
 
 Drivers in detail: **[DRIVERS.md](DRIVERS.md)**. Map: [TOPOLOGY.md](TOPOLOGY.md).
 
