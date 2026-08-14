@@ -1,0 +1,10 @@
+stateDiagram-v2
+  [*] --> Minted: mint policy
+  Minted --> Active: issue
+  Active --> Consumed: atomic once before effects
+  Active --> Expired: Host clock outside window
+  Active --> Revoked: revoke API
+  Consumed --> [*]: verify refuses replay
+  Expired --> [*]: verify refuses
+  Revoked --> ReversePending: reverse lineage
+  ReversePending --> [*]

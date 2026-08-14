@@ -1,0 +1,14 @@
+flowchart TD
+  END[Activity end or Cap revoke] --> REV[reverse lineage]
+  REV --> R{receipt present?}
+  R -->|yes| SET[prefer landed set]
+  R -->|no| SET2[use authorized set]
+  SET --> PLAN{reverse class}
+  SET2 --> PLAN
+  PLAN -->|inverse| INV[inverse Ops]
+  PLAN -->|compensation| RC[Intents under recovery Cap]
+  PLAN -->|none| MARK[non-reversible mark + audit]
+  INV -->|fail| MARK
+  RC -->|fail| MARK
+  INV -->|ok| OK[clean reverse]
+  RC -->|ok| OK

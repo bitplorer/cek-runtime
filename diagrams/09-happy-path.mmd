@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant App as L7 Caller
+  participant Host as Host Rust
+  participant Peer as Peer Rust
+
+  Host->>Host: mint Cap
+  Host-->>App: Cap
+  App->>Host: submit Intent + Cap
+  Host->>Host: verify → once → truth → dispatch
+  Host->>Host: lineage + project
+  Host-->>App: Result Ops
+  App->>Peer: apply Result
+  Peer->>Peer: apply Ops in order
+  Peer-->>Host: optional receipt
+  App->>Host: end Activity
+  Host->>Host: reverse landed or authorized

@@ -1,0 +1,15 @@
+flowchart LR
+  subgraph M1["Module split"]
+    H1[Host crate]
+    P1[Peer crate]
+  end
+  subgraph M2["Process split"]
+    H2[Host process]
+    P2[Peer worker]
+    H2 -->|Ops IPC| P2
+  end
+  subgraph M3["WASM"]
+    H3[Host]
+    P3[Peer component]
+    H3 -->|Ops| P3
+  end

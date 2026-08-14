@@ -1,0 +1,13 @@
+flowchart TD
+  RES[Result Ops ordered] --> PROF[load profile]
+  PROF --> LOOP[next Op]
+  LOOP --> K{known under profile?}
+  K -->|no| U[ignore / soft-fail / strict
+no kernel panic]
+  K -->|yes| AP[apply payload pure data]
+  AP --> LF[record landed or failed]
+  U --> LF
+  LF --> MORE{more Ops?}
+  MORE -->|yes| LOOP
+  MORE -->|no| RCPT[optional Receipt]
+  RCPT --> HOST[Host may annotate lineage]

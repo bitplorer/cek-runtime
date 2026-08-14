@@ -1,0 +1,7 @@
+flowchart LR
+  PR[Pull request] --> VEC[run CORE 19 vectors]
+  VEC -->|red| BLOCK[block merge]
+  VEC -->|green| LINT[Peer no mint symbols
+no Cap-skip flags]
+  LINT -->|fail| BLOCK
+  LINT -->|ok| MERGE[merge]

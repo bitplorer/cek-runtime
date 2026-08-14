@@ -1,0 +1,13 @@
+flowchart TB
+  subgraph FW["cek-framework"]
+    AX[axioms vocabulary layers]
+    ROL[Host Peer roles conceptual]
+    CONF[conformance families]
+  end
+  subgraph RT["cek-runtime"]
+    PIPE[submit machine code design]
+    CRATE[Rust crates isolation CI]
+    SCH[JSON schemas vectors]
+  end
+  FW -->|must satisfy| RT
+  RT -->|must not amend| FW

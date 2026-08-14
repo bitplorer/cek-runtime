@@ -1,0 +1,18 @@
+flowchart TD
+  IN[Intent + Cap] --> V{verify Cap}
+  V -->|fail| AR[authority_refusal
+zero Ops · zero cause]
+  V -->|ok| B[BoundAsk token]
+  B --> O{once / idempotency}
+  O -->|store down / once replay| AR2[refuse]
+  O -->|duplicate bind| PR[replay prior Result digest]
+  O -->|ok| T[reload truth from Host store]
+  T --> D[dispatch]
+  D -->|miss| DE[dispatch error]
+  D -->|ok| LIN{revocable or endable?}
+  LIN -->|yes| REC[commit lineage
+authorized Ops + reverse class]
+  LIN -->|no| PROJ
+  REC --> PROJ[project Ops
+profile union Baseline]
+  PROJ --> OUT[Result]

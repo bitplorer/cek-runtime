@@ -1,0 +1,13 @@
+flowchart TB
+  subgraph Contract["cek-contract"]
+    SCH[schemas]
+    VEC[CORE 19 vectors]
+    BASE[Baseline Ops]
+    MAN[manifest]
+  end
+  H[cek-host-kernel-rust] --> Contract
+  P[cek-peer-kernel-rust] --> Contract
+  VEC -->|CI merge gate| H
+  VEC --> P
+  MAN -->|handshake| H
+  MAN --> P

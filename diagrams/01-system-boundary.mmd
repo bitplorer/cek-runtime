@@ -1,0 +1,18 @@
+flowchart LR
+  subgraph L7["L7 Caller / App"]
+    C[Holds Cap]
+  end
+  subgraph Host["Host kernel Rust"]
+    M[mint]
+    S[submit pipeline]
+    L[lineage + reverse]
+  end
+  subgraph Peer["Peer kernel Rust"]
+    A[apply Ops]
+    R[optional receipt]
+  end
+  C -->|Intent + Cap| S
+  M -->|Cap| C
+  S -->|Result + Ops| A
+  A -->|receipt?| L
+  S --> L

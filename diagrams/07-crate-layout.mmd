@@ -1,0 +1,17 @@
+flowchart TB
+  CT[cek-contract
+schemas vectors]
+  TY[cek-types optional]
+  H[cek-host-kernel-rust]
+  P[cek-peer-kernel-rust]
+  OPS[cek-ops-baseline]
+  CLI[cek-cli]
+  CT --> H
+  CT --> P
+  TY --> H
+  TY --> P
+  OPS --> P
+  H --> CLI
+  P --> CLI
+  H -.->|must not depend| P
+  P -.->|must not mint| H

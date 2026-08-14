@@ -1,0 +1,12 @@
+flowchart TD
+  E[Edge case] --> D{class}
+  D -->|authority unclear| REF[refuse
+zero mutate Ops]
+  D -->|once/idem store down| REF
+  D -->|unknown meta Baseline| IGN[ignore]
+  D -->|unknown Op| PROF[profile policy
+ignore soft strict]
+  D -->|rich Peer missing| LOW[lower to Baseline Ops]
+  D -->|undo impossible| MARK[non-reversible mark]
+  D -->|Activity abandoned| END[end → reverse]
+  D -->|no ambient allow| REF
