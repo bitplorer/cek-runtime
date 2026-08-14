@@ -83,7 +83,7 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **128** `#[test]` + **57** vector fixtures + TS/WASM apply-only runners.
+Current inventory: **130** `#[test]` + **57** vector fixtures + TS/WASM apply-only runners.
 
 ```bash
 ./scripts/llvm-cov.sh   # coverage/summary.txt + coverage/html

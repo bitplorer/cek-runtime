@@ -12,4 +12,4 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-57 CORE vectors. 128 tests. Dual-speak window. Ed25519 + HMAC. Subject bind. TS + WASM Peers.
+57 vectors. 130 tests. UI is an extension (`cek-ext-ui`), not kernel. Dual-speak. Ed25519 + HMAC.

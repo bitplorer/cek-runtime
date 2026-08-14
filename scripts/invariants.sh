@@ -67,4 +67,16 @@ if ! grep -q 'Actions are never applied' crates/cek-contract/src/actions.rs; the
 fi
 ok "action vs Op split documented"
 
+# 8. Kernel Baseline does not project ui.* (extension pack).
+if grep -n 'ACTION_UI_MORPH' crates/cek-host-kernel/src/host.rs | grep -v '//' | grep -v test >/dev/null; then
+  fail "ui.morph must not live in kernel Host project"
+fi
+if [ ! -f extensions/cek-ext-ui/src/lib.rs ]; then
+  fail "cek-ext-ui extension missing"
+fi
+if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint' extensions/cek-ext-ui >/dev/null; then
+  fail "extension must not mint"
+fi
+ok "ui pack is an extension (kernel has no ui project)"
+
 echo "invariants ok"

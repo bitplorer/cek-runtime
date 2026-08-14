@@ -2,19 +2,16 @@
 
 Law stays in [cek-framework](https://github.com/bitplorer/cek-framework). This file records **runtime** changes only.
 
-## 2026-08-14 — dual-speak law-generation window
+## 2026-08-14 — extensions (ui out of kernel)
 
 ### Added
 
-- `Cap.law_generation` (additive). Unset = legacy current.
-- `Host::accept_generation` / Manifest `accepted_generations`.
-- Unknown or blank generation → refuse, zero Ops.
-- Vectors `law-gen-unknown` / `law-gen-accepted` / `law-gen-blank` (54 → 57).
+- `DomainPack` + `Host::with_pack`. Kernel Baseline is kv/log only.
+- `extensions/cek-ext-ui`: `UiPack` (project/inverse) + optional `DomTree`.
+- Without the pack, `ui.morph` is `dispatch_error` (zero Ops). CLI registers the pack.
 
 ### Unchanged
 
-- Law is still `cek-law-1`. This is a Host window, not a new generation.
+- Vectors still cover `ui.*` via the registered pack. Peer still has no mint. Law unchanged.
 
-## 2026-08-14 — Ed25519 Host policy
-
-`with_ed25519` / `trust_ed25519`. RFC 8032 Test 1.
+## 2026-08-14 — dual-speak law-generation window

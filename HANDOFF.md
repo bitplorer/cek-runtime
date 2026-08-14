@@ -19,21 +19,21 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-Expected: **128** unit/property tests; **57** vectors PASS; TS + WASM Peers apply-only green.
+Expected: **130** unit/property tests; **57** vectors PASS.
 
 ## Current maturity
 
-Stage C met. Stage D: TS + WASM Peers; HMAC + Ed25519; **dual-speak law-generation window**.
+Kernel is Baseline only. `ui.*` is the `cek-ext-ui` extension (`Host::with_pack`).
 
-## Done this session (2026-08-14, dual-speak)
+## Done this session (2026-08-14, extensions)
 
-- `Cap.law_generation` optional. Unset = legacy current.
-- `Host::accept_generation` opens a window. Unknown / blank → refuse, zero Ops.
-- Manifest lists `accepted_generations`. Current `cek-law-1` is always accepted.
+- `DomainPack` hook on Host. Kernel `project_baseline` is kv/log only.
+- `extensions/cek-ext-ui`: `UiPack` + optional `DomTree`. No mint.
+- CLI / vectors register the pack. Kernel without pack: `ui.morph` is dispatch_error.
 
 ## Do next
 
-1. Real DOM UI store (reference map is enough for now).
+Further domain packs go under `extensions/`. Do not add them to the kernel.
 
 ## Never regress
 

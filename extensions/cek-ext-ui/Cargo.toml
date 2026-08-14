@@ -1,18 +1,12 @@
 [package]
-name = "cek-cli"
-description = "CEK demo + vector runner"
+name = "cek-ext-ui"
+description = "CEK UI domain pack (extension, not kernel)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
-[[bin]]
-name = "cek"
-path = "src/main.rs"
-
 [dependencies]
 cek-contract = { workspace = true }
 cek-host-kernel = { workspace = true }
-cek-peer-kernel = { workspace = true }
-cek-ext-ui = { workspace = true }
 serde_json = { workspace = true }

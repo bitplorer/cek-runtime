@@ -4,12 +4,14 @@ use cek_contract::{
     check_result, load_vector_dir, sealed_args_digest, Intent, ResultKind, ResultMsg,
     UnknownOpPolicy, VectorCase,
 };
+use cek_ext_ui::UiPack;
 use cek_host_kernel::Host;
 use cek_peer_kernel::Peer;
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 fn main() {
     let mut args = env::args().skip(1);
@@ -31,7 +33,7 @@ fn main() {
 
 fn run_demo() {
     println!("=== CEK mature demo (Host + Peer) ===\n");
-    let host = Host::with_clock(1_000);
+    let host = Host::with_clock(1_000).with_pack(Arc::new(UiPack));
     let peer = Peer::baseline();
 
     // 1) Refuse path
@@ -271,7 +273,7 @@ fn parse_hmac_key(hex: &str) -> Result<[u8; 32], String> {
 }
 
 fn run_one(case: &VectorCase) -> Result<(), String> {
-    let mut host = Host::with_clock(case.now.unwrap_or(0));
+    let mut host = Host::with_clock(case.now.unwrap_or(0)).with_pack(Arc::new(UiPack));
     if let Some(ref hex) = case.hmac_key {
         host = host.with_hmac_key(parse_hmac_key(hex)?);
     }

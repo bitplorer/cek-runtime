@@ -8,6 +8,7 @@ members = [
     "crates/cek-ops-ui",
     "crates/cek-peer-wasm",
     "crates/cek-cli",
+    "extensions/cek-ext-ui",
 ]
 
 [workspace.package]
@@ -24,6 +25,7 @@ cek-peer-kernel = { path = "crates/cek-peer-kernel" }
 cek-peer-wasm = { path = "crates/cek-peer-wasm" }
 cek-ops-baseline = { path = "crates/cek-ops-baseline" }
 cek-ops-ui = { path = "crates/cek-ops-ui" }
+cek-ext-ui = { path = "extensions/cek-ext-ui" }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 thiserror = "1.0.61"
