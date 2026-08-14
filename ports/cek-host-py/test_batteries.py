@@ -83,6 +83,17 @@ def main() -> int:
     cap["law_generation"] = "not-a-law"
     check("pen-law-gen", refuse(h.submit(intent(cap))))
 
+    from ed25519 import public_key, sign, verify
+
+    seed = bytes.fromhex("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+    pk = public_key(seed)
+    sig = sign(seed, b"")
+    check(
+        "ed25519-rfc8032",
+        pk.hex() == "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+        and verify(pk, b"", sig),
+    )
+
     print("batteries", "ok" if fails == 0 else f"{fails} failed")
     return 1 if fails else 0
 

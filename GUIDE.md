@@ -98,7 +98,7 @@ node --experimental-strip-types --no-warnings \
 ```
 
 Expect about **147** Rust tests, **57** vectors, batteries green.  
-Python Host skips Peer-only and Ed25519 fixtures. JS Peer runs apply-only fixtures.
+Python Host skips Peer-only fixtures (Ed25519 is implemented). JS Peer runs apply-only fixtures.
 
 ## 8. Use it from an app
 

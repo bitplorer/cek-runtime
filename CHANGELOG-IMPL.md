@@ -1,9 +1,8 @@
 # Implementation changelog
 
-## 2026-08-14 — DOM driver + Python Host + JS Peer
+## 2026-08-14 — Python Ed25519 + complete DOM driver
 
-- `cek-ops-ui::DomTree` — tree document driver (Peer-outer).
-- `ports/cek-host-py` — Host runtime (48 CORE vectors; Ed25519 skipped).
-- `ports/cek-peer-js` — Peer runtime, apply + DomTree, no mint.
+- Python Host signs/verifies `ed25519:` (RFC 8032, no extra deps). All 3 Ed25519 vectors pass.
+- `DomTree` is a full Peer driver: `#id`, `/path`, insert/remove, text, attrs, HTML render.
 
-Law unchanged. No third kernel.
+Law unchanged. Peer still has no mint.

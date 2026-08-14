@@ -49,6 +49,11 @@ const restore = peer.apply({
 });
 check("dom-restore", restore.landed.length === 1 && peer.dom.get("root")?.tag === "div");
 
+peer.dom.insertChild("root", { tag: "p", attrs: { id: "blurb" }, children: [] });
+peer.dom.setText("blurb", "hi");
+check("dom-html", peer.dom.html().includes("<p id=\"blurb\">hi</p>"));
+check("dom-path", peer.dom.get("/0")?.attrs?.id === "root");
+
 check("no-mint", typeof peer.mint !== "function");
 
 console.log(fails ? `${fails} failed` : "batteries ok");

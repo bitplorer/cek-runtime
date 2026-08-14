@@ -12,6 +12,10 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
+from ed25519 import public_key as ed_public_key
+from ed25519 import sign as ed_sign
+from ed25519 import verify as ed_verify
+
 LAW = "cek-law-1"
 KIND_OK = "ok"
 KIND_REFUSE = "authority_refusal"
@@ -55,6 +59,28 @@ def hmac_valid(cap: dict, key: bytes) -> bool:
         return False
     expect = "cek1:" + hmac.new(key, cap_sign_bytes(cap), hashlib.sha256).hexdigest()
     return hmac.compare_digest(sig, expect)
+
+
+def attach_ed25519(cap: dict, seed: bytes) -> dict:
+    out = dict(cap)
+    sig = ed_sign(seed, cap_sign_bytes(out))
+    out["sig"] = "ed25519:" + sig.hex()
+    return out
+
+
+def ed25519_valid(cap: dict, seed: bytes, extra_pks: list[bytes] | None = None) -> bool:
+    sig = cap.get("sig")
+    if not isinstance(sig, str) or not sig.startswith("ed25519:"):
+        return False
+    try:
+        raw = bytes.fromhex(sig[len("ed25519:") :])
+    except ValueError:
+        return False
+    keys = [ed_public_key(seed)]
+    if extra_pks:
+        keys.extend(extra_pks)
+    msg = cap_sign_bytes(cap)
+    return any(ed_verify(pk, msg, raw) for pk in keys)
 
 
 def resource_of(intent: dict) -> tuple[str, str]:
@@ -167,10 +193,12 @@ class Host:
         self,
         now: int = 0,
         hmac_key: bytes | None = None,
+        ed25519_seed: bytes | None = None,
         accepted: list[str] | None = None,
     ):
         self.now = now
         self.hmac_key = hmac_key
+        self.ed25519_seed = ed25519_seed
         self.accepted = list(accepted or [LAW])
         if LAW not in self.accepted:
             self.accepted.insert(0, LAW)
@@ -188,7 +216,9 @@ class Host:
             "scopes": [],
             "law_generation": LAW,
         }
-        if self.hmac_key:
+        if self.ed25519_seed:
+            cap = attach_ed25519(cap, self.ed25519_seed)
+        elif self.hmac_key:
             cap = attach_hmac(cap, self.hmac_key)
         return cap
 
@@ -294,6 +324,15 @@ class Host:
             got = (intent.get("args") or {}).get("subject")
             if got != subj:
                 raise Authority("subject bind mismatch")
-        if self.hmac_key is not None:
-            if not hmac_valid(cap, self.hmac_key):
-                raise Authority("Cap signature required or invalid")
+        if self.ed25519_seed is not None or self.hmac_key is not None:
+            sig = cap.get("sig")
+            if not isinstance(sig, str):
+                raise Authority("Cap signature required")
+            if sig.startswith("ed25519:"):
+                if not (self.ed25519_seed and ed25519_valid(cap, self.ed25519_seed)):
+                    raise Authority("Cap signature invalid")
+            elif self.hmac_key is not None:
+                if not hmac_valid(cap, self.hmac_key):
+                    raise Authority("Cap signature invalid")
+            else:
+                raise Authority("Cap signature invalid")

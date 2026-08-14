@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run CORE vectors against the Python Host runtime. Skip Peer-only and Ed25519."""
+"""Run CORE vectors against the Python Host runtime. Skip Peer-only."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from cek_host import Host, attach_hmac, Dispatch
+from cek_host import Host, attach_hmac, attach_ed25519, Dispatch
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -26,12 +26,11 @@ def hexkey(s: str) -> bytes:
 def run_case(c: dict) -> str | None:
     if c.get("peer_result") and not c.get("intent"):
         return "skip-peer-only"
-    if c.get("ed25519_seed"):
-        return "skip-ed25519"
     now = int(c.get("now") or 0)
     key = hexkey(c["hmac_key"]) if c.get("hmac_key") else None
+    ed = hexkey(c["ed25519_seed"]) if c.get("ed25519_seed") else None
     accepted = [*(c.get("accept_generations") or [])]
-    host = Host(now=now, hmac_key=key, accepted=accepted or None)
+    host = Host(now=now, hmac_key=key, ed25519_seed=ed, accepted=accepted or None)
     if c.get("prior_intent"):
         pr = host.submit(c["prior_intent"])
         if c.get("prior_must_ok") and pr["kind"] != "ok":
@@ -41,9 +40,13 @@ def run_case(c: dict) -> str | None:
     intent = c.get("intent")
     if not intent:
         return "skip-no-intent"
-    if c.get("sign_cap") and key:
+    if c.get("sign_cap"):
         intent = dict(intent)
-        intent["cap"] = attach_hmac(dict(intent.get("cap") or {}), key)
+        cap = dict(intent.get("cap") or {})
+        if ed:
+            intent["cap"] = attach_ed25519(cap, ed)
+        elif key:
+            intent["cap"] = attach_hmac(cap, key)
     r = host.submit(intent)
     if r["kind"] != c["expect_kind"]:
         return f"kind {r['kind']} != {c['expect_kind']} ({r.get('error')})"
