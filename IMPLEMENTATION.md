@@ -21,7 +21,8 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | `cek-ops-ui` | In-memory UI targets (`morph` / `restore`) |
 | `cek-cli` | Demo + vector runner |
 
-TypeScript apply-only Peer: `ports/cek-peer-ts` (no mint).
+TypeScript apply-only Peer: `ports/cek-peer-ts` (no mint).  
+WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm` (no mint; same kernel).
 
 ## Pipeline (Host)
 
@@ -102,7 +103,9 @@ crates/cek-peer-kernel/    # apply only — no mint
 crates/cek-ops-baseline/
 crates/cek-ops-ui/
 crates/cek-cli/
-ports/cek-peer-ts/         # apply-only; no mint
+crates/cek-peer-wasm/      # JSON/WASM apply surface; no mint
+ports/cek-peer-ts/
+ports/cek-peer-wasm/
 ```
 
 ## Edge cases & testing

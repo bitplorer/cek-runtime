@@ -1,0 +1,16 @@
+[package]
+name = "cek-peer-wasm"
+description = "CEK Peer apply-only WASM/JSON port — no mint"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cek-contract = { workspace = true }
+cek-peer-kernel = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -2,22 +2,21 @@
 
 Law stays in [cek-framework](https://github.com/bitplorer/cek-framework). This file records **runtime** changes only.
 
-## 2026-08-14 — kv.delete prior-value reverse
+## 2026-08-14 — WASM apply-only Peer (Stage D)
 
 ### Added
 
-- `kv_delete_prior` / `inverse_kv`: prior lives **on the Op**.
-- Reverse: `kv.delete`+prior → `kv.set`; no prior → `non_reversible`.
-- Vectors `kv-delete-prior-reverse`, `kv-delete-no-prior-non-reversible` (43 → 45).
+- `cek-peer-wasm` wraps `cek-peer-kernel` (`apply_json`). **No mint.**
+- `wasm32-unknown-unknown` cdylib (`cek_alloc` / `cek_apply` / `cek_result_ptr`).
+- Node runner `ports/cek-peer-wasm/run-vectors.mjs` — same `peer_result` fixtures as TS.
+- `Peer::kv_snapshot` / `ui_snapshot` for port checks.
 
 ### Unchanged
 
-- Cap refuse → zero Ops. Peer no mint. `log.append` still non-reversible.
+- Peer (Rust, TS, WASM) cannot mint. Host still decides.
 
-## 2026-08-14 — polish: glossary, fail-closed blanks
+## 2026-08-14 — kv.delete prior-value reverse
 
-Action vs Op glossary; empty idempotency / blank scopes refuse.
+Prior on the Op; reverse `kv.set` or honest `non_reversible`.
 
 ## 2026-08-14 — Stage C: ui.* + scopes + TS Peer
-
-Domain pack, snapshot reverse, attenuation, TypeScript apply-only Peer.

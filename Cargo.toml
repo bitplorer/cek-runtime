@@ -6,6 +6,7 @@ members = [
     "crates/cek-peer-kernel",
     "crates/cek-ops-baseline",
     "crates/cek-ops-ui",
+    "crates/cek-peer-wasm",
     "crates/cek-cli",
 ]
 
@@ -20,6 +21,7 @@ rust-version = "1.70"
 cek-contract = { path = "crates/cek-contract" }
 cek-host-kernel = { path = "crates/cek-host-kernel" }
 cek-peer-kernel = { path = "crates/cek-peer-kernel" }
+cek-peer-wasm = { path = "crates/cek-peer-wasm" }
 cek-ops-baseline = { path = "crates/cek-ops-baseline" }
 cek-ops-ui = { path = "crates/cek-ops-ui" }
 serde = { version = "1.0.203", features = ["derive"] }

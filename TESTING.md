@@ -83,7 +83,7 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **112** `#[test]` + **45** vector fixtures + TS apply-only self-check.
+Current inventory: **114** `#[test]` + **45** vector fixtures + TS/WASM apply-only runners.
 
 ## Coverage targets
 

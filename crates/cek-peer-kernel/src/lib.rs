@@ -200,6 +200,16 @@ impl Peer {
     pub fn ui_get(&self, target: &str) -> Option<serde_json::Value> {
         self.ui.lock().ok()?.get(target)
     }
+
+    /// Full kv snapshot (ports / WASM).
+    pub fn kv_snapshot(&self) -> std::collections::BTreeMap<String, serde_json::Value> {
+        self.kv.lock().map(|g| g.snapshot()).unwrap_or_default()
+    }
+
+    /// Full UI snapshot (ports / WASM).
+    pub fn ui_snapshot(&self) -> std::collections::BTreeMap<String, serde_json::Value> {
+        self.ui.lock().map(|g| g.snapshot()).unwrap_or_default()
+    }
 }
 
 #[cfg(test)]

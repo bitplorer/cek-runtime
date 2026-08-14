@@ -42,6 +42,10 @@ if command -v node >/dev/null 2>&1; then
   echo "=== ts peer ==="
   node --experimental-strip-types --no-warnings \
     ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
+  if rustup target list --installed | grep -q wasm32-unknown-unknown; then
+    echo "=== wasm peer ==="
+    bash scripts/run-wasm-peer.sh || true
+  fi
 fi
 
 echo "=== invariants ==="

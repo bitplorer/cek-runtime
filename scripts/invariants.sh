@@ -10,13 +10,19 @@ ok() { echo "ok  $*"; }
 if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|mint_root' crates/cek-peer-kernel >/dev/null; then
   fail "Peer must not expose mint"
 fi
+ok "Peer has no mint"
 if [ -d ports/cek-peer-ts ]; then
   if grep -REn 'function mint|export function mint|mint_root' ports/cek-peer-ts >/dev/null; then
     fail "TS Peer must not expose mint"
   fi
   ok "TS Peer has no mint"
 fi
-ok "Peer has no mint"
+if [ -d crates/cek-peer-wasm ]; then
+  if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|Host::mint|mint_root' crates/cek-peer-wasm >/dev/null; then
+    fail "WASM Peer crate must not mint"
+  fi
+  ok "WASM Peer crate has no mint"
+fi
 
 # 2. BoundAsk has no public constructor.
 if grep -REn 'pub[[:space:]]+(fn[[:space:]]+new|struct BoundAsk)' crates/cek-host-kernel/src/bound.rs | grep -v 'pub struct BoundAsk' >/dev/null; then

@@ -42,6 +42,14 @@ impl KvStore {
     pub fn is_empty(&self) -> bool {
         self.map.is_empty()
     }
+
+    /// Snapshot of live keys (deterministic order).
+    pub fn snapshot(&self) -> std::collections::BTreeMap<String, Value> {
+        self.map
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
 }
 
 #[cfg(test)]

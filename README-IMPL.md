@@ -9,6 +9,7 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 ./scripts/invariants.sh
 node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
+bash scripts/run-wasm-peer.sh
 ```
 
-45 CORE vectors. 112 unit/property tests. `kv.delete` prior reverse. Domain pack `ui.*`. Actions ≠ Ops.
+45 CORE vectors. 114 unit/property tests. TS + WASM apply-only Peers. `kv.delete` prior reverse. Domain pack `ui.*`.

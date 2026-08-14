@@ -50,6 +50,14 @@ impl UiStore {
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
+
+    /// Snapshot of live targets (deterministic order).
+    pub fn snapshot(&self) -> std::collections::BTreeMap<String, Value> {
+        self.nodes
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
 }
 
 #[cfg(test)]

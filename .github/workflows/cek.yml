@@ -20,6 +20,10 @@ jobs:
         run: cargo run -p cek-cli -- vectors crates/cek-contract/vectors
       - name: TypeScript Peer apply-only
         run: node --experimental-strip-types --no-warnings ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
+      - name: WASM Peer apply-only
+        run: |
+          rustup target add wasm32-unknown-unknown
+          bash scripts/run-wasm-peer.sh
       - name: coverage inventory
         run: bash scripts/coverage.sh
       - name: install cargo-llvm-cov
