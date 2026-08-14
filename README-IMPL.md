@@ -12,4 +12,4 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-54 CORE vectors. 127 tests. Ed25519 + HMAC Host policy. Subject bind. TS + WASM Peers.
+57 CORE vectors. 128 tests. Dual-speak window. Ed25519 + HMAC. Subject bind. TS + WASM Peers.

@@ -31,6 +31,9 @@ pub struct Cap {
     /// Optional Host-policy MAC (`cek1:<hmac>`). Not law; verify is Host policy.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sig: Option<String>,
+    /// Optional law-generation tag. Unset = current (legacy). Host dual-speak window.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub law_generation: Option<String>,
 }
 
 /// Sealed ask under a Cap.
@@ -215,8 +218,11 @@ impl Default for UnknownOpPolicy {
 /// Process handshake document.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Manifest {
-    /// Law generation id.
+    /// Law generation id (current).
     pub law_generation: String,
+    /// Generations this Host will accept (dual-speak window). Unset → `[law_generation]`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub accepted_generations: Vec<String>,
     /// Supported profiles.
     pub profiles: Vec<String>,
     /// Fail-closed facts.

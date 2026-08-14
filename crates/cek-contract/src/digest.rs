@@ -156,6 +156,7 @@ pub fn cap_sign_bytes(cap: &crate::Cap) -> Vec<u8> {
         "scopes": cap.scopes,
         "sealed_args_bind": cap.sealed_args_bind,
         "subject": cap.subject,
+        "law_generation": cap.law_generation,
     });
     canonical_bytes(&v)
 }
@@ -319,6 +320,7 @@ mod tests {
             subject: None,
             scopes: vec![],
             sig: None,
+            law_generation: None,
         };
         let s1 = cap_signature(&key, &cap);
         cap.sig = Some("cek1:dead".into());

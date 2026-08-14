@@ -278,6 +278,13 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
     if let Some(ref hex) = case.ed25519_seed {
         host = host.with_ed25519(parse_hmac_key(hex)?);
     }
+    if let Some(ref gens) = case.accept_generations {
+        for g in gens {
+            host = host
+                .accept_generation(g.clone())
+                .map_err(|e| e.to_string())?;
+        }
+    }
     let peer = make_peer(case);
 
     if let Some(ref prior) = case.prior_intent {

@@ -2,18 +2,19 @@
 
 Law stays in [cek-framework](https://github.com/bitplorer/cek-framework). This file records **runtime** changes only.
 
-## 2026-08-14 — Ed25519 Host policy
+## 2026-08-14 — dual-speak law-generation window
 
 ### Added
 
-- `Host::with_ed25519` / `trust_ed25519`. Mint attaches `ed25519:<hex>` over `cap_sign_bytes`.
-- Rotation: a Host can trust more than one public key.
-- RFC 8032 Test 1 known answer. Vectors `ed25519-ok` / `missing` / `tamper` (51 → 54).
+- `Cap.law_generation` (additive). Unset = legacy current.
+- `Host::accept_generation` / Manifest `accepted_generations`.
+- Unknown or blank generation → refuse, zero Ops.
+- Vectors `law-gen-unknown` / `law-gen-accepted` / `law-gen-blank` (54 → 57).
 
 ### Unchanged
 
-- HMAC Hosts unchanged. Unsigned Hosts accept legacy Caps. Peer does not mint or sign.
+- Law is still `cek-law-1`. This is a Host window, not a new generation.
 
-## 2026-08-14 — subject bind + llvm-cov HTML
+## 2026-08-14 — Ed25519 Host policy
 
-`Cap.subject` / `args.subject`. llvm-cov HTML in CI.
+`with_ed25519` / `trust_ed25519`. RFC 8032 Test 1.

@@ -7,7 +7,7 @@
 | A Core frozen | BoundAsk, refuse, once, Baseline, vectors | **Met** |
 | B Interop mature | Digests, sealed-args, receipts, CI, property tables | **Met** |
 | C Domain-generic | Domain Op packs without law change | **`ui.*` pack + snapshot reverse + scopes** |
-| D Institutional | Multi-port, dual-speak windows | **TS + WASM apply-only Peers** |
+| D Institutional | Multi-port, dual-speak windows | **TS + WASM Peers; law-generation window** |
 
 ## Invariants (must not regress)
 
@@ -33,7 +33,7 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Receipt annotation  
 - [x] Landed-first reverse preference  
 - [x] Reverse classes (Inverse / Compensation / NonReversible)  
-- [x] Executable vectors (54)  
+- [x] Executable vectors (57)  
 - [x] Unknown-meta ignored on the wire  
 - [x] Peer no-mint (CI + `invariants.sh`, Rust + TS + WASM)  
 - [x] Domain `ui.*` with snapshot reverse  
@@ -45,6 +45,7 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Subject bind (`Cap.subject` / `args.subject`)  
 - [x] llvm-cov HTML (`scripts/llvm-cov.sh`, CI artifact)  
 - [x] Ed25519 Host policy + rotation window  
+- [x] Dual-speak law-generation window  
 
 ## Consistency glossary (code ↔ law)
 

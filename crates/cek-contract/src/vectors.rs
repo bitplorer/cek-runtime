@@ -88,6 +88,9 @@ pub struct VectorCase {
     /// Hex-encoded 32-byte Ed25519 seed. When set, Host requires Ed25519 sigs.
     #[serde(default)]
     pub ed25519_seed: Option<String>,
+    /// Extra law generations the Host accepts (dual-speak).
+    #[serde(default)]
+    pub accept_generations: Option<Vec<String>>,
 }
 
 /// Load a single vector JSON file.

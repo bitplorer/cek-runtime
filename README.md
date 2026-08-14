@@ -9,7 +9,7 @@
 
 | Status | Detail |
 |--------|--------|
-| **v0.1 code** | Host + Peer + ui.* pack, scopes, 54 vectors, 127 tests, Ed25519+HMAC, subject bind, TS apply-only Peer |
+| **v0.1 code** | Host + Peer + ui.* pack, scopes, 57 vectors, 128 tests, dual-speak, Ed25519+HMAC, TS apply-only Peer |
 | Proven | Cap refuse → zero Ops; snapshot reverse for ui.morph; scopes cannot widen; Peer no mint (Rust+TS) |
 | Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md) · [INVARIANTS.md](INVARIANTS.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
 

@@ -28,6 +28,7 @@ fn prop_serde_roundtrip_core_types() {
         subject: Some("s".into()),
         scopes: vec!["narrow".into()],
         sig: None,
+        law_generation: None,
     };
     let mut args = BTreeMap::new();
     args.insert("key".into(), json!("k"));
@@ -121,6 +122,7 @@ fn constants_and_defaults() {
     assert!(matches!(p, UnknownOpPolicy::Skip));
     let _ = Manifest {
         law_generation: LAW_GENERATION.into(),
+        accepted_generations: vec![LAW_GENERATION.into()],
         profiles: vec![PROFILE_BASELINE.into()],
         fail_closed: fc,
     };

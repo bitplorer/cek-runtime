@@ -27,6 +27,8 @@ pub struct Host {
     ed_sign: Option<SigningKey>,
     /// Trusted Ed25519 public keys (verify; rotation window).
     ed_trust: Vec<VerifyingKey>,
+    /// Law generations this Host accepts (always includes current).
+    accepted_generations: Vec<String>,
 }
 
 impl Default for Host {
@@ -65,6 +67,7 @@ impl Host {
             signing_key: None,
             ed_sign: None,
             ed_trust: Vec::new(),
+            accepted_generations: vec![LAW_GENERATION.into()],
         }
     }
 
@@ -94,6 +97,7 @@ impl Host {
             signing_key: None,
             ed_sign: None,
             ed_trust: Vec::new(),
+            accepted_generations: vec![LAW_GENERATION.into()],
         }
     }
 
@@ -129,6 +133,20 @@ impl Host {
         self.signing_key.is_some() || self.ed_sign.is_some() || !self.ed_trust.is_empty()
     }
 
+    /// Accept an additional law generation (dual-speak window). Current is always accepted.
+    pub fn accept_generation(mut self, gen: impl Into<String>) -> HostResult<Self> {
+        let g = gen.into();
+        if g.trim().is_empty() {
+            return Err(HostError::Authority(
+                "empty law generation is not allowed".into(),
+            ));
+        }
+        if !self.accepted_generations.contains(&g) {
+            self.accepted_generations.push(g);
+        }
+        Ok(self)
+    }
+
     /// Shared once backend.
     pub fn once_store(&self) -> Arc<dyn OnceBackend> {
         Arc::clone(&self.once)
@@ -148,6 +166,7 @@ impl Host {
     pub fn manifest(&self) -> Manifest {
         Manifest {
             law_generation: LAW_GENERATION.into(),
+            accepted_generations: self.accepted_generations.clone(),
             profiles: vec![PROFILE_BASELINE.into(), PROFILE_PRODUCTION_V1.into()],
             fail_closed: cek_contract::FailClosed {
                 cap_signatures: self.requires_cap_sig(),
@@ -173,6 +192,7 @@ impl Host {
             subject: None,
             scopes: Vec::new(),
             sig: None,
+            law_generation: Some(LAW_GENERATION.into()),
         };
         self.attach_sig(cap)
     }
@@ -321,8 +341,24 @@ impl Host {
         }
         crate::scope::check_scopes(intent)?;
         Self::check_subject(intent)?;
+        self.check_generation(&intent.cap)?;
         self.verify_sig(&intent.cap)?;
         Ok(())
+    }
+
+    /// Unset generation = legacy current. Set generation must be in the window.
+    fn check_generation(&self, cap: &Cap) -> HostResult<()> {
+        match cap.law_generation.as_deref() {
+            None => Ok(()),
+            Some(g) if g.trim().is_empty() => Err(HostError::Authority(
+                "empty law generation is not allowed".into(),
+            )),
+            Some(g) if self.accepted_generations.iter().any(|a| a == g) => Ok(()),
+            Some(g) => Err(HostError::Authority(format!(
+                "law generation `{g}` not in {:?}",
+                self.accepted_generations
+            ))),
+        }
     }
 
     /// Cap.subject set → Intent.args.subject must match. Blank bind refuses.
@@ -1287,6 +1323,27 @@ mod tests {
         let cap = a.mint("c-un", "kv.write", false, None);
         let b = Host::with_clock(1000).with_ed25519([0x02; 32]);
         let r = b.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+
+    #[test]
+    fn dual_speak_accepts_previous_refuses_unknown() {
+        let host = Host::with_clock(1000)
+            .accept_generation("cek-law-0")
+            .unwrap();
+        assert!(host
+            .manifest()
+            .accepted_generations
+            .contains(&"cek-law-0".into()));
+        let mut cap = host.mint("c-ds", "kv.write", false, None);
+        cap.law_generation = Some("cek-law-0".into());
+        let r = host.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+
+        let mut bad = host.mint("c-ds2", "kv.write", false, None);
+        bad.law_generation = Some("cek-law-99".into());
+        let r = host.submit(intent_write(bad, "a", json!(1)));
         assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
         assert!(r.ops.is_empty());
     }

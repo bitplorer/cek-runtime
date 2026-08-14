@@ -19,23 +19,21 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-Expected: **127** unit/property tests; **54** vectors PASS; TS + WASM Peers apply-only green.
+Expected: **128** unit/property tests; **57** vectors PASS; TS + WASM Peers apply-only green.
 
 ## Current maturity
 
-Stage C met. Stage D: TS + WASM Peers; HMAC **and** Ed25519 Host policy.
+Stage C met. Stage D: TS + WASM Peers; HMAC + Ed25519; **dual-speak law-generation window**.
 
-## Done this session (2026-08-14, Ed25519)
+## Done this session (2026-08-14, dual-speak)
 
-- `Host::with_ed25519(seed)` mints `ed25519:<hex>` over the same authority bytes as HMAC.
-- `trust_ed25519` adds pubs for a rotation window (old Caps still verify).
-- Missing / forged / wrong-key → refuse, zero Ops.
-- RFC 8032 Test 1 known answer. HMAC Hosts unchanged. Peer never signs.
+- `Cap.law_generation` optional. Unset = legacy current.
+- `Host::accept_generation` opens a window. Unknown / blank → refuse, zero Ops.
+- Manifest lists `accepted_generations`. Current `cek-law-1` is always accepted.
 
 ## Do next
 
 1. Real DOM UI store (reference map is enough for now).
-2. Dual-speak law-generation window (institutional).
 
 ## Never regress
 

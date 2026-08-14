@@ -58,6 +58,7 @@ fn check_result_kind_mismatch() {
         hmac_key: None,
         sign_cap: false,
         ed25519_seed: None,
+        accept_generations: None,
     };
     let r = ResultMsg::authority_refusal("no");
     assert!(check_result(&case, &r).is_err());
@@ -93,6 +94,7 @@ fn check_result_rejects_refusal_with_ops() {
         hmac_key: None,
         sign_cap: false,
         ed25519_seed: None,
+        accept_generations: None,
     };
     let mut r = ResultMsg::authority_refusal("no");
     r.ops = vec![baseline::kv_set("k", json!(1))];
@@ -129,6 +131,7 @@ fn check_result_ops_empty_and_exact() {
         hmac_key: None,
         sign_cap: false,
         ed25519_seed: None,
+        accept_generations: None,
     };
     let with_ops = ResultMsg::ok(vec![baseline::kv_set("k", json!(1))]);
     assert!(check_result(&case, &with_ops).is_err());

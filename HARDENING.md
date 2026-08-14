@@ -16,7 +16,7 @@ This document lists **fail-closed** and **determinism** rules enforced in code.
 | Once commit | after successful project | Mark consumed; dispatch error does **not** burn |
 | Once second use | already consumed | Refuse (unless idempotent replay already returned) |
 | Subject bind | `cap.subject` set | `args.subject` must match; blank bind → refuse |
-| Ed25519 | `with_ed25519` / `trust_ed25519` | Missing, forged, or untrusted pub → refuse |
+| Dual-speak | `Cap.law_generation` set | Must be in Host `accepted_generations`; blank/unknown → refuse |
 | Idem store down | lock poison / I/O | Refuse (fail closed) |
 
 ## BoundAsk

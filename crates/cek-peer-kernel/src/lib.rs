@@ -84,6 +84,7 @@ impl Peer {
     pub fn manifest(&self) -> Manifest {
         Manifest {
             law_generation: LAW_GENERATION.into(),
+            accepted_generations: vec![LAW_GENERATION.into()],
             profiles: vec![self.profile.name.clone()],
             fail_closed: Default::default(),
         }
