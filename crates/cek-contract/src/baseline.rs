@@ -21,12 +21,24 @@ pub fn kv_set(key: impl Into<String>, value: serde_json::Value) -> Op {
     }
 }
 
-/// Build a `kv.delete` Op.
+/// Build a `kv.delete` Op. Optional `prior` is the value to restore on reverse.
 pub fn kv_delete(key: impl Into<String>) -> Op {
+    kv_delete_prior(key, None)
+}
+
+/// `kv.delete` with a prior-value snapshot on the Op (landed-first reverse).
+pub fn kv_delete_prior(key: impl Into<String>, prior: Option<serde_json::Value>) -> Op {
+    let mut payload = json!({ "key": key.into() });
+    if let Some(p) = prior {
+        payload
+            .as_object_mut()
+            .expect("object")
+            .insert("prior".into(), p);
+    }
     Op {
         ns: "kv".into(),
         name: "delete".into(),
-        payload: json!({ "key": key.into() }),
+        payload,
     }
 }
 
@@ -44,5 +56,50 @@ pub fn kv_set_inverse(key: impl Into<String>, prior: Option<serde_json::Value>) 
     match prior {
         Some(v) => kv_set(key, v),
         None => kv_delete(key),
+    }
+}
+
+/// Inverse of a Baseline kv Op when enough payload is present.
+///
+/// - `kv.set` → `kv.delete` (no prior needed to undo a set)
+/// - `kv.delete` with `prior` → `kv.set` of that prior
+/// - `kv.delete` without prior / `log.append` → `None` (honest non-reversible)
+pub fn inverse_kv(op: &Op) -> Option<Op> {
+    if op.ns != "kv" {
+        return None;
+    }
+    match op.name.as_str() {
+        "set" => {
+            let key = op.payload.get("key").and_then(|v| v.as_str())?;
+            Some(kv_delete(key))
+        }
+        "delete" => {
+            let key = op.payload.get("key").and_then(|v| v.as_str())?;
+            let prior = op.payload.get("prior").cloned()?;
+            Some(kv_set(key, prior))
+        }
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn delete_prior_inverts_to_set() {
+        let d = kv_delete_prior("k", Some(json!(1)));
+        let inv = inverse_kv(&d).unwrap();
+        assert_eq!(inv.fq(), "kv.set");
+        assert_eq!(inv.payload.get("value"), Some(&json!(1)));
+        assert!(inverse_kv(&kv_delete("k")).is_none());
+    }
+
+    #[test]
+    fn set_inverts_to_delete() {
+        let inv = inverse_kv(&kv_set("k", json!(1))).unwrap();
+        assert_eq!(inv.fq(), "kv.delete");
+        assert!(inv.payload.get("prior").is_none());
     }
 }

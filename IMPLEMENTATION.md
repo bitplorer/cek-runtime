@@ -80,6 +80,7 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 11. Scope deny / blank scope token → refuse, zero Ops; attenuate cannot widen  
 12. `ui.morph` (action) with snapshot → reverse `ui.dom.restore` (Op); without → non_reversible  
 13. Empty idempotency key → refuse (not a global key)  
+14. `kv.delete` with `prior` on the Op → reverse `kv.set`; without → non_reversible  
 
 See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 

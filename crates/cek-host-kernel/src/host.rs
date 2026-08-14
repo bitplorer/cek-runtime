@@ -439,7 +439,8 @@ fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
             if key.is_empty() {
                 return Err("kv.delete key must be non-empty".into());
             }
-            Ok(vec![baseline::kv_delete(key)])
+            let prior = intent.args.get("prior").cloned();
+            Ok(vec![baseline::kv_delete_prior(key, prior)])
         }
         cek_contract::ACTION_LOG_APPEND => {
             let msg = intent
@@ -489,14 +490,12 @@ fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
 fn inverse_for(ops: &[Op]) -> Vec<Op> {
     let mut inv = Vec::new();
     for op in ops.iter().rev() {
-        if op.ns == "kv" && op.name == "set" {
-            if let Some(key) = op.payload.get("key").and_then(|v| v.as_str()) {
-                inv.push(baseline::kv_delete(key));
-            }
+        if let Some(kv_inv) = cek_contract::inverse_kv(op) {
+            inv.push(kv_inv);
         } else if let Some(ui_inv) = cek_contract::inverse_ui(op) {
             inv.push(ui_inv);
         }
-        // kv.delete / log.append / restore-without-prior: no inverse
+        // log.append / restore / delete-without-prior: honest non-reversible
     }
     inv
 }
@@ -1019,5 +1018,46 @@ mod tests {
         let r = host.submit(i);
         assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
         assert!(r.ops.is_empty());
+    }
+
+    fn intent_delete(cap: Cap, key: &str, prior: Option<Value>) -> Intent {
+        let mut args = BTreeMap::new();
+        args.insert("key".into(), json!(key));
+        if let Some(p) = prior {
+            args.insert("prior".into(), p);
+        }
+        Intent {
+            action: "kv.delete".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-del".into()),
+        }
+    }
+
+    #[test]
+    fn kv_delete_with_prior_reverses_to_set() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-delp", "kv.delete", false, None);
+        let r = host.submit(intent_delete(cap, "k", Some(json!("old"))));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops[0].fq(), "kv.delete");
+        assert_eq!(r.ops[0].payload.get("prior"), Some(&json!("old")));
+        let rev = host.end_activity("act-del").unwrap();
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "kv.set");
+        assert_eq!(rev.ops[0].payload.get("value"), Some(&json!("old")));
+    }
+
+    #[test]
+    fn kv_delete_without_prior_is_non_reversible() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-deln", "kv.delete", false, None);
+        let r = host.submit(intent_delete(cap, "k", None));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let rev = host.end_activity("act-del").unwrap();
+        assert!(rev.ops.is_empty());
+        assert!(!rev.non_reversible.is_empty());
     }
 }

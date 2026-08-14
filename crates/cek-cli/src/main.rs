@@ -136,6 +136,45 @@ fn run_demo() {
     let _ = peer_ui.apply(&ResultMsg::ok(rev.ops));
     println!("   ui[hdr] after restore={:?}", peer_ui.ui_get("hdr"));
 
+    // 6) kv.delete with prior → reverse restores
+    let cap_del = host.mint("cap-del", "kv.delete", false, None);
+    let _ = peer.apply(&host.submit(Intent {
+        action: "kv.write".into(),
+        args: {
+            let mut a = BTreeMap::new();
+            a.insert("key".into(), json!("note"));
+            a.insert("value".into(), json!("keep"));
+            a
+        },
+        cap: host.mint("cap-note", "kv.write", false, None),
+        trace: None,
+        idempotency_key: None,
+        activity_id: None,
+    }));
+    let r = host.submit(Intent {
+        action: "kv.delete".into(),
+        args: {
+            let mut a = BTreeMap::new();
+            a.insert("key".into(), json!("note"));
+            a.insert("prior".into(), json!("keep"));
+            a
+        },
+        cap: cap_del,
+        trace: None,
+        idempotency_key: None,
+        activity_id: Some("act-del".into()),
+    });
+    let rec = peer.apply(&r).unwrap();
+    host.report_receipt("act-del", &rec).expect("del receipt");
+    println!(
+        "\n6) kv.delete(prior) → {:?} kv[note]={:?}",
+        r.kind,
+        peer.kv_get("note")
+    );
+    let rev = host.end_activity("act-del").expect("del reverse");
+    let _ = peer.apply(&ResultMsg::ok(rev.ops));
+    println!("   kv[note] after reverse={:?}", peer.kv_get("note"));
+
     println!("\n=== demo ok ===");
 }
 

@@ -10,7 +10,7 @@
 | **BoundAsk** | Post-verify token; Host-private | A Cap |
 | **Result** | Host answer: kind + Ops + digest | World mutation |
 | **Receipt** | Peer report of landed / failed | Authority |
-| **Snapshot** | Prior UI node carried **on** `ui.dom.morph` | A Host secret |
+| **Snapshot** | Prior value on the Op (`ui.dom.morph.snapshot`, `kv.delete.prior`) | A Host secret |
 | **Restore** | Inverse Op `ui.dom.restore` | Compensation Intent |
 | **Baseline** | Classic Ops every Peer can apply | The UI pack |
 | **Lower** | Project domain Ops to Baseline (`kv.set ui:{target}`) | Change the Cap |

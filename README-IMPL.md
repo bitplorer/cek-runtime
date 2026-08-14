@@ -11,4 +11,4 @@ node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-43 CORE vectors. 106 unit/property tests. Domain pack `ui.*` with snapshot reverse. Actions ≠ Ops. Empty keys/scopes refuse.
+45 CORE vectors. 112 unit/property tests. `kv.delete` prior reverse. Domain pack `ui.*`. Actions ≠ Ops.

@@ -9,7 +9,7 @@
 
 | Status | Detail |
 |--------|--------|
-| **v0.1 code** | Host + Peer + ui.* pack, scopes, 43 vectors, 106 tests, TS apply-only Peer |
+| **v0.1 code** | Host + Peer + ui.* pack, scopes, 45 vectors, 112 tests, TS apply-only Peer |
 | Proven | Cap refuse → zero Ops; snapshot reverse for ui.morph; scopes cannot widen; Peer no mint (Rust+TS) |
 | Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md) · [INVARIANTS.md](INVARIANTS.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
 

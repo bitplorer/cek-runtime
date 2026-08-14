@@ -34,5 +34,6 @@
 |------|--------|
 | Concurrent once race under multi-thread | Mutex serializes; commit-after-project still races across hosts — multi-Host policy later |
 | Multi-process file lock | One `File*Store` instance per directory; flock/SQL later |
-| Snapshot reverse for delete | Needs prior value store (`kv.delete` still non-reversible) |
+| `kv.delete` with `prior` | Undo delete | Inverse `kv.set` from Op payload |
+| `kv.delete` without `prior` | Fake undo | `NonReversible` |
 | Cap crypto forge | Deferred (signatures) |

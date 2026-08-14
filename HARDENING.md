@@ -41,7 +41,8 @@ Vector checker rejects `authority_refusal` with non-empty Ops.
 3. Peer receipt → `report_receipt` annotates **landed** Ops.  
 4. `end_activity` prefers inverse of **landed** when annotated; else inverse from commit.  
 5. `NonReversible` / `Compensation` entries are listed; never claimed clean.  
-6. `ui.dom.morph` reverse is `ui.dom.restore` **only** when `snapshot` is on the Op; otherwise mark non-reversible.
+6. `ui.dom.morph` reverse is `ui.dom.restore` **only** when `snapshot` is on the Op; otherwise mark non-reversible.  
+7. `kv.delete` reverse is `kv.set` **only** when `prior` is on the Op; otherwise mark non-reversible.
 
 ## Stores
 

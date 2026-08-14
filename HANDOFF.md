@@ -18,26 +18,23 @@ node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-Expected: **106** unit/property tests; **43** vectors PASS; TS Peer apply-only green; demo includes ui.morph restore.
+Expected: **112** unit/property tests; **45** vectors PASS; TS Peer apply-only green; demo includes ui restore + kv.delete prior restore.
 
 ## Current maturity
 
-**Stage C started** (domain `ui.*` pack + snapshot reverse). Stage B still met. See MATURITY.md.
+**Stage C** — domain `ui.*` + snapshot reverse for UI **and** `kv.delete`. See MATURITY.md.
 
-## Done this session (2026-08-14, polish)
+## Done this session (2026-08-14, kv.delete prior)
 
-- Glossary: **action** (`ui.morph`) vs **Op** (`ui.dom.morph`) — [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md).
-- Empty idempotency key and blank scope tokens refuse (fail closed).
-- `FailClosed` handshake lists once / idem / sealed / scopes (all default true).
-- Vector runner prints family counts; TS runner reports skipped host-projected cases.
-- Constants `ACTION_*` / `PROFILE_UI` used by Host + Peer.
+- `kv.delete` carries optional `prior` **on the Op** (same rule as `ui.morph` snapshot).
+- Reverse is `kv.set` of that prior; missing prior → honest `non_reversible`.
+- `inverse_kv` lives next to `inverse_ui` in the contract.
 
 ## Do next
 
-1. Cap cryptographic signatures (optional Host policy).
-2. WASM apply-only Peer (same vectors as TS).
-3. Richer UI snapshot store (real DOM / prior-value for `kv.delete`).
-4. llvm-cov HTML in CI.
+1. WASM apply-only Peer (same `peer_result` vectors as TS).
+2. Cap cryptographic signatures (optional Host policy).
+3. llvm-cov HTML in CI.
 
 ## Never regress
 

@@ -22,6 +22,7 @@ This file lists **what the reference runtime actually checks** and where.
 | 13 | Scope deny / blank token → zero Ops | `prop_scope_deny_never_effects`, `empty-scope-token` |
 | 14 | Attenuate cannot widen | `prop_attenuate_no_widen` |
 | 15 | ui snapshot reverse / honest non-reversible | `prop_ui_snapshot_reverse`, `ui-morph-*` |
+| 19 | kv.delete prior reverse / honest non-reversible | `prop_kv_delete_prior_reverse`, `kv-delete-*` |
 | 16 | TS Peer has no mint | `invariants.sh` grep `ports/cek-peer-ts` |
 | 17 | Empty idempotency key → refuse | vector `empty-idempotency-key` |
 | 18 | Action ≠ Op | `actions::tests::actions_are_not_ops` |

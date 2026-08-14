@@ -51,7 +51,7 @@ cargo llvm-cov --workspace --html --output-dir coverage
 | `unknown_ops` | skip continues, fail_batch aborts | Unknown Ops |
 | `unknown_meta` | extra JSON fields ignored | Unknown meta |
 | `lineage` | double end, commit after ended, empty activity_id | Lineage |
-| `reverse_on_end` | inverse delete; log.append non-reversible | Reverse on end |
+| `reverse_on_end` | inverse delete; log.append non-reversible; **kv.delete prior / no-prior** | Reverse on end |
 | `apply_receipt` | landed-first reverse | Apply receipt into lineage |
 | `idempotent_submit` | replay, conflict, once-Cap retry | Idempotent submit |
 | `trace` | shared trace does not grant authority | Trace |
@@ -81,7 +81,9 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 16. Scope deny → refuse ∧ ops=∅  
 17. Attenuate cannot widen  
 
-Current inventory: **105+** `#[test]` + **43** vector fixtures + TS apply-only self-check.
+18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
+
+Current inventory: **112** `#[test]` + **45** vector fixtures + TS apply-only self-check.
 
 ## Coverage targets
 

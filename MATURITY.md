@@ -33,15 +33,15 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Receipt annotation  
 - [x] Landed-first reverse preference  
 - [x] Reverse classes (Inverse / Compensation / NonReversible)  
-- [x] Executable vectors (43)  
+- [x] Executable vectors (45)  
 - [x] Unknown-meta ignored on the wire  
 - [x] Peer no-mint (CI + `invariants.sh`, Rust + TS)  
 - [x] Domain `ui.*` with snapshot reverse  
 - [x] Scope attenuation (Host policy; no widen)  
 - [x] Second Peer language port (TS apply-only)  
+- [x] Snapshot reverse for `kv.delete` prior value  
 - [ ] Cap cryptographic signatures  
 - [ ] WASM Peer port  
-- [ ] Snapshot reverse for `kv.delete` prior value  
 
 ## Consistency glossary (code ↔ law)
 

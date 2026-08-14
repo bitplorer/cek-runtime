@@ -499,3 +499,56 @@ fn prop_attenuate_no_widen() {
             .is_err());
     }
 }
+
+/// ∀ kv.delete with prior → reverse is kv.set of that prior
+#[test]
+fn prop_kv_delete_prior_reverse() {
+    let host = Host::with_clock(1_000);
+    for key in keys() {
+        let cap = host.mint(format!("delp-{key}"), "kv.delete", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("key".into(), json!(key));
+        args.insert("prior".into(), json!(format!("old-{key}")));
+        let aid = format!("act-del-{key}");
+        let r = host.submit(Intent {
+            action: "kv.delete".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some(aid.clone()),
+        });
+        assert!(matches!(r.kind, ResultKind::Ok), "{key}");
+        let rev = host.end_activity(&aid).unwrap();
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "kv.set");
+        assert_eq!(
+            rev.ops[0].payload.get("key").and_then(|v| v.as_str()),
+            Some(key)
+        );
+    }
+}
+
+/// ∀ kv.delete without prior → reverse is empty (honest)
+#[test]
+fn prop_kv_delete_no_prior_non_reversible() {
+    let host = Host::with_clock(1_000);
+    for key in keys() {
+        let cap = host.mint(format!("deln-{key}"), "kv.delete", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("key".into(), json!(key));
+        let aid = format!("act-deln-{key}");
+        let r = host.submit(Intent {
+            action: "kv.delete".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some(aid.clone()),
+        });
+        assert!(matches!(r.kind, ResultKind::Ok), "{key}");
+        let rev = host.end_activity(&aid).unwrap();
+        assert!(rev.ops.is_empty());
+        assert!(!rev.non_reversible.is_empty());
+    }
+}
