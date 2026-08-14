@@ -4,3 +4,5 @@ Cargo.lock
 /coverage
 *.profraw
 *.profdata
+__pycache__/
+*.pyc
