@@ -1,98 +1,91 @@
 # CEK Runtime
 
-**Build a CEK Host (authority) and Peer (apply surface) without inventing ambient power.**
+**Implement a CEK Host (authority) and Peer (apply surface) without ambient power.**
 
-This repo is the **implementation playbook**: contract, pipelines, isolation, CI gates, Rust-oriented crate shape.  
-The **law** (meanings of Cap, Host, Peer, lineage…) lives in **[cek-framework](https://github.com/bitplorer/cek-framework)**.
+| | |
+|--|--|
+| **This repo** | Implementation playbook — contract, pipelines, isolation, CI, Rust crate shape |
+| **Law** | [cek-framework](https://github.com/bitplorer/cek-framework) — Cap, Host, Peer, lineage, axioms |
 
-| Status today | What’s fixed |
-|--------------|--------------|
-| Design + gates documented | Host/Peer split, submit order, reverse-first, vector merge rule |
-| Runnable crates / JSON vectors | Next engineering step — layout is ready so code can’t “quietly” skip Cap |
-
----
-
-## Real problems this is for
-
-| You’re building… | Risk without a CEK runtime | What this design gives you |
-|------------------|----------------------------|----------------------------|
-| **Agent tools** that write files, call APIs, or change prod state | Agent invents permission; no clean revoke | Host verifies Cap; every write is an Op under lineage |
-| **UI / DOM channel** (morph, patch, multiplayer surface) | Random client mutations; undo is guesswork | Peer only applies `dom.*` Ops; Host ends Activity → reverse/restore |
-| **Device or robot commands** | Firmware “trusted path” bypasses policy | Same submit path; refuse = no motor/GPIO Op |
-| **Multi-version clients** | New Host breaks old Peer | **Baseline** Ops + profile projection |
-| **Cancel job / unload plugin / revoke access** | Half-applied cleanup, fake “rolled back” | Lineage + reverse plan (inverse, compensation, or honest mark) |
-| **PR review on authority code** | “Just this once” admin flags | Kill ambient skips; Peer must not mint; vectors block merge |
-
-**Example path (DOM):** Cap allows morph → Intent → Host Result `{ Ops: [dom.morph] }` → Peer applies → morph **stays** until Activity end/revoke → Host reverse may emit restore/inverse Ops → Peer applies those. Finishing a morph does **not** auto-undo.
+| Status | Detail |
+|--------|--------|
+| Documented | Host/Peer split, submit order, reverse-first, vector merge gates |
+| Next | Runnable crates + JSON vectors (layout is fixed so Cap cannot be skipped quietly) |
 
 ---
 
-## What this repo is (plain)
+## Problems this solves
 
-Two kernels, one contract:
+| You’re building | Risk without CEK runtime | What this design provides |
+|-----------------|--------------------------|---------------------------|
+| **Agent tools** (files, APIs, prod state) | Agent invents permission; weak revoke | Host verifies Cap; writes are Ops under lineage |
+| **UI / DOM channel** (morph, patch, collab) | Client free-mutates; undo is guesswork | Peer applies `dom.*` Ops only; Host ends Activity → reverse/restore |
+| **Device / robot commands** | Trusted firmware bypass | Same submit path; refuse → no effect Op |
+| **Multi-version clients** | New Host breaks old Peer | Baseline Ops + profile projection |
+| **Cancel / unload / revoke** | Half cleanup; fake rollback | Lineage + reverse plan (inverse, compensation, or honest mark) |
+| **Authority PR review** | “Just this once” admin flags | No Cap-skip flags; Peer cannot mint; vectors block merge |
+
+**DOM example:** Cap → Intent → `Result{Ops:[dom.morph]}` → Peer applies → morph **stays** until Activity end or Cap revoke → Host may emit restore/inverse Ops → Peer applies them. Completing a morph does **not** auto-undo.
+
+---
+
+## What you get
 
 ```text
-Your app  --Intent+Cap-->  Host (Rust)  --Result+Ops-->  Peer (Rust)
-                              |
-                         lineage / reverse
+Your app  --Intent + Cap-->  Host (Rust)  --Result + Ops-->  Peer (Rust)
+                                |
+                           lineage / reverse
 ```
 
 | Piece | Job |
 |-------|-----|
-| **Contract** | Schemas + tests (CORE 19 families) — interop product |
+| **Contract** | Schemas + CORE 19-style vectors — the interop product |
 | **Host** | mint, verify, once/idempotency, dispatch, lineage, project, reverse |
 | **Peer** | apply Ops in order; optional receipt; **never** mint root Caps |
-| **Baseline Ops** | Small classic set (data only) so old Peers keep working |
+| **Baseline Ops** | Small data-only set so older Peers keep working |
 
-**Submit order (Host, fail closed):**  
+**Host submit order (fail closed):**  
 verify → once/idempotency → reload truth → dispatch → lineage → project → Result  
-Refuse at Cap check → **zero** mutate Ops.
+Cap refuse → **zero** mutate Ops.
 
 ---
 
-## When to use which repo
+## Which repo?
 
-| I need… | Open |
-|---------|------|
-| What the words mean / axioms / “is this still CEK?” | [cek-framework](https://github.com/bitplorer/cek-framework) |
-| How to structure Host/Peer, CI, crates, isolation | **this repo** |
-| Product UI, business handlers | Your app (L7) — hold Caps, call `submit` |
+| Need | Open |
+|------|------|
+| Meanings, axioms, kill criteria | [cek-framework](https://github.com/bitplorer/cek-framework) |
+| Host/Peer structure, CI, crates, isolation | **This repo** |
+| Product UI and business handlers | Your app — hold Caps, call `submit` |
 
----
-
-## Canonical target
-
-| Kernel | Language |
-|--------|----------|
-| Host | **Rust** only (`cek-host-kernel-rust`) |
-| Peer | **Rust** only (`cek-peer-kernel-rust`) |
-
-Python/TS/etc. = callers or later Peer ports — not Host kernels here.
+**Kernels here:** Host and Peer in **Rust** only. Other languages = callers or later Peer ports.
 
 ---
 
-## One line
+## Design rule
 
-**Contract is sole product → Host is Cap state machine → Peer is pure apply → reverse before rich Ops → vectors gate merge.**
+**Contract is the sole interop product → Host is a Cap state machine → Peer is pure apply → reverse before rich domain Ops → vectors gate merge.**
 
-## Start navigating
+## Navigate
 
 | Path | Role |
 |------|------|
 | [SCOPE.md](SCOPE.md) | Law vs this repo |
-| [diagrams/](diagrams/) | Flows (optional Mermaid) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to change this playbook |
+| [diagrams/](diagrams/) | Implementation flows |
 | [00-contract/](00-contract/) | Schemas, vectors, Baseline |
+| [01-kernels/](01-kernels/) | Host and Peer APIs |
 | [02-host-pipeline/](02-host-pipeline/) | Submit machine |
 | [03-peer-apply/](03-peer-apply/) | Apply + receipt |
 | [05-lineage-reverse/](05-lineage-reverse/) | Undo story |
 | [09-ci/](09-ci/) | Merge gates |
-| [INDEX.md](INDEX.md) | Everything |
+| [INDEX.md](INDEX.md) | Full map |
 
-## Definition of done (reference runtime)
+## Definition of done
 
-1. Contract schemas + CORE 19 vectors executable  
-2. Rust Host + Peer green on those vectors  
+1. Contract schemas + vector families executable  
+2. Rust Host + Peer pass those vectors  
 3. Baseline Ops end-to-end  
 4. Cap refuse → zero mutate effects  
 5. Activity end → reverse or non-reversible mark  
-6. Peer crate has **no** mint-root API  
+6. Peer crate exposes **no** mint-root API  

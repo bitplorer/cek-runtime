@@ -1,28 +1,19 @@
-# Scope — Law vs Implementation
+# Scope — law vs implementation
 
-## Belongs in cek-framework (law)
-
-- META method, axioms, vocabulary, layers  
-- Host/Peer *roles*, Cap/Intent/Ops *concepts*  
-- Lineage, reverse, Baseline, profile *as law*  
-- Kill criteria, charter, conformance *families*  
-- Encoding-free conceptual shapes  
-
-## Belongs here (implementation)
-
-- Programming languages for kernels  
-- Crate/module layout  
-- Cap as a typed state machine in code  
-- Submit orchestrator API surface  
-- Peer isolation technology (process, WASM, in-process modules)  
-- CI rules, lint bans, merge gates  
-- Concrete schema files and vector JSON  
-- Production profile packaging  
-- Crypto/store choices (must still satisfy Cap binds)  
-- How L7 callers talk to Host (IPC, HTTP, in-process)  
+| In [cek-framework](https://github.com/bitplorer/cek-framework) | In **this** repo |
+|---------------------------------------------------------------|------------------|
+| META method, axioms, vocabulary, layers | Kernel languages (Rust reference) |
+| Host/Peer *roles*; Cap/Intent/Ops *concepts* | Crate and module layout |
+| Lineage, reverse, Baseline, profile as law | Cap as a typed state machine in code |
+| Kill criteria, charter, conformance *families* | Submit API surface, isolation, CI bans |
+| Encoding-free conceptual shapes | Schema files, vector JSON, crypto/store choices |
+| | How L7 callers reach Host (IPC, HTTP, in-process) |
 
 ## Hard rule
 
-If a change would rename a frozen kernel concept, alter axioms, or add a third L1 role — it is a **charter amendment** in cek-framework, not a patch here.
+| Change type | Where |
+|-------------|--------|
+| Rename frozen concept, change axiom, add third L1 role | **Charter amendment** in cek-framework |
+| Rust API, CI, isolation, vector encoding | **This** repo |
 
-If a change only affects Rust APIs, CI, isolation, or vector *encoding* — it lives here.
+Do not weaken fail-closed Cap verify or Peer no-mint in the name of convenience.
