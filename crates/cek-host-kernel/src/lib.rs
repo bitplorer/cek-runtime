@@ -7,6 +7,7 @@
 //!
 //! ```text
 //! verify Cap (action, expiry, sealed-args)
+//!   → idempotency lookup (before once)
 //!   → once ensure_available (before effects; do not burn yet)
 //!   → BoundAsk
 //!   → project Ops
@@ -43,5 +44,7 @@ pub use lineage::*;
 pub use once::*;
 pub use store::*;
 
+#[cfg(test)]
+mod fail_closed;
 #[cfg(test)]
 mod props;

@@ -9,9 +9,9 @@
 
 | Status | Detail |
 |--------|--------|
-| **v0.1 code** | Contract, Host (BoundAsk + store traits), Peer (apply-only), Baseline kv, 25 vectors, CLI |
-| Proven | Cap refuse → zero Ops; once commit-after-project; idempotency-before-once; `cek1:` digests; landed-first reverse; file-backed once/lineage |
-| Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
+| **v0.1 code** | Contract, Host (BoundAsk + store traits), Peer (apply-only), Baseline kv, 31 vectors, 87 tests, CLI |
+| Proven | Cap refuse → zero Ops; once commit-after-project; idempotency-before-once; `cek1:` FIPS SHA-256; landed-first reverse; fail-closed stores |
+| Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [INVARIANTS.md](INVARIANTS.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
 
 ```bash
 cargo test --workspace

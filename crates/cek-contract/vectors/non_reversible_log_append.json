@@ -1,0 +1,15 @@
+{
+  "id": "non-reversible-log-append",
+  "family": "reverse_on_end",
+  "description": "log.append under an Activity is marked non-reversible (no fake undo)",
+  "now": 1000,
+  "intent": {
+    "action": "log.append",
+    "args": { "message": "hi" },
+    "cap": { "id": "cap-nr", "action": "log.append", "once": false },
+    "activity_id": "act-log"
+  },
+  "expect_kind": "ok",
+  "end_activity": "act-log",
+  "expect_reverse_ops": []
+}

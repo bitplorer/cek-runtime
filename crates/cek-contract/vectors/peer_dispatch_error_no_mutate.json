@@ -1,0 +1,14 @@
+{
+  "id": "peer-dispatch-error-no-mutate",
+  "family": "baseline_apply",
+  "description": "Peer apply of dispatch_error is a no-op",
+  "peer_result": {
+    "kind": "dispatch_error",
+    "ops": [],
+    "error": "miss"
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true,
+  "peer_apply": true,
+  "expect_peer_kv": { "a": null }
+}

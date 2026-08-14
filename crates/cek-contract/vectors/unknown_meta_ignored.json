@@ -1,0 +1,21 @@
+{
+  "id": "unknown-meta-ignored",
+  "family": "unknown_meta",
+  "description": "Unknown JSON fields on Cap/Intent are ignored; valid ask still projects",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "k", "value": 1 },
+    "cap": {
+      "id": "cap-meta",
+      "action": "kv.write",
+      "once": false,
+      "unknown_meta": { "hint": true }
+    },
+    "extra_caller_field": 1
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    { "ns": "kv", "name": "set", "payload": { "key": "k", "value": 1 } }
+  ]
+}

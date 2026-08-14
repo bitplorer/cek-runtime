@@ -180,4 +180,47 @@ mod tests {
         b.insert("k".into(), json!(1));
         assert_eq!(sealed_args_digest(&a), sealed_args_digest(&b));
     }
+
+    #[test]
+    fn sha256_known_answers() {
+        // FIPS 180-2 / RFC 6234 fixtures — digest stability depends on this.
+        assert_eq!(
+            sha256_hex(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        assert_eq!(
+            sha256_hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
+            "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+        );
+    }
+
+    #[test]
+    fn empty_ops_digest_is_cek1() {
+        let d = ops_digest(&[]);
+        assert!(d.starts_with("cek1:"));
+        assert_eq!(d, ops_digest(&[]));
+    }
+
+    #[test]
+    fn result_digest_distinguishes_kind() {
+        let ops = vec![baseline::kv_set("a", json!(1))];
+        let ok = result_digest("ok", &ops, None);
+        let refuse = result_digest("authority_refusal", &[], Some("no"));
+        let disp = result_digest("dispatch_error", &[], Some("miss"));
+        assert_ne!(ok, refuse);
+        assert_ne!(ok, disp);
+        assert_ne!(refuse, disp);
+        assert!(ok.starts_with("cek1:"));
+    }
+
+    #[test]
+    fn multi_op_digest_order_sensitive() {
+        let a = baseline::kv_set("a", json!(1));
+        let b = baseline::kv_delete("a");
+        assert_ne!(ops_digest(&[a.clone(), b.clone()]), ops_digest(&[b, a]));
+    }
 }

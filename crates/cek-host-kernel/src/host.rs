@@ -723,4 +723,137 @@ mod tests {
         assert_eq!(rev.ops[0].fq(), "kv.delete");
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn host_new_default_manifest_and_bind() {
+        let host = Host::new();
+        let _ = Host::default();
+        let m = host.manifest();
+        assert_eq!(m.law_generation, LAW_GENERATION);
+        assert!(m.profiles.contains(&PROFILE_BASELINE.to_string()));
+        let cap = host.mint("c-new", "kv.write", false, None);
+        let bound = host
+            .verify_and_bind(intent_write(cap, "k", json!(1)), 1000)
+            .unwrap();
+        assert_eq!(bound.now(), 1000);
+        assert_eq!(bound.intent().action, "kv.write");
+        let _ = host.idem_store();
+        let _ = host.lineage_store();
+    }
+
+    #[test]
+    fn empty_activity_id_is_dispatch_error() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ea", "kv.write", false, None);
+        let mut i = intent_write(cap, "k", json!(1));
+        i.activity_id = Some(String::new());
+        let r = host.submit(i);
+        assert!(matches!(r.kind, ResultKind::DispatchError));
+        assert!(r.ops.is_empty());
+    }
+
+    #[test]
+    fn missing_kv_key_and_log_message_dispatch() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-mk", "kv.write", false, None);
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args: BTreeMap::new(),
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::DispatchError));
+        let cap = host.mint("c-lm", "log.append", false, None);
+        let r = host.submit(Intent {
+            action: "log.append".into(),
+            args: BTreeMap::new(),
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::DispatchError));
+    }
+
+    #[test]
+    fn log_append_activity_is_non_reversible() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-nr", "log.append", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("message".into(), json!("hi"));
+        let r = host.submit(Intent {
+            action: "log.append".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-log".into()),
+        });
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let rev = host.end_activity("act-log").unwrap();
+        assert!(rev.ops.is_empty());
+        assert!(!rev.non_reversible.is_empty());
+        assert!(!rev.used_landed);
+    }
+
+    #[test]
+    fn compensation_listed_honestly() {
+        let host = Host::with_clock(1000);
+        host.lineage_store()
+            .commit(
+                "cap",
+                Some("act-comp"),
+                "kv.write",
+                vec![baseline::kv_set("k", json!(1))],
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .unwrap();
+        let rev = host.end_activity("act-comp").unwrap();
+        assert!(rev.ops.is_empty());
+        assert_eq!(rev.non_reversible.len(), 1);
+    }
+
+    #[test]
+    fn report_receipt_unknown_activity_errors() {
+        let host = Host::with_clock(1000);
+        let rec = Receipt {
+            landed: vec![],
+            failed: vec![],
+        };
+        assert!(host.report_receipt("no-such", &rec).is_err());
+    }
+
+    #[test]
+    fn once_try_consume_and_file_stores_helper() {
+        let once = OnceStore::new();
+        once.try_consume("x", true).unwrap();
+        assert!(once.try_consume("x", true).is_err());
+        assert!(once.try_consume("y", false).is_ok());
+
+        static N: AtomicU64 = AtomicU64::new(1);
+        let dir = std::env::temp_dir().join(format!(
+            "cek-filestores-{}-{}",
+            std::process::id(),
+            N.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        let stores = crate::FileStores::open(&dir).unwrap();
+        stores.once.commit("c", true).unwrap();
+        drop(stores);
+        let stores2 = crate::FileStores::open(&dir).unwrap();
+        assert!(stores2.once.is_consumed("c"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn expiry_at_exact_not_after_refuses() {
+        let host = Host::with_clock(1500);
+        let cap = host.mint("c-eq", "kv.write", false, Some(1500));
+        let r = host.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
 }

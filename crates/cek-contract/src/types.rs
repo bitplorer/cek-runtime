@@ -222,11 +222,19 @@ pub struct Manifest {
 }
 
 /// Declared fail-closed behaviors.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FailClosed {
     /// If once-store is down, refuse (do not skip once).
     #[serde(default = "default_true")]
     pub once_store_down: bool,
+}
+
+impl Default for FailClosed {
+    fn default() -> Self {
+        Self {
+            once_store_down: true,
+        }
+    }
 }
 
 fn default_true() -> bool {

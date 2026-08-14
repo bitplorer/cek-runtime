@@ -20,7 +20,7 @@
 | Commit after Activity ended | Ghost causes | Lineage rejects **before** insert |
 | Partial apply | Undo wrong set | Reverse prefers **landed** when receipt annotated |
 | Digest stability | Cache poison | `cek1:` SHA-256 canonical JSON |
-| Durable store I/O / lock poison | Skip once | Fail closed (`OnceStoreDown` / `IdemStoreDown` / `Lineage`) |
+| `FailClosed::default()` vs serde | `once_store_down` false by derive | Manual `Default` matches serde (`true`) |
 | Durable reopen | Lost consume / lineage | File backends persist JSON; reopen sees consumed + landed |
 
 ## Open / deferred

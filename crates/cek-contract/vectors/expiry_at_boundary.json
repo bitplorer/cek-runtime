@@ -1,0 +1,18 @@
+{
+  "id": "expiry-at-boundary",
+  "family": "cap_verify",
+  "description": "Cap is invalid at exactly not_after (now >= not_after)",
+  "now": 1500,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 1 },
+    "cap": {
+      "id": "cap-eq",
+      "action": "kv.write",
+      "not_after": 1500,
+      "once": false
+    }
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

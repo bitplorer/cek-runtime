@@ -212,4 +212,59 @@ mod tests {
         assert!(receipt.landed.is_empty());
         assert!(peer.kv_get("a").is_none());
     }
+
+    #[test]
+    fn dispatch_error_no_mutate() {
+        let peer = Peer::baseline();
+        let result = ResultMsg::dispatch_error("miss");
+        let rec = peer.apply(&result).unwrap();
+        assert!(rec.landed.is_empty());
+        assert!(peer.kv_get("a").is_none());
+    }
+
+    #[test]
+    fn apply_delete_and_log() {
+        let peer = Peer::default();
+        let _ = peer.apply(&ResultMsg::ok(vec![
+            baseline::kv_set("a", serde_json::json!(1)),
+            baseline::log_append("hi"),
+        ]));
+        assert_eq!(peer.kv_get("a"), Some(serde_json::json!(1)));
+        assert_eq!(peer.log_lines(), vec!["hi".to_string()]);
+        let _ = peer.apply(&ResultMsg::ok(vec![baseline::kv_delete("a")]));
+        assert!(peer.kv_get("a").is_none());
+        assert_eq!(peer.profile().name, "baseline");
+        assert_eq!(peer.manifest().law_generation, LAW_GENERATION);
+    }
+
+    #[test]
+    fn malformed_payload_is_failed_not_landed() {
+        let peer = Peer::baseline();
+        let result = ResultMsg::ok(vec![
+            Op {
+                ns: "kv".into(),
+                name: "set".into(),
+                payload: serde_json::json!({ "value": 1 }),
+            },
+            baseline::kv_set("ok", serde_json::json!(2)),
+        ]);
+        let rec = peer.apply(&result).unwrap();
+        assert_eq!(rec.failed.len(), 1);
+        assert_eq!(rec.landed.len(), 1);
+        assert_eq!(peer.kv_get("ok"), Some(serde_json::json!(2)));
+    }
+
+    #[test]
+    fn prop_refuse_never_mutates_world() {
+        let peer = Peer::baseline();
+        let _ = peer.apply(&ResultMsg::ok(vec![baseline::kv_set(
+            "seed",
+            serde_json::json!(1),
+        )]));
+        for msg in ["", "no", "action mismatch"] {
+            let _ = peer.apply(&ResultMsg::authority_refusal(msg));
+            let _ = peer.apply(&ResultMsg::dispatch_error(msg));
+        }
+        assert_eq!(peer.kv_get("seed"), Some(serde_json::json!(1)));
+    }
 }

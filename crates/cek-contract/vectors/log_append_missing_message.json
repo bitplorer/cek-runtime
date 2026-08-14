@@ -1,0 +1,13 @@
+{
+  "id": "log-append-missing-message",
+  "family": "baseline_lowering",
+  "description": "log.append without args.message is a dispatch_error",
+  "now": 1000,
+  "intent": {
+    "action": "log.append",
+    "args": {},
+    "cap": { "id": "cap-lm", "action": "log.append", "once": false }
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true
+}

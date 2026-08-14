@@ -74,7 +74,7 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 9. Commit after Activity ended → dispatch_error (no ghost cause)  
 10. Peer has no mint API  
 
-See [HARDENING.md](HARDENING.md) and [MATURITY.md](MATURITY.md).
+See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 
 ## Layout
 
@@ -83,9 +83,12 @@ Cargo.toml
 HARDENING.md
 MATURITY.md
 IMPLEMENTATION.md
+INVARIANTS.md
 .github/workflows/cek.yml
+scripts/invariants.sh
+scripts/coverage.sh
 crates/cek-contract/
-crates/cek-host-kernel/   # store.rs + durable.rs
+crates/cek-host-kernel/   # store.rs + durable.rs + props.rs + fail_closed.rs
 crates/cek-peer-kernel/
 crates/cek-ops-baseline/
 crates/cek-cli/
@@ -95,5 +98,6 @@ crates/cek-cli/
 
 - [EDGE_CASES.md](EDGE_CASES.md) — closed and deferred edges
 - [TESTING.md](TESTING.md) — unit, vectors, property-style, coverage
+- [INVARIANTS.md](INVARIANTS.md) — executable never-regress map
 - [HARDENING.md](HARDENING.md) — fail-closed rules
 - [MATURITY.md](MATURITY.md) — stage checklist

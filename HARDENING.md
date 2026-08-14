@@ -69,6 +69,11 @@ File backends write JSON via temp + rename. They are not a multi-process lock.
 | `baseline` | Optional | Classic Ops |
 | `production-v1` | Expected for landed-first reverse | Host still works without; maturity prefers receipts |
 
+## Manifest
+
+`FailClosed::default()` and serde both set `once_store_down: true`. A derive-`Default` would have been `false` (unsafe skip).
+
 ## Explicit non-goals (v0.1+)
 
 Cap public-key crypto · SQL/DB backends · multi-Host federation policy · DOM snapshot store · network transport as kernel.
+

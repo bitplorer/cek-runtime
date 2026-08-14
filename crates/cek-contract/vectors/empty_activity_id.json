@@ -1,0 +1,14 @@
+{
+  "id": "empty-activity-id",
+  "family": "lineage",
+  "description": "Empty activity_id is a dispatch_error after Cap verify",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "k", "value": 1 },
+    "cap": { "id": "cap-ea", "action": "kv.write", "once": false },
+    "activity_id": ""
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true
+}

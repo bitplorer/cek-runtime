@@ -43,3 +43,7 @@ pub const PROFILE_BASELINE: &str = "baseline";
 
 #[cfg(test)]
 mod digest_props;
+#[cfg(test)]
+mod types_props;
+#[cfg(test)]
+mod vector_tests;

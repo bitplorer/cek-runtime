@@ -12,16 +12,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - name: test workspace (unit + proptest)
+      - name: never-regress invariants
+        run: bash scripts/invariants.sh
+      - name: test workspace (unit + property tables)
         run: cargo test --workspace
       - name: vectors
         run: cargo run -p cek-cli -- vectors crates/cek-contract/vectors
-      - name: Peer must not expose mint
-        run: |
-          if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|mint_root' crates/cek-peer-kernel; then
-            echo "Peer must not mint"; exit 1
-          fi
-          echo "Peer mint check ok"
+      - name: coverage inventory
+        run: bash scripts/coverage.sh
       - name: install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked || true
       - name: coverage summary

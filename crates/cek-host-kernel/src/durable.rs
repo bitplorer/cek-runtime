@@ -448,4 +448,46 @@ mod tests {
         assert_eq!(lin.for_activity("a").unwrap().len(), 1);
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn corrupt_json_fails_closed() {
+        let dir = tmp_dir();
+        std::fs::write(dir.join("once.json"), "{not-json").unwrap();
+        assert!(FileOnceStore::open(&dir).is_err());
+        std::fs::write(dir.join("idem.json"), "{not-json").unwrap();
+        assert!(FileIdemStore::open(&dir).is_err());
+        std::fs::write(dir.join("lineage.json"), "{not-json").unwrap();
+        assert!(FileLineageStore::open(&dir).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn empty_file_is_default_not_down() {
+        let dir = tmp_dir();
+        std::fs::write(dir.join("once.json"), "   ").unwrap();
+        let s = FileOnceStore::open(&dir).unwrap();
+        assert!(!s.is_consumed("x"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn file_once_non_once_is_noop() {
+        let dir = tmp_dir();
+        let s = FileOnceStore::open(&dir).unwrap();
+        s.ensure_available("n", false).unwrap();
+        s.commit("n", false).unwrap();
+        assert!(!s.is_consumed("n"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn annotate_unknown_entry_errors() {
+        let dir = tmp_dir();
+        let s = FileLineageStore::open(&dir).unwrap();
+        assert!(s.annotate_landed("nope", vec![]).is_err());
+        assert!(s
+            .annotate_landed_latest_for_activity("missing", vec![])
+            .is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
