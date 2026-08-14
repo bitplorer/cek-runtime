@@ -1,0 +1,18 @@
+{
+  "id": "sealed-args-mismatch",
+  "family": "cap_verify",
+  "description": "Sealed-args bind mismatch refuses with zero Ops",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "fixed", "value": 999 },
+    "cap": {
+      "id": "cap-seal",
+      "action": "kv.write",
+      "once": false,
+      "sealed_args_bind": "cek1:placeholder"
+    }
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

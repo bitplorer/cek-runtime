@@ -1,0 +1,22 @@
+name: cek
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: test workspace
+        run: cargo test --workspace
+      - name: vectors
+        run: cargo run -p cek-cli -- vectors crates/cek-contract/vectors
+      - name: Peer must not expose mint
+        run: |
+          if rg -n '\b(pub\s+fn\s+mint|mint_root)\b' crates/cek-peer-kernel; then
+            echo "Peer must not mint"; exit 1
+          fi
+          echo "Peer mint check ok"
