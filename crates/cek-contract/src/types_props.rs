@@ -109,6 +109,9 @@ fn constants_and_defaults() {
     assert_eq!(PROFILE_PRODUCTION_V1, "production-v1");
     let fc = FailClosed::default();
     assert!(fc.once_store_down);
+    assert!(fc.idem_store_down);
+    assert!(fc.sealed_args);
+    assert!(fc.scopes);
     let p = UnknownOpPolicy::default();
     assert!(matches!(p, UnknownOpPolicy::Skip));
     let _ = Manifest {

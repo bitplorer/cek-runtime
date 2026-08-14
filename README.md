@@ -9,9 +9,9 @@
 
 | Status | Detail |
 |--------|--------|
-| **v0.1 code** | Host + Peer + ui.* pack, scopes, 41 vectors, 103 tests, TS apply-only Peer |
+| **v0.1 code** | Host + Peer + ui.* pack, scopes, 43 vectors, 106 tests, TS apply-only Peer |
 | Proven | Cap refuse → zero Ops; snapshot reverse for ui.morph; scopes cannot widen; Peer no mint (Rust+TS) |
-| Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [INVARIANTS.md](INVARIANTS.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
+| Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md) · [INVARIANTS.md](INVARIANTS.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
 
 ```bash
 cargo test --workspace
@@ -46,7 +46,7 @@ verify → once → project → lineage → Result
 | Topology and pipelines | A central “CEK cloud” service |
 | Rust reference kernels | Python/TS Host kernels |
 
-[TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md)
+[TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md)
 
 ---
 
@@ -81,7 +81,7 @@ verify → once → project → lineage → Result
 
 | Path | Role |
 |------|------|
-| [IMPLEMENTATION.md](IMPLEMENTATION.md) | Runnable slice docs |
+| [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md) | Runnable slice docs |
 | [CONCEPTS.md](CONCEPTS.md) | Implementation concepts |
 | [TOPOLOGY.md](TOPOLOGY.md) | Runtime contains kernel; wire |
 | [SCOPE.md](SCOPE.md) | Law vs this repo |

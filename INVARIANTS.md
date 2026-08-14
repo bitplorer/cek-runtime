@@ -19,10 +19,12 @@ This file lists **what the reference runtime actually checks** and where.
 | 10 | Trace is not permission | `prop_trace_never_grants_authority` |
 | 11 | Honest reverse | `prop_reverse_is_inverse_delete`, log.append → non_reversible |
 | 12 | Concurrent once: exactly one `ok` | `concurrent_once_only_one_ok` |
-| 13 | Scope deny → zero Ops | `prop_scope_deny_never_effects`, `scope-denies-key` |
+| 13 | Scope deny / blank token → zero Ops | `prop_scope_deny_never_effects`, `empty-scope-token` |
 | 14 | Attenuate cannot widen | `prop_attenuate_no_widen` |
 | 15 | ui snapshot reverse / honest non-reversible | `prop_ui_snapshot_reverse`, `ui-morph-*` |
 | 16 | TS Peer has no mint | `invariants.sh` grep `ports/cek-peer-ts` |
+| 17 | Empty idempotency key → refuse | vector `empty-idempotency-key` |
+| 18 | Action ≠ Op | `actions::tests::actions_are_not_ops` |
 
 ## Coverage
 

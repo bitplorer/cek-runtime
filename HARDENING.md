@@ -9,9 +9,9 @@ This document lists **fail-closed** and **determinism** rules enforced in code.
 | Action match | `intent.action == cap.action` | `authority_refusal`, zero Ops |
 | Expiry | `now >= cap.not_after` | `authority_refusal`, zero Ops |
 | Sealed-args bind | Cap has `sealed_args_bind` | Digest of Intent.args must equal bind; else refuse |
-| Scopes | `cap.scopes` non-empty | Resource must match allow-list; else refuse |
+| Scopes | `cap.scopes` non-empty | Resource must match allow-list; blank token → refuse |
 | Attenuation | `Host::attenuate` | Child scopes must be a narrowing; widen refused |
-| Idempotency | `idempotency_key` set | **Before** once-ensure. Same digest → cached Result; different → refuse |
+| Idempotency | `idempotency_key` set | **Before** once-ensure. Empty key → refuse. Same digest → cached Result; different → refuse |
 | Once available | `cap.once` | Ensure not consumed **before** project |
 | Once commit | after successful project | Mark consumed; dispatch error does **not** burn |
 | Once second use | already consumed | Refuse (unless idempotent replay already returned) |

@@ -2,14 +2,18 @@
 //!
 //! Law: scopes may only **narrow**. Empty `Cap.scopes` means unrestricted.
 //! A non-empty list is an allow-list over resources the Intent may touch.
+//! Blank tokens are refuse (unclear authority).
 
 use crate::{HostError, HostResult};
-use cek_contract::Intent;
+use cek_contract::{
+    Intent, ACTION_KV_DELETE, ACTION_KV_WRITE, ACTION_LOG_APPEND, ACTION_UI_MORPH,
+    ACTION_UI_RESTORE,
+};
 
 /// Resource the Intent would touch: `(kind, name)` e.g. `("kv", "greeting")`.
 pub fn resource_of(intent: &Intent) -> (String, String) {
     match intent.action.as_str() {
-        "kv.write" | "kv.delete" => {
+        ACTION_KV_WRITE | ACTION_KV_DELETE => {
             let name = intent
                 .args
                 .get("key")
@@ -18,7 +22,7 @@ pub fn resource_of(intent: &Intent) -> (String, String) {
                 .to_string();
             ("kv".into(), name)
         }
-        "ui.morph" | "ui.restore" => {
+        ACTION_UI_MORPH | ACTION_UI_RESTORE => {
             let name = intent
                 .args
                 .get("target")
@@ -27,7 +31,7 @@ pub fn resource_of(intent: &Intent) -> (String, String) {
                 .to_string();
             ("ui".into(), name)
         }
-        "log.append" => ("log".into(), String::new()),
+        ACTION_LOG_APPEND => ("log".into(), String::new()),
         other => ("action".into(), other.to_string()),
     }
 }
@@ -39,7 +43,13 @@ pub fn resource_of(intent: &Intent) -> (String, String) {
 /// - `kv:name` / `ui:name` — exact name
 /// - `name` — exact name (any kind)
 /// - `kv:*` — all names of that kind
+///
+/// Empty tokens and `kind:` (empty name) never allow.
 pub fn scope_allows(scope: &str, kind: &str, name: &str) -> bool {
+    let scope = scope.trim();
+    if scope.is_empty() {
+        return false;
+    }
     if scope == kind {
         return true;
     }
@@ -47,7 +57,7 @@ pub fn scope_allows(scope: &str, kind: &str, name: &str) -> bool {
         return true;
     }
     if let Some((k, n)) = scope.split_once(':') {
-        if k == kind && (n == "*" || n == name) {
+        if k == kind && (n == "*" || (!n.is_empty() && n == name)) {
             return true;
         }
     }
@@ -55,10 +65,16 @@ pub fn scope_allows(scope: &str, kind: &str, name: &str) -> bool {
 }
 
 /// Fail closed: non-empty scopes must allow the Intent resource.
+/// Blank tokens refuse (unclear).
 pub fn check_scopes(intent: &Intent) -> HostResult<()> {
     let scopes = &intent.cap.scopes;
     if scopes.is_empty() {
         return Ok(());
+    }
+    if scopes.iter().any(|s| s.trim().is_empty()) {
+        return Err(HostError::Authority(
+            "empty scope token is not allowed".into(),
+        ));
     }
     let (kind, name) = resource_of(intent);
     if scopes.iter().any(|s| scope_allows(s, &kind, &name)) {
@@ -72,10 +88,14 @@ pub fn check_scopes(intent: &Intent) -> HostResult<()> {
 
 /// True iff `child` is a narrowing of `parent`.
 ///
-/// - Parent empty (unrestricted) → any child (including empty) is allowed.
+/// - Parent empty (unrestricted) → any non-blank child (including empty list) is allowed.
 /// - Parent non-empty → child must be non-empty and every child token must
 ///   be implied by some parent token (no widen).
+/// - Blank tokens are never a valid narrowing.
 pub fn can_attenuate(parent: &[String], child: &[String]) -> bool {
+    if child.iter().any(|s| s.trim().is_empty()) {
+        return false;
+    }
     if parent.is_empty() {
         return true;
     }
@@ -87,10 +107,18 @@ pub fn can_attenuate(parent: &[String], child: &[String]) -> bool {
 
 /// Parent token implies child token (equal, or kind covers kind:name).
 fn implies(parent: &str, child: &str) -> bool {
+    let parent = parent.trim();
+    let child = child.trim();
+    if parent.is_empty() || child.is_empty() {
+        return false;
+    }
     if parent == child {
         return true;
     }
     if let Some((ck, cn)) = child.split_once(':') {
+        if cn.is_empty() {
+            return false;
+        }
         if parent == ck {
             return true;
         }
@@ -151,6 +179,14 @@ mod tests {
     }
 
     #[test]
+    fn blank_scope_token_refuses() {
+        assert!(check_scopes(&intent_scoped("kv.write", "a", &[""])).is_err());
+        assert!(check_scopes(&intent_scoped("kv.write", "a", &["  "])).is_err());
+        assert!(!scope_allows("log:", "log", ""));
+        assert!(!scope_allows("", "kv", "a"));
+    }
+
+    #[test]
     fn attenuate_cannot_widen() {
         let parent = vec!["kv:a".into(), "kv:b".into()];
         assert!(can_attenuate(&parent, &["kv:a".into()]));
@@ -159,5 +195,6 @@ mod tests {
         assert!(can_attenuate(&[], &["kv:a".into()]));
         assert!(can_attenuate(&["kv".into()], &["kv:a".into()]));
         assert!(!can_attenuate(&["kv:a".into()], &["kv".into()]));
+        assert!(!can_attenuate(&["kv".into()], &["".into()]));
     }
 }

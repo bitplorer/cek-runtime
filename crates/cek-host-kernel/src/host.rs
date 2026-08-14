@@ -181,6 +181,11 @@ impl Host {
         // Idempotency is checked after Cap verify and **before** once-ensure
         // so a retry of a once-Cap returns the cached Result instead of refusing.
         if let Some(ref key) = intent.idempotency_key {
+            if key.is_empty() {
+                return Self::err_result(HostError::Authority(
+                    "empty idempotency key is not allowed".into(),
+                ));
+            }
             match self.idempotency_lookup(key, &intent) {
                 Ok(Some(prior)) => return prior,
                 Ok(None) => {}
@@ -218,7 +223,7 @@ impl Host {
         }
     }
 
-    /// Cap integrity only (action, expiry, sealed-args, non-empty). No once, no idem.
+    /// Cap integrity (action, expiry, sealed-args, id, scopes). No once, no idem.
     fn verify_cap(&self, intent: &Intent, now: u64) -> HostResult<()> {
         let cap = &intent.cap;
         if intent.action != cap.action {
@@ -413,7 +418,7 @@ impl Host {
 
 fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
     match intent.action.as_str() {
-        "kv.write" => {
+        cek_contract::ACTION_KV_WRITE => {
             let key = intent
                 .args
                 .get("key")
@@ -425,7 +430,7 @@ fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
             let value = intent.args.get("value").cloned().unwrap_or(json!(null));
             Ok(vec![baseline::kv_set(key, value)])
         }
-        "kv.delete" => {
+        cek_contract::ACTION_KV_DELETE => {
             let key = intent
                 .args
                 .get("key")
@@ -436,7 +441,7 @@ fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
             }
             Ok(vec![baseline::kv_delete(key)])
         }
-        "log.append" => {
+        cek_contract::ACTION_LOG_APPEND => {
             let msg = intent
                 .args
                 .get("message")
@@ -444,7 +449,7 @@ fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
                 .ok_or_else(|| "log.append requires string args.message".to_string())?;
             Ok(vec![baseline::log_append(msg)])
         }
-        "ui.morph" => {
+        cek_contract::ACTION_UI_MORPH => {
             let target = intent
                 .args
                 .get("target")
@@ -461,7 +466,7 @@ fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
             let snapshot = intent.args.get("snapshot").cloned();
             Ok(vec![cek_contract::ui_morph(target, patch, snapshot)])
         }
-        "ui.restore" => {
+        cek_contract::ACTION_UI_RESTORE => {
             let target = intent
                 .args
                 .get("target")
@@ -1003,5 +1008,16 @@ mod tests {
         assert!(host.attenuate(&parent, "w", vec!["kv:z".into()]).is_err());
         assert!(host.attenuate(&parent, "w2", vec![]).is_err());
         assert!(host.attenuate(&parent, "", vec!["kv:a".into()]).is_err());
+    }
+
+    #[test]
+    fn empty_idempotency_key_refuses() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ik", "kv.write", false, None);
+        let mut i = intent_write(cap, "a", json!(1));
+        i.idempotency_key = Some(String::new());
+        let r = host.submit(i);
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
     }
 }

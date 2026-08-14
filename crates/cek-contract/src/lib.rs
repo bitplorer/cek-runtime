@@ -13,10 +13,12 @@
 //! - `authority_refusal` must never carry mutate Ops.
 //! - Digests use `cek1:` SHA-256 over canonical JSON; algorithm id is part of the string.
 //! - Peer cannot mint; that is enforced by Host/Peer crates + CI, not by types alone.
+//! - **Actions** (`kv.write`, `ui.morph`) are Host verbs. **Ops** (`kv.set`, `ui.dom.morph`) are Peer data.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+pub mod actions;
 pub mod baseline;
 pub mod digest;
 mod error;
@@ -24,6 +26,7 @@ pub mod types;
 pub mod ui;
 mod vectors;
 
+pub use actions::*;
 pub use baseline::*;
 pub use digest::*;
 pub use error::*;
@@ -42,6 +45,9 @@ pub const PROFILE_PRODUCTION_V1: &str = "production-v1";
 
 /// Baseline profile name — classic Ops only; receipts optional.
 pub const PROFILE_BASELINE: &str = "baseline";
+
+/// UI domain profile name — Baseline + `ui.dom.*`.
+pub const PROFILE_UI: &str = "ui";
 
 #[cfg(test)]
 mod digest_props;

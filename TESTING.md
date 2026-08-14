@@ -31,7 +31,7 @@ cargo llvm-cov --workspace --html --output-dir coverage
 | **Unit** | `host::tests`, peer, durable | Refuse, once, sealed, receipt, double-end, idem, file reopen |
 | **Fail-closed** | `fail_closed.rs` | Store-down refuse; concurrent once (exactly one `ok`) |
 | **Store contract** | `store::tests` | Memory backends satisfy trait contracts |
-| **Vectors** | `crates/cek-contract/vectors/*.json` | CORE families — **31** cases |
+| **Vectors** | `crates/cek-contract/vectors/*.json` | CORE families — **43** cases |
 | **Property-style** | `props.rs`, `digest_props.rs`, `types_props.rs` | Deterministic tables (no `proptest` crate) |
 | **SHA-256** | `digest::sha256_known_answers` | FIPS fixtures (`""`, `"abc"`, 56-byte) |
 | **Coverage** | `scripts/coverage.sh` | Inventory + optional llvm-cov |
@@ -57,7 +57,9 @@ cargo llvm-cov --workspace --html --output-dir coverage
 | `trace` | shared trace does not grant authority | Trace |
 
 | `ui_domain` | morph project, snapshot reverse, no-snapshot non-reversible, empty target, Peer lands | Domain pack |
-| `attenuation` | scope allow / deny | Attenuation |
+| `attenuation` | scope allow / deny / blank token | Attenuation |
+
+TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected cases stay on the Rust runner.
 
 ## Property invariants
 
@@ -79,7 +81,7 @@ cargo llvm-cov --workspace --html --output-dir coverage
 16. Scope deny → refuse ∧ ops=∅  
 17. Attenuate cannot widen  
 
-Current inventory: **103** `#[test]` + **41** vector fixtures + TS apply-only self-check.
+Current inventory: **105+** `#[test]` + **43** vector fixtures + TS apply-only self-check.
 
 ## Coverage targets
 

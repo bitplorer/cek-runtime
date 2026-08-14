@@ -221,18 +221,30 @@ pub struct Manifest {
     pub fail_closed: FailClosed,
 }
 
-/// Declared fail-closed behaviors.
+/// Declared fail-closed behaviors (handshake; Host always enforces these).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FailClosed {
     /// If once-store is down, refuse (do not skip once).
     #[serde(default = "default_true")]
     pub once_store_down: bool,
+    /// If idempotency store is down, refuse.
+    #[serde(default = "default_true")]
+    pub idem_store_down: bool,
+    /// Sealed-args bind is enforced when present.
+    #[serde(default = "default_true")]
+    pub sealed_args: bool,
+    /// Non-empty Cap.scopes is an allow-list.
+    #[serde(default = "default_true")]
+    pub scopes: bool,
 }
 
 impl Default for FailClosed {
     fn default() -> Self {
         Self {
             once_store_down: true,
+            idem_store_down: true,
+            sealed_args: true,
+            scopes: true,
         }
     }
 }

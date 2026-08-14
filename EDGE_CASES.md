@@ -21,7 +21,8 @@
 | Partial apply | Undo wrong set | Reverse prefers **landed** when receipt annotated |
 | Digest stability | Cache poison | `cek1:` SHA-256 canonical JSON |
 | `FailClosed::default()` vs serde | `once_store_down` false by derive | Manual `Default` matches serde (`true`) |
-| Scope deny | Extra rights | Refuse, zero Ops |
+| Empty `idempotency_key` | Accidental global key | Refuse |
+| Blank scope token | Unclear allow-list | Refuse |
 | Attenuate widen | Derived Cap stronger than parent | `Host::attenuate` errors |
 | `ui.morph` with snapshot | Undo DOM | Inverse `ui.dom.restore` from Op payload |
 | `ui.morph` without snapshot | Fake undo | `NonReversible` |

@@ -28,8 +28,8 @@ for k in sorted(by):
     print(f"  {k:22} {by[k]:3d}")
 vec = [f for f in os.listdir("crates/cek-contract/vectors") if f.endswith(".json")]
 print(f"{len(vec)} vector fixtures")
-if len(vec) < 25:
-    raise SystemExit(f"expected >= 25 vectors, got {len(vec)}")
+if len(vec) < 41:
+    raise SystemExit(f"expected >= 41 vectors, got {len(vec)}")
 PY
 
 echo "=== cargo test ==="

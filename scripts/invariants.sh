@@ -50,9 +50,15 @@ ok "cek1 digest prefix present"
 
 # 6. vector count.
 n=$(find crates/cek-contract/vectors -name '*.json' | wc -l)
-if [ "$n" -lt 25 ]; then
-  fail "expected >= 25 vectors, got $n"
+if [ "$n" -lt 41 ]; then
+  fail "expected >= 41 vectors, got $n"
 fi
 ok "vectors: $n"
+
+# 7. action / Op split documented (ui.morph is not ui.dom.morph).
+if ! grep -q 'Actions are never applied' crates/cek-contract/src/actions.rs; then
+  fail "action vs Op split missing"
+fi
+ok "action vs Op split documented"
 
 echo "invariants ok"

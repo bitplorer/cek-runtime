@@ -13,7 +13,7 @@
 
 use cek_contract::{
     baseline, ui, Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, UnknownOpPolicy,
-    LAW_GENERATION,
+    LAW_GENERATION, PROFILE_BASELINE, PROFILE_UI,
 };
 use cek_ops_baseline::KvStore;
 use cek_ops_ui::UiStore;
@@ -43,7 +43,7 @@ impl Peer {
     pub fn with_policy(unknown_op_policy: UnknownOpPolicy) -> Self {
         Self {
             profile: Profile {
-                name: "baseline".into(),
+                name: PROFILE_BASELINE.into(),
                 apply_set: baseline::BASELINE_OPS
                     .iter()
                     .map(|s| (*s).to_string())
@@ -65,7 +65,7 @@ impl Peer {
         apply.extend(ui::UI_OPS.iter().map(|s| (*s).to_string()));
         Self {
             profile: Profile {
-                name: "ui".into(),
+                name: PROFILE_UI.into(),
                 apply_set: apply,
                 unknown_op_policy: UnknownOpPolicy::Skip,
             },

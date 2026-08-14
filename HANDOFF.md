@@ -18,20 +18,19 @@ node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-Expected: **103** unit/property tests; **41** vectors PASS; TS Peer apply-only green; demo includes ui.morph restore.
+Expected: **106** unit/property tests; **43** vectors PASS; TS Peer apply-only green; demo includes ui.morph restore.
 
 ## Current maturity
 
 **Stage C started** (domain `ui.*` pack + snapshot reverse). Stage B still met. See MATURITY.md.
 
-## Done this session (2026-08-14, Stage C)
+## Done this session (2026-08-14, polish)
 
-- Domain pack `ui.morph` → `ui.dom.morph` / `ui.dom.restore`.
-- Snapshot lives **on the Op** so landed-first reverse can restore.
-- No snapshot → honest `non_reversible`.
-- Baseline lowering: `ui.dom.*` → `kv.set` `ui:{target}`.
-- Scope attenuation: empty = unrestricted; non-empty allow-list; `Host::attenuate` refuses widen.
-- TypeScript apply-only Peer (`ports/cek-peer-ts`) — **no mint** — same `peer_result` vectors.
+- Glossary: **action** (`ui.morph`) vs **Op** (`ui.dom.morph`) — [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md).
+- Empty idempotency key and blank scope tokens refuse (fail closed).
+- `FailClosed` handshake lists once / idem / sealed / scopes (all default true).
+- Vector runner prints family counts; TS runner reports skipped host-projected cases.
+- Constants `ACTION_*` / `PROFILE_UI` used by Host + Peer.
 
 ## Do next
 

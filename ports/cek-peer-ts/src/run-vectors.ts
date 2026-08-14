@@ -42,13 +42,17 @@ function checkMap(
 
 function main() {
   const dir = process.argv[2] ?? "crates/cek-contract/vectors";
-  const cases = loadDir(dir).filter((c) => c.peer_apply || c.peer_result);
+  const all = loadDir(dir);
+  const cases = all.filter((c) => c.peer_apply || c.peer_result);
+  const hostOnly = all.length - cases.length;
   let passed = 0;
   let failed = 0;
+  let skippedHost = 0;
   for (const c of cases) {
     if (!c.peer_result) {
       // Host-projected apply cases need the Result from Host; this port
       // only runs Peer-only fixtures (peer_result set).
+      skippedHost++;
       continue;
     }
     const peer = new Peer({
@@ -93,7 +97,9 @@ function main() {
     console.log("PASS ts-peer-self  [port]");
     passed++;
   }
-  console.log(`\n${passed} passed, ${failed} failed (ts peer apply-only)`);
+  console.log(
+    `\n${passed} passed, ${failed} failed (ts peer apply-only; skipped ${skippedHost + hostOnly} host-projected)`,
+  );
   if (failed > 0) process.exit(1);
 }
 

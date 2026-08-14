@@ -256,6 +256,7 @@ fn run_vectors(dir: &PathBuf) {
     println!("Running vectors in {}", dir.display());
     let mut failed = 0usize;
     let mut passed = 0usize;
+    let mut families: BTreeMap<String, usize> = BTreeMap::new();
     let cases = match load_vector_dir(dir) {
         Ok(c) => c,
         Err(e) => {
@@ -268,6 +269,7 @@ fn run_vectors(dir: &PathBuf) {
             Ok(()) => {
                 println!("PASS {}  [{}]", case.id, case.family);
                 passed += 1;
+                *families.entry(case.family.clone()).or_insert(0) += 1;
             }
             Err(e) => {
                 eprintln!("FAIL {} ({}): {e}", case.id, path.display());
@@ -276,6 +278,10 @@ fn run_vectors(dir: &PathBuf) {
         }
     }
     println!("\n{passed} passed, {failed} failed");
+    if !families.is_empty() {
+        let summary: Vec<String> = families.iter().map(|(f, n)| format!("{f}:{n}")).collect();
+        println!("families  {}", summary.join("  "));
+    }
     if failed > 0 {
         std::process::exit(1);
     }

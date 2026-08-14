@@ -77,9 +77,9 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 8. Activity end → reverse Ops; landed preferred when receipt reported  
 9. Commit after Activity ended → dispatch_error (no ghost cause)  
 10. Peer has no mint API  
-
-11. Scope deny → refuse, zero Ops; attenuate cannot widen  
-12. `ui.morph` with snapshot → reverse `ui.dom.restore`; without → non_reversible  
+11. Scope deny / blank scope token → refuse, zero Ops; attenuate cannot widen  
+12. `ui.morph` (action) with snapshot → reverse `ui.dom.restore` (Op); without → non_reversible  
+13. Empty idempotency key → refuse (not a global key)  
 
 See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 
@@ -91,13 +91,16 @@ HARDENING.md
 MATURITY.md
 IMPLEMENTATION.md
 INVARIANTS.md
+GLOSSARY-IMPL.md
 .github/workflows/cek.yml
 scripts/invariants.sh
 scripts/coverage.sh
-crates/cek-contract/
-crates/cek-host-kernel/   # store.rs + durable.rs + props.rs + fail_closed.rs
-crates/cek-peer-kernel/
+crates/cek-contract/       # types, actions, Baseline, ui, vectors
+crates/cek-host-kernel/    # verify, BoundAsk, project, stores
+crates/cek-peer-kernel/    # apply only — no mint
+crates/cek-ops-baseline/
 crates/cek-ops-ui/
+crates/cek-cli/
 ports/cek-peer-ts/         # apply-only; no mint
 ```
 
@@ -107,4 +110,4 @@ ports/cek-peer-ts/         # apply-only; no mint
 - [TESTING.md](TESTING.md) — unit, vectors, property-style, coverage
 - [INVARIANTS.md](INVARIANTS.md) — executable never-regress map
 - [HARDENING.md](HARDENING.md) — fail-closed rules
-- [MATURITY.md](MATURITY.md) — stage checklist
+- [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md) — action vs Op, snapshot, scope
