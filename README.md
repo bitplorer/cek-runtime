@@ -4,7 +4,7 @@
 
 | | |
 |--|--|
-| **This repo** | Implementation playbook — contract, pipelines, topology, CI, Rust crate shape |
+| **This repo** | Implementation playbook — contract, pipelines, topology, CI, Rust shape |
 | **Law** | [cek-framework](https://github.com/bitplorer/cek-framework) |
 
 | Status | Detail |
@@ -16,23 +16,30 @@
 
 ## This repo at a glance
 
+**What this is:** how to **build** Host and Peer. Not new law.
+
+| Piece | Role |
+|-------|------|
+| **cek-contract** | Schemas + vectors — sole interop product |
+| **Host runtime** | Process that **contains** the Host kernel |
+| **Host kernel** | mint, verify, once, dispatch, lineage, project, reverse |
+| **Peer runtime** | Process that **contains** the Peer kernel |
+| **Peer kernel** | apply Ops only — **no** mint |
+| **Wire / in-proc** | Contract messages only — no third kernel in the middle |
+
+**Submit (fail closed)**
+
 ```text
-┌────────────────────────── cek-runtime ──────────────────────────┐
-│  IMPLEMENTATION (how to build; not new law)                     │
-│                                                                 │
-│  cek-contract     schemas + vectors = sole interop product      │
-│  Host runtime   ⊃ Host kernel   (mint, verify, lineage, …)      │
-│  Peer runtime   ⊃ Peer kernel   (apply Ops only; no mint)       │
-│  Wire / in-proc   contract messages — no third kernel in middle │
-│                                                                 │
-│  submit: verify → once → truth → dispatch → lineage → project   │
-│  reverse: on Activity end / Cap revoke (not when apply finishes)│
-│  CI: red vectors or Peer mint symbol → block merge              │
-└─────────────────────────────────────────────────────────────────┘
-         │ law                                    │ this playbook
-         ▼                                        ▼
-   cek-framework                            Host/Peer crates
+verify → once → truth → dispatch → lineage → project → Result
 ```
+
+**Reverse** runs on Activity end or Cap revoke — **not** when apply finishes.  
+**CI:** red vectors or Peer mint symbol → block merge.
+
+| Need | Open |
+|------|------|
+| Law meanings | [cek-framework](https://github.com/bitplorer/cek-framework) |
+| This playbook | **Here** → Host/Peer crates |
 
 | This repo **is** | This repo **is not** |
 |------------------|----------------------|
@@ -42,16 +49,11 @@
 
 | Piece | One line |
 |-------|----------|
-| **cek-contract** | Shared schemas + tests |
-| **Host kernel** | Decide path inside Host process |
-| **Peer kernel** | Apply path inside Peer process |
 | **BoundAsk** | After verify; required for dispatch |
 | **Receipt** | What Peer landed; guides reverse |
 | **Baseline Ops** | Forever-interop data effects |
 
-**Kernels sit inside runtimes** — [TOPOLOGY.md](TOPOLOGY.md).  
-All implementation concepts — [CONCEPTS.md](CONCEPTS.md).  
-Law meanings — [cek-framework CONCEPTS](https://github.com/bitplorer/cek-framework/blob/main/CONCEPTS.md).
+[TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md) · [law CONCEPTS](https://github.com/bitplorer/cek-framework/blob/main/CONCEPTS.md)
 
 ---
 
@@ -89,7 +91,7 @@ Host and Peer kernels here: **Rust only**. Other languages = callers or later Pe
 | Path | Role |
 |------|------|
 | [CONCEPTS.md](CONCEPTS.md) | Implementation concepts |
-| [TOPOLOGY.md](TOPOLOGY.md) | Runtime ⊃ kernel; wire |
+| [TOPOLOGY.md](TOPOLOGY.md) | Runtime contains kernel; wire |
 | [SCOPE.md](SCOPE.md) | Law vs this repo |
 | [00-contract/](00-contract/) | Schemas, vectors, Baseline |
 | [01-kernels/](01-kernels/) | Host/Peer APIs |
