@@ -79,4 +79,9 @@ if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint' extensions/cek-ext-ui >/dev/nul
 fi
 ok "ui pack is an extension (kernel has no ui project)"
 
+if [ -d crates/cek-ops-ui ]; then
+  fail "cek-ops-ui must live under extensions/, not crates/"
+fi
+ok "UI world crate lives under extensions/"
+
 echo "invariants ok"

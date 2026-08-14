@@ -6,7 +6,7 @@
 //!
 //! - Apply is ordered; unknown Ops follow profile policy.
 //! - Receipts report landed vs failed — never authority.
-//! - Drivers live in `cek-ops-baseline` and `cek-ops-ui`.
+//! - Drivers: Baseline `cek-ops-baseline`; UI world `extensions/cek-ops-ui`.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
@@ -24,7 +24,8 @@ pub struct Peer {
     profile: Profile,
     kv: Mutex<KvStore>,
     log: Mutex<Vec<String>>,
-    ui: Mutex<UiStore>,
+    /// UI world is extension-only. Baseline Peer has none.
+    ui: Option<Mutex<UiStore>>,
 }
 
 impl Default for Peer {
@@ -52,11 +53,11 @@ impl Peer {
             },
             kv: Mutex::new(KvStore::new()),
             log: Mutex::new(Vec::new()),
-            ui: Mutex::new(UiStore::new()),
+            ui: None,
         }
     }
 
-    /// Baseline + `ui.dom.*` apply-set (Stage C domain pack).
+    /// Baseline + `ui.dom.*` apply-set (extension profile, not kernel Baseline).
     pub fn with_ui() -> Self {
         let mut apply: Vec<String> = baseline::BASELINE_OPS
             .iter()
@@ -71,7 +72,7 @@ impl Peer {
             },
             kv: Mutex::new(KvStore::new()),
             log: Mutex::new(Vec::new()),
-            ui: Mutex::new(UiStore::new()),
+            ui: Some(Mutex::new(UiStore::new())),
         }
     }
 
@@ -163,27 +164,13 @@ impl Peer {
                 self.log.lock().map_err(|_| ())?.push(msg.to_string());
                 Ok(())
             }
-            ("ui.dom", "morph") => {
-                let target = op
-                    .payload
-                    .get("target")
-                    .and_then(|v| v.as_str())
-                    .ok_or(())?;
-                let patch = op.payload.get("patch").cloned().ok_or(())?;
-                self.ui.lock().map_err(|_| ())?.morph(target, patch);
-                Ok(())
+            _ => {
+                if let Some(ui) = &self.ui {
+                    let mut g = ui.lock().map_err(|_| ())?;
+                    return cek_ops_ui::apply_op(&mut g, op);
+                }
+                Err(())
             }
-            ("ui.dom", "restore") => {
-                let target = op
-                    .payload
-                    .get("target")
-                    .and_then(|v| v.as_str())
-                    .ok_or(())?;
-                let snapshot = op.payload.get("snapshot").cloned().ok_or(())?;
-                self.ui.lock().map_err(|_| ())?.restore(target, snapshot);
-                Ok(())
-            }
-            _ => Err(()),
         }
     }
 
@@ -199,7 +186,7 @@ impl Peer {
 
     /// UI target for tests/demo.
     pub fn ui_get(&self, target: &str) -> Option<serde_json::Value> {
-        self.ui.lock().ok()?.get(target)
+        self.ui.as_ref()?.lock().ok()?.get(target)
     }
 
     /// Full kv snapshot (ports / WASM).
@@ -209,7 +196,10 @@ impl Peer {
 
     /// Full UI snapshot (ports / WASM).
     pub fn ui_snapshot(&self) -> std::collections::BTreeMap<String, serde_json::Value> {
-        self.ui.lock().map(|g| g.snapshot()).unwrap_or_default()
+        self.ui
+            .as_ref()
+            .and_then(|u| u.lock().ok().map(|g| g.snapshot()))
+            .unwrap_or_default()
     }
 }
 

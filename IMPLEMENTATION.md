@@ -18,8 +18,8 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, project, lineage, receipts, reverse, **store traits + file backends** |
 | `cek-peer-kernel` | profile, apply, receipt — **no mint** |
 | `cek-ops-baseline` | In-memory kv |
-| `cek-ops-ui` | In-memory UI targets (`morph` / `restore`) — used by the **extension**, not kernel project |
-| `cek-ext-ui` | **Extension pack** (`UiPack`, optional `DomTree`). Register via `Host::with_pack`. |
+| `cek-ops-ui` | **Extension world** (`extensions/cek-ops-ui`) — apply `ui.dom.*` |
+| `cek-ext-ui` | **Extension pack** (`UiPack`, optional `DomTree`) |
 | `cek-cli` | Demo + vector runner (registers `UiPack`) |
 
 TypeScript apply-only Peer: `ports/cek-peer-ts` (no mint).  
@@ -108,7 +108,8 @@ crates/cek-contract/       # types, actions, Baseline, ui, vectors
 crates/cek-host-kernel/    # verify, BoundAsk, project, stores
 crates/cek-peer-kernel/    # apply only — no mint
 crates/cek-ops-baseline/
-crates/cek-ops-ui/
+extensions/cek-ext-ui/
+extensions/cek-ops-ui/
 crates/cek-cli/
 crates/cek-peer-wasm/      # JSON/WASM apply surface; no mint
 ports/cek-peer-ts/

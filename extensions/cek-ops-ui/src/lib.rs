@@ -60,6 +60,25 @@ impl UiStore {
     }
 }
 
+/// Apply one `ui.dom.*` Op. `Err` if not a UI Op or payload is bad.
+pub fn apply_op(store: &mut UiStore, op: &cek_contract::Op) -> Result<(), ()> {
+    match (op.ns.as_str(), op.name.as_str()) {
+        ("ui.dom", "morph") => {
+            let target = op.payload.get("target").and_then(|v| v.as_str()).ok_or(())?;
+            let patch = op.payload.get("patch").cloned().ok_or(())?;
+            store.morph(target, patch);
+            Ok(())
+        }
+        ("ui.dom", "restore") => {
+            let target = op.payload.get("target").and_then(|v| v.as_str()).ok_or(())?;
+            let snapshot = op.payload.get("snapshot").cloned().ok_or(())?;
+            store.restore(target, snapshot);
+            Ok(())
+        }
+        _ => Err(()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

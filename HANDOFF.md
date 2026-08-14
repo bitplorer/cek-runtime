@@ -31,9 +31,17 @@ Kernel is Baseline only. `ui.*` is the `cek-ext-ui` extension (`Host::with_pack`
 - `extensions/cek-ext-ui`: `UiPack` + optional `DomTree`. No mint.
 - CLI / vectors register the pack. Kernel without pack: `ui.morph` is dispatch_error.
 
+See [LAYERS.md](LAYERS.md) for law / kernel / extension placement.
+
+## Done this session (2026-08-14, placement)
+
+- `cek-ops-ui` moved to `extensions/` (Peer world).
+- Peer Baseline has no UI store; `with_ui()` is the extension profile.
+- Dual-speak glossary row restored.
+
 ## Do next
 
-Further domain packs go under `extensions/`. Do not add them to the kernel.
+New domain features go in `extensions/`. Do not add them to Host/Peer kernels.
 
 ## Never regress
 

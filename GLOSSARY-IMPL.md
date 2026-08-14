@@ -17,6 +17,7 @@
 | **Trace** | Correlation id | Permission |
 | **subject** | Cap bind of who may present; Intent shows `args.subject` | A trace id |
 | **sig** | Host-policy HMAC (`cek1:`) or Ed25519 (`ed25519:`) | Peer authority |
-| **extension** | Pack / world the kernel does not need (`cek-ext-ui`) | Kernel Baseline |
+| **dual-speak** | Host accepts current + previous `law_generation` | A second law; Peer mint |
+| **extension** | Pack / world the kernel does not need | Kernel Baseline |
 
 Actions are never applied. Ops are never submitted.
