@@ -61,6 +61,7 @@ impl UiStore {
 }
 
 /// Apply one `ui.dom.*` Op. `Err` if not a UI Op or payload is bad.
+#[allow(clippy::result_unit_err)]
 pub fn apply_op(store: &mut UiStore, op: &cek_contract::Op) -> Result<(), ()> {
     match (op.ns.as_str(), op.name.as_str()) {
         ("ui.dom", "morph") => {

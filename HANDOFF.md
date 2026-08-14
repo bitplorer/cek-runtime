@@ -19,7 +19,7 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-Expected: **130** unit/property tests; **57** vectors PASS.
+Expected: **128** unit/property tests; **57** vectors PASS.
 
 ## Current maturity
 

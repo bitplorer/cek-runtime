@@ -200,19 +200,14 @@ pub struct Profile {
 }
 
 /// Peer behavior for Ops outside apply_set.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UnknownOpPolicy {
     /// Skip and record failed.
+    #[default]
     Skip,
     /// Fail the whole apply batch.
     FailBatch,
-}
-
-impl Default for UnknownOpPolicy {
-    fn default() -> Self {
-        Self::Skip
-    }
 }
 
 /// Process handshake document.

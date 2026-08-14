@@ -182,7 +182,7 @@ impl FileLineageStore {
         let dir = dir.as_ref();
         std::fs::create_dir_all(dir).map_err(|e| HostError::Lineage(e.to_string()))?;
         let path = dir.join("lineage.json");
-        let mut snap: LineageSnap = load(&path).map_err(|e| HostError::Lineage(e))?;
+        let mut snap: LineageSnap = load(&path).map_err(HostError::Lineage)?;
         if snap.seq == 0 {
             snap.seq = 1;
         }
