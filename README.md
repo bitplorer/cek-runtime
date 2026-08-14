@@ -14,18 +14,58 @@
 
 ---
 
+## This repo at a glance
+
+```text
+┌────────────────────────── cek-runtime ──────────────────────────┐
+│  IMPLEMENTATION (how to build; not new law)                     │
+│                                                                 │
+│  cek-contract     schemas + vectors = sole interop product      │
+│  Host runtime   ⊃ Host kernel   (mint, verify, lineage, …)      │
+│  Peer runtime   ⊃ Peer kernel   (apply Ops only; no mint)       │
+│  Wire / in-proc   contract messages — no third kernel in middle │
+│                                                                 │
+│  submit: verify → once → truth → dispatch → lineage → project   │
+│  reverse: on Activity end / Cap revoke (not when apply finishes)│
+│  CI: red vectors or Peer mint symbol → block merge              │
+└─────────────────────────────────────────────────────────────────┘
+         │ law meanings                        │ this playbook
+         ▼                                     ▼
+   cek-framework                         Host/Peer crates
+```
+
+| This repo **is** | This repo **is not** |
+|------------------|----------------------|
+| How to structure Host/Peer + contract | Replacement for [cek-framework](https://github.com/bitplorer/cek-framework) axioms |
+| Topology, pipelines, CI bans | A required central “CEK cloud” service |
+| Rust reference kernel design | Python/TS Host kernels (callers/ports only) |
+
+| Piece | One line |
+|-------|----------|
+| **cek-contract** | Shared schemas + tests |
+| **Host kernel** | Decide path inside Host process |
+| **Peer kernel** | Apply path inside Peer process |
+| **BoundAsk** | Token after verify; required for dispatch |
+| **Receipt** | What Peer landed; guides reverse |
+| **Baseline Ops** | Forever-interop data effects |
+
+Full concept set: **[CONCEPTS.md](CONCEPTS.md)** · placement: **[TOPOLOGY.md](TOPOLOGY.md)**.
+
+---
+
 ## Start here
 
 | Doc | Why |
 |-----|-----|
-| **[CONCEPTS.md](CONCEPTS.md)** | All implementation concepts at a glance |
-| **[TOPOLOGY.md](TOPOLOGY.md)** | Runtime vs kernel; wire placement |
+| Glance (above) | Whole repo in one box |
+| **[CONCEPTS.md](CONCEPTS.md)** | Every implementation concept |
+| **[TOPOLOGY.md](TOPOLOGY.md)** | Runtime vs kernel; wire |
 | [00-contract/](00-contract/) | What `cek-contract` is |
-| [cek-framework CONCEPTS](https://github.com/bitplorer/cek-framework/blob/main/CONCEPTS.md) | Law concepts (Cap, Ops, lineage, …) |
+| [cek-framework CONCEPTS](https://github.com/bitplorer/cek-framework/blob/main/CONCEPTS.md) | Law concepts |
 
 ---
 
-## Runtime vs kernel (glance)
+## Runtime vs kernel
 
 Kernels sit **inside** runtimes. No central broker kernel on the wire.
 
@@ -45,8 +85,6 @@ Kernels sit **inside** runtimes. No central broker kernel on the wire.
 │  └──────────────────────────────────────────────────────────┘ │
 └──────────────────────── Peer runtime ────────────────────────┘
 ```
-
-More: [TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md).
 
 ---
 
@@ -76,13 +114,6 @@ Your app  --Intent + Cap-->  Host runtime (kernel inside)
                                 |
                            lineage / reverse on Host
 ```
-
-| Piece | Job |
-|-------|-----|
-| **Contract** | Schemas + CORE 19-style vectors — the interop product |
-| **Host kernel** | mint, verify, once/idempotency, dispatch, lineage, project, reverse |
-| **Peer kernel** | apply Ops in order; optional receipt; **never** mint root Caps |
-| **Baseline Ops** | Small data-only set so older Peers keep working |
 
 **Host submit order (fail closed):**  
 verify → once/idempotency → reload truth → dispatch → lineage → project → Result  
