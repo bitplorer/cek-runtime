@@ -1,6 +1,8 @@
-# CEK reference implementation (Rust) — complete guide
+# CEK reference implementation (Rust)
 
-Runnable Host + Peer aligned with [cek-framework](https://github.com/bitplorer/cek-framework) law and this repo’s design docs.
+Walkthrough: **[GUIDE.md](GUIDE.md)**. Topology: [TOPOLOGY.md](TOPOLOGY.md).
+
+Runnable Host + Peer aligned with [cek-framework](https://github.com/bitplorer/cek-framework) law.
 
 ## Quick start
 

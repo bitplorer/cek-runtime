@@ -9,9 +9,9 @@
 
 | Status | Detail |
 |--------|--------|
-| **v0.1 code** | Host + Peer + ui.* pack, scopes, 57 vectors, 130 tests, ui is an extension, TS apply-only Peer |
+| **v0.1 code** | Host + Peer + drivers, 57 vectors, 147 tests, Python Host + JS Peer, batteries |
 | Proven | Cap refuse → zero Ops; snapshot reverse for ui.morph; scopes cannot widen; Peer no mint (Rust+TS) |
-| Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md) · [INVARIANTS.md](INVARIANTS.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
+| Doc | **[GUIDE.md](GUIDE.md)** · [TOPOLOGY.md](TOPOLOGY.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [INVARIANTS.md](INVARIANTS.md) |
 
 ```bash
 cargo test --workspace
@@ -44,7 +44,7 @@ verify → once → project → lineage → Result
 |------------------|----------------------|
 | Host/Peer structure, contract, reference Rust | A new set of axioms |
 | Topology and pipelines | A central “CEK cloud” service |
-| Rust reference kernels | Python/TS Host kernels |
+| Rust reference + Python Host / JS Peer ports | A third kernel or `extensions/` layer |
 
 [TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md)
 

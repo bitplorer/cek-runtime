@@ -1,5 +1,7 @@
 # Topology — law vs runtime vs kernel vs driver
 
+Start with **[GUIDE.md](GUIDE.md)** if you want the walkthrough.
+
 Matches [cek-framework](https://github.com/bitplorer/cek-framework) and the runtime [TOPOLOGY](https://github.com/bitplorer/cek-runtime/blob/main/TOPOLOGY.md).
 
 **There is no third kernel. There is no `extensions/` layer.**

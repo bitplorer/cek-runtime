@@ -51,9 +51,7 @@ Follow official topology. Domain *worlds* are Peer drivers (`cek-ops-*`). Host *
 ## Prompt starter
 
 ```
-Continue CEK runtime from this workspace.
-Read HANDOFF.md, IMPLEMENTATION.md, INVARIANTS.md first.
-Run cargo test, vectors, invariants, and the TS peer runner before changing code.
-Priority: Cap signatures or WASM Peer.
-Do not violate Cap-only / Ops-as-data / Host-Peer split.
+Read **GUIDE.md**, then HANDOFF.md, IMPLEMENTATION.md, INVARIANTS.md.
+Run cargo test, vectors, invariants, batteries before changing code.
+Do not add a third kernel. Host project or Peer driver only.
 ```

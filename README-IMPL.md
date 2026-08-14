@@ -1,15 +1,13 @@
 # CEK Rust workspace
 
-See [IMPLEMENTATION.md](IMPLEMENTATION.md), [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), [INVARIANTS.md](INVARIANTS.md), [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md).
+**Start here:** [GUIDE.md](GUIDE.md)
 
 ```bash
 cargo test --workspace
 cargo run -p cek-cli -- demo
 cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 ./scripts/invariants.sh
-node --experimental-strip-types --no-warnings \
-  ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
-bash scripts/run-wasm-peer.sh
+./scripts/batteries.sh
 ```
 
-57 vectors. Official topology: Host kernel / Peer kernel / Peer drivers. No extensions layer.
+147 tests. 57 vectors. Host kernel / Peer kernel / Peer drivers. No third kernel.
