@@ -32,6 +32,14 @@ def cek1_hex(data: bytes) -> str:
     return "cek1:" + hashlib.sha256(data).hexdigest()
 
 
+def result_digest(kind: str, ops: list, error: str | None) -> str:
+    return cek1_hex(_canon({"error": error, "kind": kind, "ops": ops}))
+
+
+def _err(kind: str, error: str) -> dict:
+    return {"kind": kind, "ops": [], "error": error, "digest": result_digest(kind, [], error)}
+
+
 def cap_sign_bytes(cap: dict) -> bytes:
     return _canon(
         {
@@ -226,36 +234,41 @@ class Host:
         try:
             self._verify(intent)
         except Authority as e:
-            return {"kind": KIND_REFUSE, "ops": [], "error": str(e)}
+            return _err(KIND_REFUSE, str(e))
         key = intent.get("idempotency_key")
         if isinstance(key, str) and not key.strip():
-            return {"kind": KIND_REFUSE, "ops": [], "error": "empty idempotency key"}
+            return _err(KIND_REFUSE, "empty idempotency key")
         try:
             ops = project(intent)
         except Dispatch as e:
-            return {"kind": KIND_DISPATCH, "ops": [], "error": str(e)}
+            return _err(KIND_DISPATCH, str(e))
         body = json.dumps(ops, sort_keys=True, separators=(",", ":"))
         if isinstance(key, str):
             if key in self.idem:
                 prior = self.idem[key]
                 if json.dumps(prior.get("ops"), sort_keys=True, separators=(",", ":")) != body:
-                    return {"kind": KIND_REFUSE, "ops": [], "error": "idempotency conflict"}
+                    return _err(KIND_REFUSE, "idempotency conflict")
                 return dict(prior)
         aid = intent.get("activity_id")
         if aid == "":
-            return {"kind": KIND_DISPATCH, "ops": [], "error": "empty activity_id"}
+            return _err(KIND_DISPATCH, "empty activity_id")
         cap = intent.get("cap") or {}
         if cap.get("once"):
             cid = cap.get("id") or ""
             if cid in self.once_used:
-                return {"kind": KIND_REFUSE, "ops": [], "error": "once Cap already used"}
+                return _err(KIND_REFUSE, "once Cap already used")
             self.once_used.add(cid)
-        result = {"kind": KIND_OK, "ops": ops, "error": None}
+        result = {
+            "kind": KIND_OK,
+            "ops": ops,
+            "error": None,
+            "digest": result_digest(KIND_OK, ops, None),
+        }
         if isinstance(key, str):
             self.idem[key] = result
         if isinstance(aid, str) and aid.strip():
             if aid in self.ended:
-                return {"kind": KIND_DISPATCH, "ops": [], "error": "activity already ended"}
+                return _err(KIND_DISPATCH, "activity already ended")
             inv = [x for o in reversed(ops) if (x := inverse_op(o))]
             cls = "Inverse" if inv else "NonReversible"
             self.lineage.setdefault(aid, []).append(LineageEntry(ops, inv, cls))

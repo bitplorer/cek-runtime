@@ -27,7 +27,7 @@ There is **no third kernel**. A bus only moves messages.
 | Peer kernel | `crates/cek-peer-kernel` | apply loop — **no mint** |
 | Peer driver | kv, log, UI/DOM — see [DRIVERS.md](DRIVERS.md) |
 
-Drivers in detail: **[DRIVERS.md](DRIVERS.md)**. Map: [TOPOLOGY.md](TOPOLOGY.md).
+Drivers in detail: **[DRIVERS.md](DRIVERS.md)**. Ports: **[PORTS.md](PORTS.md)**. Map: [TOPOLOGY.md](TOPOLOGY.md).
 
 ## 3. Words that must not mix
 
@@ -129,7 +129,7 @@ Checks: [INVARIANTS.md](INVARIANTS.md), `scripts/invariants.sh`, `scripts/batter
 
 | File | Use when |
 |------|----------|
-| [DRIVERS.md](DRIVERS.md) | kv / log / UI / DOM — Peer-outer only |
+| [PORTS.md](PORTS.md) | Python Host / JS Peer — has vs has-not |
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Pipeline detail, store traits |
 | [HARDENING.md](HARDENING.md) | Fail-closed table |
 | [EDGE_CASES.md](EDGE_CASES.md) | Expiry, once, reverse edges |

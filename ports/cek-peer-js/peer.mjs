@@ -46,6 +46,14 @@ export class DomTree {
     return true;
   }
 
+  setAttr(target, key, value) {
+    const n = findAt(this.roots, target);
+    if (!n) return false;
+    n.attrs = n.attrs || {};
+    n.attrs[key] = value;
+    return true;
+  }
+
   html() {
     return this.roots.map(render).join("");
   }
