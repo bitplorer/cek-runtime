@@ -9,9 +9,9 @@
 
 | Status | Detail |
 |--------|--------|
-| **v0.1 code** | Contract types, Host (BoundAsk), Peer (apply-only), Baseline kv, vectors, CLI |
-| Proven | Cap refuse → zero Ops; once-Cap; `kv.set` land; Activity reverse |
-| Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) |
+| **v0.1 code** | Contract, Host (BoundAsk + store traits), Peer (apply-only), Baseline kv, 25 vectors, CLI |
+| Proven | Cap refuse → zero Ops; once commit-after-project; idempotency-before-once; `cek1:` digests; landed-first reverse; file-backed once/lineage |
+| Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
 
 ```bash
 cargo test --workspace
@@ -28,7 +28,7 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | Piece | Role |
 |-------|------|
 | **cek-contract** | Types + vectors — sole interop product |
-| **Host kernel** | mint, verify, once, BoundAsk, lineage, project, reverse |
+| **Host kernel** | mint, verify, once, BoundAsk, lineage, project, reverse, durable store traits |
 | **Peer kernel** | apply Ops only — **no** mint |
 | **Wire / in-proc** | Contract messages — no third kernel |
 

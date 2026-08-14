@@ -1,0 +1,23 @@
+{
+  "id": "baseline-log-append",
+  "family": "baseline_lowering",
+  "description": "log.append projects the classic log.append Op",
+  "now": 1000,
+  "intent": {
+    "action": "log.append",
+    "args": { "message": "hello" },
+    "cap": {
+      "id": "cap-log",
+      "action": "log.append",
+      "once": false
+    }
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    {
+      "ns": "log",
+      "name": "append",
+      "payload": { "message": "hello" }
+    }
+  ]
+}

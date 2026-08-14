@@ -1,0 +1,18 @@
+{
+  "id": "trace-not-authority",
+  "family": "trace",
+  "description": "A shared trace never grants authority; action mismatch still refuses",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 1 },
+    "cap": {
+      "id": "cap-trace",
+      "action": "kv.read",
+      "once": false
+    },
+    "trace": "shared-trace"
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

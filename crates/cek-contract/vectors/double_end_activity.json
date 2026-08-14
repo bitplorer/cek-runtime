@@ -1,0 +1,19 @@
+{
+  "id": "double-end-activity",
+  "family": "lineage",
+  "description": "Second end_activity is an error (no double reverse)",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "k", "value": 1 },
+    "cap": {
+      "id": "cap-de",
+      "action": "kv.write",
+      "once": false
+    },
+    "activity_id": "act-de"
+  },
+  "expect_kind": "ok",
+  "end_activity": "act-de",
+  "end_activity_again": true
+}

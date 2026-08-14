@@ -1,0 +1,16 @@
+{
+  "id": "unknown-op-skip",
+  "family": "unknown_ops",
+  "description": "Unknown Op is skipped; subsequent known Ops still apply",
+  "peer_unknown_policy": "skip",
+  "peer_result": {
+    "kind": "ok",
+    "ops": [
+      { "ns": "ui", "name": "morph", "payload": { "sel": "#x" } },
+      { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+    ]
+  },
+  "expect_kind": "ok",
+  "peer_apply": true,
+  "expect_peer_kv": { "a": 1 }
+}

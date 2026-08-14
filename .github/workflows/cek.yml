@@ -10,13 +10,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: test workspace
+        with:
+          components: llvm-tools-preview
+      - name: test workspace (unit + proptest)
         run: cargo test --workspace
       - name: vectors
         run: cargo run -p cek-cli -- vectors crates/cek-contract/vectors
       - name: Peer must not expose mint
         run: |
-          if rg -n '\b(pub\s+fn\s+mint|mint_root)\b' crates/cek-peer-kernel; then
+          if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|mint_root' crates/cek-peer-kernel; then
             echo "Peer must not mint"; exit 1
           fi
           echo "Peer mint check ok"
+      - name: install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked || true
+      - name: coverage summary
+        run: cargo llvm-cov --workspace --summary-only || echo "llvm-cov optional"

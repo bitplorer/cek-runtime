@@ -1,0 +1,25 @@
+{
+  "id": "baseline-apply-lands",
+  "family": "baseline_apply",
+  "description": "Peer applies projected kv.set and the world changes",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "greeting", "value": "hello" },
+    "cap": {
+      "id": "cap-land",
+      "action": "kv.write",
+      "once": false
+    }
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    {
+      "ns": "kv",
+      "name": "set",
+      "payload": { "key": "greeting", "value": "hello" }
+    }
+  ],
+  "peer_apply": true,
+  "expect_peer_kv": { "greeting": "hello" }
+}

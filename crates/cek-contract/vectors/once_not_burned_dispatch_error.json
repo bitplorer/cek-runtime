@@ -1,0 +1,18 @@
+{
+  "id": "once-not-burned-dispatch-error",
+  "family": "single_use",
+  "description": "Dispatch error does not burn a once-Cap",
+  "now": 1000,
+  "intent": {
+    "action": "no.such.action",
+    "args": {},
+    "cap": {
+      "id": "cap-once-dispatch",
+      "action": "no.such.action",
+      "once": true
+    }
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true,
+  "expect_once_consumed": false
+}

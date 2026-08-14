@@ -14,6 +14,9 @@ pub enum HostError {
     /// Once-store unavailable under fail-closed policy.
     #[error("once store unavailable")]
     OnceStoreDown,
+    /// Idempotency store unavailable under fail-closed policy.
+    #[error("idempotency store unavailable")]
+    IdemStoreDown,
     /// Lineage store failure.
     #[error("lineage: {0}")]
     Lineage(String),

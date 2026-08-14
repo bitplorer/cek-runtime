@@ -11,19 +11,25 @@
 | Empty kv key | Nonsense Op | `dispatch_error` |
 | Empty `activity_id` | Bad lineage key | `dispatch_error` |
 | Idempotency same key + same body | Duplicate causes | Return **cached** Result |
-| Idempotency same key + different body | Silent fork | Refuse conflict |
+| Idempotency same key + different body | Silent fork | Refuse conflict (**digest compared before once-ensure**) |
+| Once-Cap + idempotent retry | Retry refused as consumed | Lookup **before** once-ensure; cached Result |
 | Peer `FailBatch` | Partial apply of unknowns | **Abort rest** after first unknown |
+| Peer `Skip` | Drop known Ops after unknown | Unknown skipped; later known Ops still apply |
 | `authority_refusal` / `dispatch_error` on Peer | Spurious mutate | Apply is no-op |
 | Double `end_activity` | Double reverse | Second call errors |
-| Commit after Activity ended | Ghost causes | Lineage rejects |
+| Commit after Activity ended | Ghost causes | Lineage rejects **before** insert |
 | Partial apply | Undo wrong set | Reverse prefers **landed** when receipt annotated |
 | Digest stability | Cache poison | `cek1:` SHA-256 canonical JSON |
+| Durable store I/O / lock poison | Skip once | Fail closed (`OnceStoreDown` / `IdemStoreDown` / `Lineage`) |
+| Durable reopen | Lost consume / lineage | File backends persist JSON; reopen sees consumed + landed |
 
 ## Open / deferred
 
 | Edge | Status |
 |------|--------|
-| Concurrent once race under multi-Host | Mutex serializes in-process; multi-Host policy later |
+| Concurrent once race under multi-thread | Mutex serializes; commit-after-project still races across hosts — multi-Host policy later |
+| Multi-process file lock | One `File*Store` instance per directory; flock/SQL later |
 | Cap crypto forge | Deferred (signatures) |
 | Clock skew | Host clock is authority; Peer does not check expiry |
-| Snapshot reverse for delete | Needs prior value store |
+| Snapshot reverse for delete | Needs prior value store (`ui.*` / snapshot class) |
+| Scope attenuation | Cap.scopes stored; not yet enforced |

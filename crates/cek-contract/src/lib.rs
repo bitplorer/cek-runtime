@@ -11,23 +11,35 @@
 //! - Additive optional fields only; never rename frozen conceptual fields.
 //! - Ops remain **data** (`ns`, `name`, `payload`) — no eval.
 //! - `authority_refusal` must never carry mutate Ops.
+//! - Digests use `cek1:` SHA-256 over canonical JSON; algorithm id is part of the string.
 //! - Peer cannot mint; that is enforced by Host/Peer crates + CI, not by types alone.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-pub mod types;
 pub mod baseline;
-mod vectors;
+pub mod digest;
 mod error;
+pub mod types;
+mod vectors;
 
-pub use types::*;
 pub use baseline::*;
-pub use vectors::*;
+pub use digest::*;
 pub use error::*;
+pub use types::*;
+pub use vectors::*;
 
 /// Law generation this contract claims to speak.
 pub const LAW_GENERATION: &str = "cek-law-1";
 
 /// Contract crate semver (independent of law generation).
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Production profile name — receipts expected for landed-first reverse.
+pub const PROFILE_PRODUCTION_V1: &str = "production-v1";
+
+/// Baseline profile name — classic Ops only; receipts optional.
+pub const PROFILE_BASELINE: &str = "baseline";
+
+#[cfg(test)]
+mod digest_props;

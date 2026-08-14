@@ -1,0 +1,17 @@
+{
+  "id": "unknown-action-dispatch",
+  "family": "baseline_lowering",
+  "description": "Unknown action after verify is dispatch_error with zero Ops",
+  "now": 1000,
+  "intent": {
+    "action": "no.such.action",
+    "args": {},
+    "cap": {
+      "id": "cap-unknown",
+      "action": "no.such.action",
+      "once": false
+    }
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true
+}

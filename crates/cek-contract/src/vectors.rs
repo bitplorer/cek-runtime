@@ -1,10 +1,14 @@
 //! Conformance vector loading (JSON fixtures).
 
-use crate::{ContractError, ContractResult, Intent, ResultMsg};
+use crate::{ContractError, ContractResult, Intent, Op, ResultMsg};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use serde_json::Value;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
 /// One executable conformance case.
+///
+/// Additive optional fields only — older fixtures remain valid.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VectorCase {
     /// Stable case id.
@@ -16,6 +20,15 @@ pub struct VectorCase {
     /// Input Intent (when applicable).
     #[serde(default)]
     pub intent: Option<Intent>,
+    /// Optional prior submit on the same Host (e.g. first once-Cap use).
+    #[serde(default)]
+    pub prior_intent: Option<Intent>,
+    /// If true, `prior_intent` must conclude `ok`.
+    #[serde(default)]
+    pub prior_must_ok: bool,
+    /// After `prior_intent`, end this Activity before the checked submit.
+    #[serde(default)]
+    pub prior_end_activity: Option<String>,
     /// Host clock used for expiry checks (unix seconds).
     #[serde(default)]
     pub now: Option<u64>,
@@ -26,7 +39,37 @@ pub struct VectorCase {
     pub expect_ops_empty: bool,
     /// Optional exact expected Ops (JSON).
     #[serde(default)]
-    pub expect_ops: Option<Vec<crate::Op>>,
+    pub expect_ops: Option<Vec<Op>>,
+    /// After the checked submit, apply via Peer.
+    #[serde(default)]
+    pub peer_apply: bool,
+    /// Skip Host submit and apply this Result via Peer (Peer-only case).
+    #[serde(default)]
+    pub peer_result: Option<ResultMsg>,
+    /// Peer unknown-Op policy: `skip` (default) or `fail_batch`.
+    #[serde(default)]
+    pub peer_unknown_policy: Option<String>,
+    /// Expected Peer kv after apply. JSON `null` means the key must be absent.
+    #[serde(default)]
+    pub expect_peer_kv: Option<BTreeMap<String, Value>>,
+    /// After submit (and optional apply), report receipt for this Activity.
+    #[serde(default)]
+    pub report_receipt: bool,
+    /// After submit / receipt, end this Activity and check reverse.
+    #[serde(default)]
+    pub end_activity: Option<String>,
+    /// Expected reverse Ops from `end_activity`.
+    #[serde(default)]
+    pub expect_reverse_ops: Option<Vec<Op>>,
+    /// Expected `used_landed` flag from reverse.
+    #[serde(default)]
+    pub expect_used_landed: Option<bool>,
+    /// Call `end_activity` a second time (expects error).
+    #[serde(default)]
+    pub end_activity_again: bool,
+    /// After the checked submit, whether `intent.cap.id` is consumed.
+    #[serde(default)]
+    pub expect_once_consumed: Option<bool>,
 }
 
 /// Load a single vector JSON file.
@@ -39,6 +82,22 @@ pub fn load_vector_file(path: impl AsRef<Path>) -> ContractResult<VectorCase> {
         ));
     }
     Ok(v)
+}
+
+/// Load every `*.json` vector in `dir`, sorted by path.
+pub fn load_vector_dir(dir: impl AsRef<Path>) -> ContractResult<Vec<(PathBuf, VectorCase)>> {
+    let mut out = Vec::new();
+    let mut paths: Vec<_> = std::fs::read_dir(dir)?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("json"))
+        .collect();
+    paths.sort();
+    for path in paths {
+        let case = load_vector_file(&path)?;
+        out.push((path, case));
+    }
+    Ok(out)
 }
 
 /// Check a Host Result against a vector case expectations.

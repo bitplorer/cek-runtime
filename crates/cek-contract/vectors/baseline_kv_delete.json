@@ -1,0 +1,23 @@
+{
+  "id": "baseline-kv-delete",
+  "family": "baseline_lowering",
+  "description": "kv.delete projects the classic kv.delete Op",
+  "now": 1000,
+  "intent": {
+    "action": "kv.delete",
+    "args": { "key": "greeting" },
+    "cap": {
+      "id": "cap-del",
+      "action": "kv.delete",
+      "once": false
+    }
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    {
+      "ns": "kv",
+      "name": "delete",
+      "payload": { "key": "greeting" }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "empty-cap-id-refuse",
+  "family": "cap_verify",
+  "description": "Empty Cap id is never valid authority",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 1 },
+    "cap": {
+      "id": "",
+      "action": "kv.write",
+      "once": false
+    }
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

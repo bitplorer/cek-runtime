@@ -6,7 +6,7 @@
 |-------|---------|-----------|
 | A Core frozen | BoundAsk, refuse, once, Baseline, vectors | **Met** |
 | B Interop mature | Digests, sealed-args, receipts, CI | **Met in reference** |
-| C Domain-generic | Domain Op packs without law change | Baseline only; path clear |
+| C Domain-generic | Domain Op packs without law change | Baseline only; store traits ready for packs |
 | D Institutional | Multi-port, dual-speak windows | Not yet |
 
 ## Invariants (must not regress)
@@ -27,18 +27,21 @@
 - [x] Sealed-args enforcement  
 - [x] Result digests (`cek1:`)  
 - [x] Idempotency bind store  
+- [x] Idempotency **before** once-ensure (retry of once-Cap)  
 - [x] Receipt annotation  
 - [x] Landed-first reverse preference  
 - [x] Reverse classes  
-- [x] Executable vectors  
+- [x] Executable vectors (25; CORE/19 families covered except attenuation + unknown-meta)  
 - [x] Peer no-mint  
 - [x] CLI demo + vector runner  
 - [x] HARDENING.md  
 - [x] GitHub Actions workflow  
+- [x] Durable once/lineage/idem **traits** + in-memory default  
+- [x] File-backed durable backends (JSON, fail closed)  
 - [ ] Second Peer language port  
-- [ ] Durable once/lineage backends  
 - [ ] Cap cryptographic signatures  
 - [ ] Domain `ui.*` with snapshots  
+- [ ] Scope attenuation  
 
 ## Consistency glossary (code ↔ law)
 
@@ -50,8 +53,9 @@
 | Result | `cek_contract::ResultMsg` |
 | Host | `cek_host_kernel::Host` |
 | Peer | `cek_peer_kernel::Peer` |
-| lineage | `LineageStore` / `LineageEntry` |
+| lineage | `LineageBackend` / `LineageEntry` |
 | reverse | `Host::end_activity` |
 | receipt | `Receipt` + `Host::report_receipt` |
 | Baseline | `cek_contract::baseline` |
 | BoundAsk | `cek_host_kernel::BoundAsk` |
+| once store | `OnceBackend` (`OnceStore` / `FileOnceStore`) |

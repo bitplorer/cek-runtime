@@ -1,0 +1,30 @@
+{
+  "id": "commit-after-activity-ended",
+  "family": "lineage",
+  "description": "Commit onto an ended Activity is a dispatch_error (no ghost cause)",
+  "now": 1000,
+  "prior_intent": {
+    "action": "kv.write",
+    "args": { "key": "k", "value": 1 },
+    "cap": {
+      "id": "cap-cae",
+      "action": "kv.write",
+      "once": false
+    },
+    "activity_id": "act-dead"
+  },
+  "prior_must_ok": true,
+  "prior_end_activity": "act-dead",
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "k", "value": 2 },
+    "cap": {
+      "id": "cap-cae-2",
+      "action": "kv.write",
+      "once": false
+    },
+    "activity_id": "act-dead"
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true
+}

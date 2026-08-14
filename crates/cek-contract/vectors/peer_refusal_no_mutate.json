@@ -1,0 +1,14 @@
+{
+  "id": "peer-refusal-no-mutate",
+  "family": "baseline_apply",
+  "description": "Peer apply of authority_refusal is a no-op (world unchanged)",
+  "peer_result": {
+    "kind": "authority_refusal",
+    "ops": [],
+    "error": "no"
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true,
+  "peer_apply": true,
+  "expect_peer_kv": { "a": null }
+}

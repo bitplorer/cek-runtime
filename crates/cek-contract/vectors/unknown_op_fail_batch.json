@@ -1,0 +1,16 @@
+{
+  "id": "unknown-op-fail-batch",
+  "family": "unknown_ops",
+  "description": "FailBatch aborts the rest of the apply after the first unknown Op",
+  "peer_unknown_policy": "fail_batch",
+  "peer_result": {
+    "kind": "ok",
+    "ops": [
+      { "ns": "ui", "name": "morph", "payload": { "sel": "#x" } },
+      { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+    ]
+  },
+  "expect_kind": "ok",
+  "peer_apply": true,
+  "expect_peer_kv": { "a": null }
+}

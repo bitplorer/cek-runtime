@@ -12,7 +12,8 @@
 #![deny(missing_docs)]
 
 use cek_contract::{
-    baseline, Op, Profile, Receipt, ResultKind, ResultMsg, UnknownOpPolicy, LAW_GENERATION, Manifest,
+    baseline, Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, UnknownOpPolicy,
+    LAW_GENERATION,
 };
 use cek_ops_baseline::KvStore;
 use std::sync::Mutex;
@@ -31,13 +32,21 @@ impl Default for Peer {
 }
 
 impl Peer {
-    /// Baseline profile Peer.
+    /// Baseline profile Peer (unknown Ops: skip).
     pub fn baseline() -> Self {
+        Self::with_policy(UnknownOpPolicy::Skip)
+    }
+
+    /// Baseline apply-set with an explicit unknown-Op policy.
+    pub fn with_policy(unknown_op_policy: UnknownOpPolicy) -> Self {
         Self {
             profile: Profile {
                 name: "baseline".into(),
-                apply_set: baseline::BASELINE_OPS.iter().map(|s| (*s).to_string()).collect(),
-                unknown_op_policy: UnknownOpPolicy::Skip,
+                apply_set: baseline::BASELINE_OPS
+                    .iter()
+                    .map(|s| (*s).to_string())
+                    .collect(),
+                unknown_op_policy,
             },
             kv: Mutex::new(KvStore::new()),
             log: Mutex::new(Vec::new()),
@@ -60,7 +69,11 @@ impl Peer {
 
     /// Apply Result Ops in order. Authority refusals are no-ops.
     pub fn apply(&self, result: &ResultMsg) -> Option<Receipt> {
-        if matches!(result.kind, ResultKind::AuthorityRefusal) {
+        // Refuse and dispatch_error carry no intended effects in this reference.
+        if matches!(
+            result.kind,
+            ResultKind::AuthorityRefusal | ResultKind::DispatchError
+        ) {
             return Some(Receipt {
                 landed: Vec::new(),
                 failed: Vec::new(),
@@ -68,7 +81,12 @@ impl Peer {
         }
         let mut landed = Vec::new();
         let mut failed = Vec::new();
+        let mut abort_rest = false;
         for op in &result.ops {
+            if abort_rest {
+                failed.push(op.clone());
+                continue;
+            }
             if !self.can_apply(op) {
                 match self.profile.unknown_op_policy {
                     UnknownOpPolicy::Skip => {
@@ -77,13 +95,17 @@ impl Peer {
                     }
                     UnknownOpPolicy::FailBatch => {
                         failed.push(op.clone());
+                        abort_rest = true;
                         continue;
                     }
                 }
             }
             match self.apply_one(op) {
                 Ok(()) => landed.push(op.clone()),
-                Err(()) => failed.push(op.clone()),
+                Err(()) => {
+                    failed.push(op.clone());
+                    // partial apply: continue; reverse uses landed set
+                }
             }
         }
         Some(Receipt { landed, failed })
@@ -98,7 +120,11 @@ impl Peer {
         match (op.ns.as_str(), op.name.as_str()) {
             ("kv", "set") => {
                 let key = op.payload.get("key").and_then(|v| v.as_str()).ok_or(())?;
-                let value = op.payload.get("value").cloned().unwrap_or(serde_json::Value::Null);
+                let value = op
+                    .payload
+                    .get("value")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null);
                 self.kv.lock().map_err(|_| ())?.set(key, value);
                 Ok(())
             }
@@ -150,6 +176,40 @@ mod tests {
         let peer = Peer::baseline();
         let result = ResultMsg::authority_refusal("no");
         let _ = peer.apply(&result);
+        assert!(peer.kv_get("a").is_none());
+    }
+
+    #[test]
+    fn unknown_op_skip_continues() {
+        let peer = Peer::with_policy(UnknownOpPolicy::Skip);
+        let result = ResultMsg::ok(vec![
+            Op {
+                ns: "ui".into(),
+                name: "morph".into(),
+                payload: serde_json::json!({}),
+            },
+            baseline::kv_set("a", serde_json::json!(1)),
+        ]);
+        let receipt = peer.apply(&result).unwrap();
+        assert_eq!(receipt.failed.len(), 1);
+        assert_eq!(receipt.landed.len(), 1);
+        assert_eq!(peer.kv_get("a"), Some(serde_json::json!(1)));
+    }
+
+    #[test]
+    fn unknown_op_fail_batch_aborts_rest() {
+        let peer = Peer::with_policy(UnknownOpPolicy::FailBatch);
+        let result = ResultMsg::ok(vec![
+            Op {
+                ns: "ui".into(),
+                name: "morph".into(),
+                payload: serde_json::json!({}),
+            },
+            baseline::kv_set("a", serde_json::json!(1)),
+        ]);
+        let receipt = peer.apply(&result).unwrap();
+        assert_eq!(receipt.failed.len(), 2);
+        assert!(receipt.landed.is_empty());
         assert!(peer.kv_get("a").is_none());
     }
 }

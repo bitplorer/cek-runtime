@@ -1,0 +1,17 @@
+{
+  "id": "empty-kv-key-dispatch",
+  "family": "baseline_lowering",
+  "description": "Empty kv.write key is a dispatch error, not an authority refusal",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "", "value": 1 },
+    "cap": {
+      "id": "cap-empty-key",
+      "action": "kv.write",
+      "once": false
+    }
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true
+}
