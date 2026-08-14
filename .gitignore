@@ -4,3 +4,7 @@ Cargo.lock
 /coverage
 *.profraw
 *.profdata
+
+demo/host-peer/out/
+__pycache__/
+*.pyc

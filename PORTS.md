@@ -65,3 +65,11 @@ echo '{"kind":"ok","ops":[{"ns":"kv","name":"set","payload":{"key":"a","value":1
 ```
 
 Pipe them: Host stdout Result → Peer stdin. That is the official split.
+
+## Demo app
+
+```bash
+bash demo/host-peer/run.sh
+```
+
+Seven scenes (refuse, kv, ui, receipt, reverse, once, expiry). Report: `demo/host-peer/out/index.html`. Details: [demo/host-peer/README.md](demo/host-peer/README.md).

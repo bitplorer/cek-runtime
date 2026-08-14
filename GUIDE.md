@@ -108,6 +108,12 @@ Python Host skips Peer-only fixtures (Ed25519 is implemented). JS Peer runs appl
 5. Host.end_activity(activity_id)  → reverse Ops → Peer.apply again
 ```
 
+Worked example (Python Host → JS Peer, seven scenes):
+
+```bash
+bash demo/host-peer/run.sh
+```
+
 In-process: call the kernels.  
 Across processes: send contract JSON (Intent+Cap / Result / receipt).  
 Python Host and JS Peer are that split in two languages.
