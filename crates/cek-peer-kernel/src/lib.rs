@@ -6,7 +6,7 @@
 //!
 //! - Apply is ordered; unknown Ops follow profile policy.
 //! - Receipts report landed vs failed — never authority.
-//! - Drivers: Baseline `cek-ops-baseline`; UI world `extensions/cek-ops-ui`.
+//! - Drivers: `cek-ops-baseline` (kv), `cek-ops-ui` (UI world).
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

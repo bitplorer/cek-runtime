@@ -12,4 +12,4 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-57 vectors. 130 tests. UI is an extension (`cek-ext-ui`), not kernel. Dual-speak. Ed25519 + HMAC.
+57 vectors. Official topology: Host kernel / Peer kernel / Peer drivers. No extensions layer.

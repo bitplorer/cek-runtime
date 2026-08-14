@@ -46,7 +46,6 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] llvm-cov HTML (`scripts/llvm-cov.sh`, CI artifact)  
 - [x] Ed25519 Host policy + rotation window  
 - [x] Dual-speak law-generation window  
-- [x] Non-kernel features live under `extensions/` (`cek-ext-ui`)  
 
 ## Consistency glossary (code ↔ law)
 

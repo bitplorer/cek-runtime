@@ -1,8 +1,8 @@
 //! Host kernel orchestrator — mature reference implementation.
 
 use crate::{
-    BoundAsk, DomainPack, HostError, HostResult, IdemBackend, IdemStore, LineageBackend,
-    LineageStore, OnceBackend, OnceStore, ReverseOutcome,
+    BoundAsk, HostError, HostResult, IdemBackend, IdemStore, LineageBackend, LineageStore,
+    OnceBackend, OnceStore, ReverseOutcome,
 };
 use cek_contract::{
     baseline, ops_digest, result_digest, sealed_args_digest, Cap, Intent, Manifest, Op, Receipt,
@@ -29,8 +29,6 @@ pub struct Host {
     ed_trust: Vec<VerifyingKey>,
     /// Law generations this Host accepts (always includes current).
     accepted_generations: Vec<String>,
-    /// Optional domain packs (ui, …). Kernel Baseline does not need these.
-    packs: Vec<Arc<dyn DomainPack>>,
 }
 
 impl Default for Host {
@@ -70,7 +68,6 @@ impl Host {
             ed_sign: None,
             ed_trust: Vec::new(),
             accepted_generations: vec![LAW_GENERATION.into()],
-            packs: Vec::new(),
         }
     }
 
@@ -101,7 +98,6 @@ impl Host {
             ed_sign: None,
             ed_trust: Vec::new(),
             accepted_generations: vec![LAW_GENERATION.into()],
-            packs: Vec::new(),
         }
     }
 
@@ -149,12 +145,6 @@ impl Host {
             self.accepted_generations.push(g);
         }
         Ok(self)
-    }
-
-    /// Register a domain extension pack (not kernel).
-    pub fn with_pack(mut self, pack: Arc<dyn DomainPack>) -> Self {
-        self.packs.push(pack);
-        self
     }
 
     /// Shared once backend.
@@ -419,7 +409,7 @@ impl Host {
         let Some(prior) = self.idem.get(key)? else {
             return Ok(None);
         };
-        match self.project_ops(intent) {
+        match project_ops(intent) {
             Ok(ops) => {
                 let digest = result_digest("ok", &ops, None);
                 if prior.digest.as_deref() == Some(digest.as_str()) {
@@ -450,7 +440,7 @@ impl Host {
     fn dispatch_and_finish(&self, bound: BoundAsk) -> ResultMsg {
         let intent = bound.intent();
 
-        match self.project_ops(intent) {
+        match project_ops(intent) {
             Ok(ops) => {
                 let kind = "ok";
                 let digest = result_digest(kind, &ops, None);
@@ -492,7 +482,7 @@ impl Host {
                         rr.digest = Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
                         return rr;
                     }
-                    let inverse = self.inverse_ops(&ops);
+                    let inverse = inverse_ops(&ops);
                     let class = if inverse.is_empty() {
                         ReverseClass::NonReversible
                     } else {
@@ -548,7 +538,7 @@ impl Host {
                 ReverseClass::Inverse => {
                     if !entry.landed_ops.is_empty() {
                         used_landed = true;
-                        ops.extend(self.inverse_ops(&entry.landed_ops));
+                        ops.extend(inverse_ops(&entry.landed_ops));
                     } else {
                         ops.extend(entry.inverse_ops);
                     }
@@ -607,35 +597,55 @@ fn project_baseline(intent: &Intent) -> Result<Vec<Op>, String> {
     }
 }
 
-impl Host {
-    fn project_ops(&self, intent: &Intent) -> Result<Vec<Op>, String> {
-        for pack in &self.packs {
-            if let Some(r) = pack.project(intent) {
-                return r;
+fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
+    match intent.action.as_str() {
+        cek_contract::ACTION_UI_MORPH => {
+            let target = intent
+                .args
+                .get("target")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "ui.morph requires string args.target".to_string())?;
+            if target.is_empty() {
+                return Err("ui.morph target must be non-empty".into());
             }
+            let patch = intent
+                .args
+                .get("patch")
+                .cloned()
+                .ok_or_else(|| "ui.morph requires args.patch".to_string())?;
+            let snapshot = intent.args.get("snapshot").cloned();
+            Ok(vec![cek_contract::ui_morph(target, patch, snapshot)])
         }
-        project_baseline(intent)
+        cek_contract::ACTION_UI_RESTORE => {
+            let target = intent
+                .args
+                .get("target")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "ui.restore requires string args.target".to_string())?;
+            if target.is_empty() {
+                return Err("ui.restore target must be non-empty".into());
+            }
+            let snapshot = intent
+                .args
+                .get("snapshot")
+                .cloned()
+                .ok_or_else(|| "ui.restore requires args.snapshot".to_string())?;
+            Ok(vec![cek_contract::ui_restore(target, snapshot)])
+        }
+        _ => project_baseline(intent),
     }
+}
 
-    fn inverse_ops(&self, ops: &[Op]) -> Vec<Op> {
-        let mut inv = Vec::new();
-        for op in ops.iter().rev() {
-            let mut hit = false;
-            for pack in &self.packs {
-                if let Some(p) = pack.inverse(op) {
-                    inv.push(p);
-                    hit = true;
-                    break;
-                }
-            }
-            if !hit {
-                if let Some(kv_inv) = cek_contract::inverse_kv(op) {
-                    inv.push(kv_inv);
-                }
-            }
+fn inverse_ops(ops: &[Op]) -> Vec<Op> {
+    let mut inv = Vec::new();
+    for op in ops.iter().rev() {
+        if let Some(kv_inv) = cek_contract::inverse_kv(op) {
+            inv.push(kv_inv);
+        } else if let Some(ui_inv) = cek_contract::inverse_ui(op) {
+            inv.push(ui_inv);
         }
-        inv
     }
+    inv
 }
 
 #[cfg(test)]
@@ -1082,7 +1092,7 @@ mod tests {
     }
 
     #[test]
-    fn ui_morph_without_pack_is_dispatch_error() {
+    fn ui_morph_projects_and_restore_reverse() {
         let host = Host::with_clock(1000);
         let cap = host.mint("c-ui", "ui.morph", false, None);
         let r = host.submit(intent_morph(
@@ -1091,8 +1101,21 @@ mod tests {
             json!({"t": "new"}),
             Some(json!({"t": "old"})),
         ));
-        assert!(matches!(r.kind, ResultKind::DispatchError));
-        assert!(r.ops.is_empty());
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops[0].fq(), "ui.dom.morph");
+        let rev = host.end_activity("act-ui").unwrap();
+        assert_eq!(rev.ops[0].fq(), "ui.dom.restore");
+    }
+
+    #[test]
+    fn ui_morph_without_snapshot_is_non_reversible() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui2", "ui.morph", false, None);
+        let r = host.submit(intent_morph(cap, "hdr", json!({"t": 1}), None));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let rev = host.end_activity("act-ui").unwrap();
+        assert!(rev.ops.is_empty());
+        assert!(!rev.non_reversible.is_empty());
     }
 
     #[test]

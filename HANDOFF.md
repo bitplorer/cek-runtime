@@ -23,25 +23,15 @@ Expected: **130** unit/property tests; **57** vectors PASS.
 
 ## Current maturity
 
-Kernel is Baseline only. `ui.*` is the `cek-ext-ui` extension (`Host::with_pack`).
+Official topology: Host kernel / Peer kernel / Peer drivers. See [TOPOLOGY.md](TOPOLOGY.md).
 
-## Done this session (2026-08-14, extensions)
+## Done this session
 
-- `DomainPack` hook on Host. Kernel `project_baseline` is kv/log only.
-- `extensions/cek-ext-ui`: `UiPack` + optional `DomTree`. No mint.
-- CLI / vectors register the pack. Kernel without pack: `ui.morph` is dispatch_error.
-
-See [LAYERS.md](LAYERS.md) for law / kernel / extension placement.
-
-## Done this session (2026-08-14, placement)
-
-- `cek-ops-ui` moved to `extensions/` (Peer world).
-- Peer Baseline has no UI store; `with_ui()` is the extension profile.
-- Dual-speak glossary row restored.
+Aligned placement with cek-framework / cek-runtime meta. Removed the invented `extensions/` layer.
 
 ## Do next
 
-New domain features go in `extensions/`. Do not add them to Host/Peer kernels.
+Follow official topology. Domain *worlds* are Peer drivers (`cek-ops-*`). Host *project* stays in the Host kernel.
 
 ## Never regress
 

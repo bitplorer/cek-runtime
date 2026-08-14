@@ -430,6 +430,32 @@ impl PipeCap for Intent {
     }
 }
 
+/// ∀ ui.morph with snapshot → reverse is ui.dom.restore
+#[test]
+fn prop_ui_snapshot_reverse() {
+    let host = Host::with_clock(1_000);
+    for target in keys() {
+        let cap = host.mint(format!("ui-{target}"), "ui.morph", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("target".into(), json!(target));
+        args.insert("patch".into(), json!({"v": 2}));
+        args.insert("snapshot".into(), json!({"v": 1}));
+        let aid = format!("act-ui-{target}");
+        let r = host.submit(Intent {
+            action: "ui.morph".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some(aid.clone()),
+        });
+        assert!(matches!(r.kind, ResultKind::Ok), "{target}");
+        assert_eq!(r.ops[0].fq(), "ui.dom.morph");
+        let rev = host.end_activity(&aid).unwrap();
+        assert_eq!(rev.ops[0].fq(), "ui.dom.restore");
+    }
+}
+
 /// ∀ scope that does not cover the key → refuse ∧ ops=∅
 #[test]
 fn prop_scope_deny_never_effects() {

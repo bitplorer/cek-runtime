@@ -17,10 +17,9 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | `cek-contract` | Types, Baseline Ops, digests, vector load/check, law_generation |
 | `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, project, lineage, receipts, reverse, **store traits + file backends** |
 | `cek-peer-kernel` | profile, apply, receipt — **no mint** |
-| `cek-ops-baseline` | In-memory kv |
-| `cek-ops-ui` | **Extension world** (`extensions/cek-ops-ui`) — apply `ui.dom.*` |
-| `cek-ext-ui` | **Extension pack** (`UiPack`, optional `DomTree`) |
-| `cek-cli` | Demo + vector runner (registers `UiPack`) |
+| `cek-ops-baseline` | Peer **driver**: in-memory kv |
+| `cek-ops-ui` | Peer **driver**: UI/DOM world (`apply_op`) |
+| `cek-cli` | Demo + vector runner |
 
 TypeScript apply-only Peer: `ports/cek-peer-ts` (no mint).  
 WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm` (no mint; same kernel).
@@ -108,8 +107,7 @@ crates/cek-contract/       # types, actions, Baseline, ui, vectors
 crates/cek-host-kernel/    # verify, BoundAsk, project, stores
 crates/cek-peer-kernel/    # apply only — no mint
 crates/cek-ops-baseline/
-extensions/cek-ext-ui/
-extensions/cek-ops-ui/
+crates/cek-ops-ui/         # Peer driver (UI world)
 crates/cek-cli/
 crates/cek-peer-wasm/      # JSON/WASM apply surface; no mint
 ports/cek-peer-ts/

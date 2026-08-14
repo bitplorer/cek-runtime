@@ -14,5 +14,4 @@ path = "src/main.rs"
 cek-contract = { workspace = true }
 cek-host-kernel = { workspace = true }
 cek-peer-kernel = { workspace = true }
-cek-ext-ui = { workspace = true }
 serde_json = { workspace = true }

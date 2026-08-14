@@ -2,14 +2,11 @@
 
 Law stays in [cek-framework](https://github.com/bitplorer/cek-framework). This file records **runtime** changes only.
 
-## 2026-08-14 — placement consistent with law
+## 2026-08-14 — topology matches official meta
 
-### Changed
+Dropped the invented `extensions/` layer (it was a third home). Official map:
 
-- `cek-ops-ui` lives under `extensions/` (Peer world), next to `cek-ext-ui` (Host pack).
-- Peer kernel apply of `ui.dom.*` is delegated to `cek_ops_ui::apply_op`. Baseline Peer has no UI store.
-- [LAYERS.md](LAYERS.md) is the placement map. Dual-speak glossary row restored.
-
-### Unchanged
-
-- Contract may still *name* UI Op shapes for vectors. Kernel still does not project `ui.morph`.
+- **Host kernel** projects Actions (`ui.morph` included)
+- **Peer kernel** applies Ops; **no mint**
+- **`cek-ops-ui`** is a Peer **driver** (outer), not a pack kernel
+- [TOPOLOGY.md](TOPOLOGY.md) matches cek-runtime / cek-framework
