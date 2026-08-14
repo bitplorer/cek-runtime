@@ -11,11 +11,11 @@ if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|mint_root' crates/cek-peer-kerne
   fail "Peer must not expose mint"
 fi
 ok "Peer has no mint"
-if [ -d ports/cek-peer-ts ]; then
-  if grep -REn 'function mint|export function mint|mint_root' ports/cek-peer-ts >/dev/null; then
-    fail "TS Peer must not expose mint"
+if [ -d ports/cek-peer-js ]; then
+  if grep -REn 'function mint|export function mint|mint_root' ports/cek-peer-js >/dev/null; then
+    fail "JS Peer must not expose mint"
   fi
-  ok "TS Peer has no mint"
+  ok "JS Peer has no mint"
 fi
 if [ -d crates/cek-peer-wasm ]; then
   if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|Host::mint|mint_root' crates/cek-peer-wasm >/dev/null; then

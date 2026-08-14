@@ -21,8 +21,10 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | `cek-ops-ui` | Peer **driver**: UI/DOM world (`apply_op`) |
 | `cek-cli` | Demo + vector runner |
 
-TypeScript apply-only Peer: `ports/cek-peer-ts` (no mint).  
-WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm` (no mint; same kernel).
+TypeScript apply-only Peer: `ports/cek-peer-ts`.  
+JavaScript Peer **runtime** (apply + DomTree): `ports/cek-peer-js`.  
+Python Host **runtime**: `ports/cek-host-py`.  
+WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm`.
 
 ## Pipeline (Host)
 

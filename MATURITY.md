@@ -7,7 +7,7 @@
 | A Core frozen | BoundAsk, refuse, once, Baseline, vectors | **Met** |
 | B Interop mature | Digests, sealed-args, receipts, CI, property tables | **Met** |
 | C Domain-generic | Domain Op packs without law change | **`ui.*` pack + snapshot reverse + scopes** |
-| D Institutional | Multi-port, dual-speak windows | **TS + WASM Peers; law-generation window** |
+| D Institutional | Multi-port, dual-speak windows | **TS + JS + WASM Peers; Python Host; law-generation window** |
 
 ## Invariants (must not regress)
 

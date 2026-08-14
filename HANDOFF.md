@@ -19,11 +19,14 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-Expected: **128** unit/property tests; **57** vectors PASS.
+python3 ports/cek-host-py/run_vectors.py crates/cek-contract/vectors
+node ports/cek-peer-js/run-vectors.mjs crates/cek-contract/vectors
+
+Expected: **131** Rust tests; **57** vectors; Python Host 48 pass (9 skip); JS Peer apply-only green.
 
 ## Current maturity
 
-Official topology: Host kernel / Peer kernel / Peer drivers. See [TOPOLOGY.md](TOPOLOGY.md).
+Official topology + ports: Python Host runtime, JS Peer runtime, DOM tree driver.
 
 ## Done this session
 

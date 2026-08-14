@@ -37,7 +37,15 @@ L7 app
 ```
 
 `ui.morph` is a **Host action** (kernel project).  
-`ui.dom.morph` is an **Op** the **UI driver** applies.  
-Those are not two extra products — they are Host kernel + Peer driver.
+`ui.dom.morph` is an **Op** the **UI/DOM driver** applies.
+
+## Ports (same roles, other languages)
+
+| Port | Role |
+|------|------|
+| `ports/cek-host-py` | Host **runtime** (verify, project, once) |
+| `ports/cek-peer-js` | Peer **runtime** (apply + DomTree). No mint |
+| `ports/cek-peer-ts` | Peer apply-only (same contract) |
+| `ports/cek-peer-wasm` | Peer apply-only |
 
 HMAC / Ed25519 / scopes / dual-speak stay in the **Host kernel** (verify). They are not drivers.
