@@ -1,22 +1,69 @@
 # CEK Runtime — Implementation Framework
 
-**Not law.** Complements the conceptual charter at [bitplorer/cek-framework](https://github.com/bitplorer/cek-framework).
+**Not law.** How to **build** CEK Host and Peer kernels.  
+Law lives in [cek-framework](https://github.com/bitplorer/cek-framework).
 
-This repository documents **how to implement** CEK Host and Peer kernels, the interop contract, pipelines, profiles, isolation, and CI — without amending META/CORE.
+---
 
-| Layer | Lives in |
-|-------|----------|
-| Law (axioms, vocabulary, roles) | [cek-framework](https://github.com/bitplorer/cek-framework) |
-| Runtime design + reference kernels | **this repo** |
+## For developers — what is this?
 
-## Canonical target (locked for this framework)
+**cek-runtime** is the implementation playbook for CEK: contract shapes, Host/Peer design, pipelines, isolation, and CI — aimed at a **Rust** reference pair.
+
+| Piece | Role |
+|-------|------|
+| **Contract** | Schemas + conformance vectors (the only interop product) |
+| **Host kernel** | `cek-host-kernel-rust` — mint, verify, submit, lineage, reverse |
+| **Peer kernel** | `cek-peer-kernel-rust` — apply Ops only; no mint |
+| **Baseline Ops** | Classic data-only effects every Peer can aim at |
+
+**This repo is design + gates today.** Runnable crates and JSON vectors are the next engineering step; the layout and rules are fixed so that work cannot invent ambient authority.
+
+### What it does for you
+
+1. Turns CEK law into a **submit machine** (verify → once/idempotency → dispatch → lineage → project → Result).  
+2. Keeps **Peer pure** (apply + optional receipt).  
+3. Forces **reverse** before rich domain features.  
+4. Makes **vectors** the merge gate (red test = not CEK-aligned).
+
+### Flow (implementation view)
+
+```text
+Your app holds a Cap
+  → calls Host.submit(Intent, Cap)
+  → Host refuses or returns Result{Ops}
+  → Peer.apply(Result)
+  → optional receipt back to Host
+  → Activity end → Host reverse
+```
+
+### When is the runtime useful?
+
+Use this when you are:
+
+- implementing a **CEK-aligned** authority service (Host) and apply surface (Peer)  
+- wiring **agents, UIs, or devices** that must only mutate via Ops  
+- needing **fail-closed** Cap checks, once-consume, and undo  
+- wanting a **stable interop** story (Baseline + profiles) across versions  
+- reviewing a PR for “did we skip Cap / mint on Peer / silent undo?”
+
+### When to use the other repo instead
+
+| Need | Go here |
+|------|--------|
+| What the words mean / axioms / kill criteria | [cek-framework](https://github.com/bitplorer/cek-framework) |
+| How to structure Host/Peer code, CI, crates | **this repo** |
+| Your product handlers (L7) | Your app — call Host; don’t fork the law |
+
+### Canonical target
 
 | Kernel | Language |
 |--------|----------|
-| Host | Rust only (`cek-host-kernel-rust`) |
-| Peer | Rust only (`cek-peer-kernel-rust`) |
+| Host | Rust only |
+| Peer | Rust only |
 
-Python/TS/etc. may be **L7 callers** or later Peer *ports*. They are not Host kernels in this framework.
+Other languages may be **callers** (hold Cap, call submit) or later Peer **ports**. They are not Host kernels in this framework.
+
+---
 
 ## One line
 
@@ -34,7 +81,7 @@ Start here: [diagrams/README.md](diagrams/README.md)
 | Reverse | [05-reverse.mmd](diagrams/05-reverse.mmd) |
 | Contract + CI | [06](diagrams/06-contract-product.mmd) · [11](diagrams/11-ci-gate.mmd) |
 
-Law-level diagrams: [cek-framework/diagrams](https://github.com/bitplorer/cek-framework/tree/main/diagrams).
+Plain-text summaries live in section READMEs. Law diagrams: [cek-framework/diagrams](https://github.com/bitplorer/cek-framework/tree/main/diagrams).
 
 ## Map
 
