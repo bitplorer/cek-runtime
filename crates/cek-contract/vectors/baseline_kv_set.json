@@ -1,0 +1,25 @@
+{
+  "id": "baseline-kv-set",
+  "family": "baseline_apply",
+  "description": "Valid Cap projects kv.set Baseline Op",
+  "now": 1000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "greeting", "value": "hello" },
+    "cap": {
+      "id": "cap-3",
+      "action": "kv.write",
+      "once": false
+    },
+    "activity_id": "act-1"
+  },
+  "expect_kind": "ok",
+  "expect_ops_empty": false,
+  "expect_ops": [
+    {
+      "ns": "kv",
+      "name": "set",
+      "payload": { "key": "greeting", "value": "hello" }
+    }
+  ]
+}
