@@ -53,6 +53,46 @@ verify → once → truth → dispatch → lineage → project → Result
 | **Receipt** | What Peer landed; guides reverse |
 | **Baseline Ops** | Forever-interop data effects |
 
+<details>
+<summary>ASCII overview (wide screens)</summary>
+
+```text
+┌────────────────────────── cek-runtime ──────────────────────────┐
+│  IMPLEMENTATION (how to build; not new law)                     │
+│                                                                 │
+│  cek-contract     schemas + vectors = sole interop product      │
+│  Host runtime   ⊃ Host kernel   (mint, verify, lineage, …)      │
+│  Peer runtime   ⊃ Peer kernel   (apply Ops only; no mint)       │
+│  Wire / in-proc   contract messages — no third kernel in middle │
+│                                                                 │
+│  submit: verify → once → truth → dispatch → lineage → project   │
+│  reverse: on Activity end / Cap revoke (not when apply finishes)│
+│  CI: red vectors or Peer mint symbol → block merge              │
+└─────────────────────────────────────────────────────────────────┘
+         │ law                                    │ this playbook
+         ▼                                        ▼
+   cek-framework                            Host/Peer crates
+```
+
+```text
+┌──────────────────────── Host runtime ────────────────────────┐
+│  transport · once-store · lineage DB · Cap keys · clock        │
+│  ┌────────────────── Host kernel ──────────────────────────┐ │
+│  │ mint · verify · once · dispatch · lineage · project ·    │ │
+│  │ reverse · Result                                         │ │
+│  └──────────────────────────────────────────────────────────┘ │
+└───────────────────────────────┬──────────────────────────────┘
+                                │ wire: Intent+Cap / Result / receipt
+┌───────────────────────────────▼──────────────────────────────┐
+│  transport · apply drivers (DOM, kv, device, …)               │
+│  ┌────────────────── Peer kernel ──────────────────────────┐ │
+│  │ profile · apply Ops · optional receipt · NO mint         │ │
+│  └──────────────────────────────────────────────────────────┘ │
+└──────────────────────── Peer runtime ────────────────────────┘
+```
+
+</details>
+
 [TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md) · [law CONCEPTS](https://github.com/bitplorer/cek-framework/blob/main/CONCEPTS.md)
 
 ---
