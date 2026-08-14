@@ -110,13 +110,42 @@ fn run_demo() {
         "   kv[greeting] after reverse={:?}",
         peer.kv_get("greeting")
     );
+
+    // 5) ui.morph + snapshot reverse
+    let peer_ui = Peer::with_ui();
+    let cap_ui = host.mint("cap-ui", "ui.morph", false, None);
+    let r = host.submit(Intent {
+        action: "ui.morph".into(),
+        args: {
+            let mut a = BTreeMap::new();
+            a.insert("target".into(), json!("hdr"));
+            a.insert("patch".into(), json!({"t": "hello"}));
+            a.insert("snapshot".into(), json!({"t": ""}));
+            a
+        },
+        cap: cap_ui,
+        trace: None,
+        idempotency_key: None,
+        activity_id: Some("act-ui".into()),
+    });
+    println!("\n5) ui.morph → {:?} ops={}", r.kind, r.ops[0].fq());
+    let rec = peer_ui.apply(&r).unwrap();
+    host.report_receipt("act-ui", &rec).expect("ui receipt");
+    println!("   ui[hdr]={:?}", peer_ui.ui_get("hdr"));
+    let rev = host.end_activity("act-ui").expect("ui reverse");
+    let _ = peer_ui.apply(&ResultMsg::ok(rev.ops));
+    println!("   ui[hdr] after restore={:?}", peer_ui.ui_get("hdr"));
+
     println!("\n=== demo ok ===");
 }
 
 fn make_peer(case: &VectorCase) -> Peer {
-    match case.peer_unknown_policy.as_deref() {
-        Some("fail_batch") => Peer::with_policy(UnknownOpPolicy::FailBatch),
-        _ => Peer::with_policy(UnknownOpPolicy::Skip),
+    match case.peer_profile.as_deref() {
+        Some("ui") => Peer::with_ui(),
+        _ => match case.peer_unknown_policy.as_deref() {
+            Some("fail_batch") => Peer::with_policy(UnknownOpPolicy::FailBatch),
+            _ => Peer::with_policy(UnknownOpPolicy::Skip),
+        },
     }
 }
 
@@ -185,6 +214,18 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
                 }
             } else if got.as_ref() != Some(v) {
                 return Err(format!("peer kv[{k}] want {v} got {got:?}"));
+            }
+        }
+    }
+    if let Some(ref expect_ui) = case.expect_peer_ui {
+        for (k, v) in expect_ui {
+            let got = peer.ui_get(k);
+            if v.is_null() {
+                if got.is_some() {
+                    return Err(format!("peer ui[{k}] should be absent, got {got:?}"));
+                }
+            } else if got.as_ref() != Some(v) {
+                return Err(format!("peer ui[{k}] want {v} got {got:?}"));
             }
         }
     }

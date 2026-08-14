@@ -33,6 +33,7 @@ mod host;
 mod idem;
 mod lineage;
 mod once;
+mod scope;
 mod store;
 
 pub use bound::*;
@@ -42,6 +43,7 @@ pub use host::*;
 pub use idem::*;
 pub use lineage::*;
 pub use once::*;
+pub use scope::{can_attenuate, check_scopes, resource_of, scope_allows};
 pub use store::*;
 
 #[cfg(test)]

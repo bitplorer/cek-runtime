@@ -1,0 +1,15 @@
+{
+  "id": "ui-morph-baseline-lower",
+  "family": "baseline_lowering",
+  "description": "ui.dom.morph lowers to kv.set ui:{target} for Baseline Peers",
+  "now": 1000,
+  "intent": {
+    "action": "ui.morph",
+    "args": { "target": "hdr", "patch": { "t": "new" } },
+    "cap": { "id": "cap-ui-low", "action": "ui.morph", "once": false }
+  },
+  "expect_kind": "ok",
+  "expect_lowered_ops": [
+    { "ns": "kv", "name": "set", "payload": { "key": "ui:hdr", "value": { "t": "new" } } }
+  ]
+}

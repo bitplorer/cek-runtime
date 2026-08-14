@@ -7,7 +7,8 @@ cargo test --workspace
 cargo run -p cek-cli -- demo
 cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 ./scripts/invariants.sh
-./scripts/coverage.sh
+node --experimental-strip-types --no-warnings \
+  ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-31 CORE vectors. 87 unit/property tests. Host stores are traits (`OnceBackend` / `IdemBackend` / `LineageBackend`) with in-memory and JSON-file backends.
+41 CORE vectors. 103 unit/property tests. Domain pack `ui.*` with snapshot reverse. Host scopes cannot widen. TS Peer is apply-only.

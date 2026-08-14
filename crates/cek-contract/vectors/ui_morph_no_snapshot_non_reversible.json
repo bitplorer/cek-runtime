@@ -1,0 +1,15 @@
+{
+  "id": "ui-morph-no-snapshot-non-reversible",
+  "family": "ui_domain",
+  "description": "ui.morph without snapshot is marked non-reversible (honest)",
+  "now": 1000,
+  "intent": {
+    "action": "ui.morph",
+    "args": { "target": "hdr", "patch": { "t": 1 } },
+    "cap": { "id": "cap-ui-nr", "action": "ui.morph", "once": false },
+    "activity_id": "act-ui-nr"
+  },
+  "expect_kind": "ok",
+  "end_activity": "act-ui-nr",
+  "expect_reverse_ops": []
+}

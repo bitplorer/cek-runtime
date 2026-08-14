@@ -1,0 +1,14 @@
+{
+  "id": "ui-morph-baseline-peer-skips",
+  "family": "unknown_ops",
+  "description": "Baseline Peer skips ui.dom.morph; no crash, no UI write",
+  "now": 1000,
+  "intent": {
+    "action": "ui.morph",
+    "args": { "target": "hdr", "patch": { "t": 1 } },
+    "cap": { "id": "cap-ui-skip", "action": "ui.morph", "once": false }
+  },
+  "expect_kind": "ok",
+  "peer_apply": true,
+  "expect_peer_ui": { "hdr": null }
+}

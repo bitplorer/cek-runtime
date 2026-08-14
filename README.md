@@ -9,8 +9,8 @@
 
 | Status | Detail |
 |--------|--------|
-| **v0.1 code** | Contract, Host (BoundAsk + store traits), Peer (apply-only), Baseline kv, 31 vectors, 87 tests, CLI |
-| Proven | Cap refuse → zero Ops; once commit-after-project; idempotency-before-once; `cek1:` FIPS SHA-256; landed-first reverse; fail-closed stores |
+| **v0.1 code** | Host + Peer + ui.* pack, scopes, 41 vectors, 103 tests, TS apply-only Peer |
+| Proven | Cap refuse → zero Ops; snapshot reverse for ui.morph; scopes cannot widen; Peer no mint (Rust+TS) |
 | Doc | [IMPLEMENTATION.md](IMPLEMENTATION.md) · [INVARIANTS.md](INVARIANTS.md) · [CHANGELOG-IMPL.md](CHANGELOG-IMPL.md) · [HANDOFF.md](HANDOFF.md) |
 
 ```bash

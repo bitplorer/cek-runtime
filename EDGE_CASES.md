@@ -21,7 +21,11 @@
 | Partial apply | Undo wrong set | Reverse prefers **landed** when receipt annotated |
 | Digest stability | Cache poison | `cek1:` SHA-256 canonical JSON |
 | `FailClosed::default()` vs serde | `once_store_down` false by derive | Manual `Default` matches serde (`true`) |
-| Durable reopen | Lost consume / lineage | File backends persist JSON; reopen sees consumed + landed |
+| Scope deny | Extra rights | Refuse, zero Ops |
+| Attenuate widen | Derived Cap stronger than parent | `Host::attenuate` errors |
+| `ui.morph` with snapshot | Undo DOM | Inverse `ui.dom.restore` from Op payload |
+| `ui.morph` without snapshot | Fake undo | `NonReversible` |
+| Baseline Peer + `ui.dom.*` | Crash / mutate | Skip (unknown); lowering is optional `kv.set` |
 
 ## Open / deferred
 
@@ -29,7 +33,5 @@
 |------|--------|
 | Concurrent once race under multi-thread | Mutex serializes; commit-after-project still races across hosts — multi-Host policy later |
 | Multi-process file lock | One `File*Store` instance per directory; flock/SQL later |
+| Snapshot reverse for delete | Needs prior value store (`kv.delete` still non-reversible) |
 | Cap crypto forge | Deferred (signatures) |
-| Clock skew | Host clock is authority; Peer does not check expiry |
-| Snapshot reverse for delete | Needs prior value store (`ui.*` / snapshot class) |
-| Scope attenuation | Cap.scopes stored; not yet enforced |

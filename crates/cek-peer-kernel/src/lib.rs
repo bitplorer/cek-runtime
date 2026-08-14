@@ -6,23 +6,25 @@
 //!
 //! - Apply is ordered; unknown Ops follow profile policy.
 //! - Receipts report landed vs failed — never authority.
-//! - Drivers live in `cek-ops-baseline` (and future domain crates).
+//! - Drivers live in `cek-ops-baseline` and `cek-ops-ui`.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
 use cek_contract::{
-    baseline, Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, UnknownOpPolicy,
+    baseline, ui, Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, UnknownOpPolicy,
     LAW_GENERATION,
 };
 use cek_ops_baseline::KvStore;
+use cek_ops_ui::UiStore;
 use std::sync::Mutex;
 
-/// Peer kernel with in-memory Baseline drivers.
+/// Peer kernel with in-memory Baseline (and optional UI) drivers.
 pub struct Peer {
     profile: Profile,
     kv: Mutex<KvStore>,
     log: Mutex<Vec<String>>,
+    ui: Mutex<UiStore>,
 }
 
 impl Default for Peer {
@@ -32,7 +34,7 @@ impl Default for Peer {
 }
 
 impl Peer {
-    /// Baseline profile Peer (unknown Ops: skip).
+    /// Baseline profile Peer (unknown Ops: skip). No UI apply-set.
     pub fn baseline() -> Self {
         Self::with_policy(UnknownOpPolicy::Skip)
     }
@@ -50,6 +52,26 @@ impl Peer {
             },
             kv: Mutex::new(KvStore::new()),
             log: Mutex::new(Vec::new()),
+            ui: Mutex::new(UiStore::new()),
+        }
+    }
+
+    /// Baseline + `ui.dom.*` apply-set (Stage C domain pack).
+    pub fn with_ui() -> Self {
+        let mut apply: Vec<String> = baseline::BASELINE_OPS
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect();
+        apply.extend(ui::UI_OPS.iter().map(|s| (*s).to_string()));
+        Self {
+            profile: Profile {
+                name: "ui".into(),
+                apply_set: apply,
+                unknown_op_policy: UnknownOpPolicy::Skip,
+            },
+            kv: Mutex::new(KvStore::new()),
+            log: Mutex::new(Vec::new()),
+            ui: Mutex::new(UiStore::new()),
         }
     }
 
@@ -69,7 +91,6 @@ impl Peer {
 
     /// Apply Result Ops in order. Authority refusals are no-ops.
     pub fn apply(&self, result: &ResultMsg) -> Option<Receipt> {
-        // Refuse and dispatch_error carry no intended effects in this reference.
         if matches!(
             result.kind,
             ResultKind::AuthorityRefusal | ResultKind::DispatchError
@@ -104,7 +125,6 @@ impl Peer {
                 Ok(()) => landed.push(op.clone()),
                 Err(()) => {
                     failed.push(op.clone());
-                    // partial apply: continue; reverse uses landed set
                 }
             }
         }
@@ -142,6 +162,26 @@ impl Peer {
                 self.log.lock().map_err(|_| ())?.push(msg.to_string());
                 Ok(())
             }
+            ("ui.dom", "morph") => {
+                let target = op
+                    .payload
+                    .get("target")
+                    .and_then(|v| v.as_str())
+                    .ok_or(())?;
+                let patch = op.payload.get("patch").cloned().ok_or(())?;
+                self.ui.lock().map_err(|_| ())?.morph(target, patch);
+                Ok(())
+            }
+            ("ui.dom", "restore") => {
+                let target = op
+                    .payload
+                    .get("target")
+                    .and_then(|v| v.as_str())
+                    .ok_or(())?;
+                let snapshot = op.payload.get("snapshot").cloned().ok_or(())?;
+                self.ui.lock().map_err(|_| ())?.restore(target, snapshot);
+                Ok(())
+            }
             _ => Err(()),
         }
     }
@@ -154,6 +194,11 @@ impl Peer {
     /// Log lines for tests/demo.
     pub fn log_lines(&self) -> Vec<String> {
         self.log.lock().map(|g| g.clone()).unwrap_or_default()
+    }
+
+    /// UI target for tests/demo.
+    pub fn ui_get(&self, target: &str) -> Option<serde_json::Value> {
+        self.ui.lock().ok()?.get(target)
     }
 }
 
@@ -184,7 +229,7 @@ mod tests {
         let peer = Peer::with_policy(UnknownOpPolicy::Skip);
         let result = ResultMsg::ok(vec![
             Op {
-                ns: "ui".into(),
+                ns: "ui.dom".into(),
                 name: "morph".into(),
                 payload: serde_json::json!({}),
             },
@@ -201,7 +246,7 @@ mod tests {
         let peer = Peer::with_policy(UnknownOpPolicy::FailBatch);
         let result = ResultMsg::ok(vec![
             Op {
-                ns: "ui".into(),
+                ns: "ui.dom".into(),
                 name: "morph".into(),
                 payload: serde_json::json!({}),
             },
@@ -266,5 +311,32 @@ mod tests {
             let _ = peer.apply(&ResultMsg::dispatch_error(msg));
         }
         assert_eq!(peer.kv_get("seed"), Some(serde_json::json!(1)));
+    }
+
+    #[test]
+    fn ui_morph_and_restore() {
+        let peer = Peer::with_ui();
+        assert!(peer.profile().apply_set.iter().any(|s| s == "ui.dom.morph"));
+        let morph = ui::ui_morph(
+            "hdr",
+            serde_json::json!({"t": "new"}),
+            Some(serde_json::json!({"t": "old"})),
+        );
+        let rec = peer.apply(&ResultMsg::ok(vec![morph.clone()])).unwrap();
+        assert_eq!(rec.landed.len(), 1);
+        assert_eq!(peer.ui_get("hdr"), Some(serde_json::json!({"t": "new"})));
+        let restore = ui::inverse_ui(&morph).unwrap();
+        let rec = peer.apply(&ResultMsg::ok(vec![restore])).unwrap();
+        assert_eq!(rec.landed.len(), 1);
+        assert_eq!(peer.ui_get("hdr"), Some(serde_json::json!({"t": "old"})));
+    }
+
+    #[test]
+    fn baseline_peer_skips_ui_morph() {
+        let peer = Peer::baseline();
+        let morph = ui::ui_morph("hdr", serde_json::json!({"t": 1}), None);
+        let rec = peer.apply(&ResultMsg::ok(vec![morph])).unwrap();
+        assert_eq!(rec.failed.len(), 1);
+        assert!(peer.ui_get("hdr").is_none());
     }
 }

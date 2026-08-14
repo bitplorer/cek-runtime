@@ -6,9 +6,15 @@ cd "$(dirname "$0")/.."
 fail() { echo "FAIL: $*"; exit 1; }
 ok() { echo "ok  $*"; }
 
-# 1. Peer must not mint.
+# 1. Peer must not mint (Rust + TS port).
 if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|mint_root' crates/cek-peer-kernel >/dev/null; then
   fail "Peer must not expose mint"
+fi
+if [ -d ports/cek-peer-ts ]; then
+  if grep -REn 'function mint|export function mint|mint_root' ports/cek-peer-ts >/dev/null; then
+    fail "TS Peer must not expose mint"
+  fi
+  ok "TS Peer has no mint"
 fi
 ok "Peer has no mint"
 

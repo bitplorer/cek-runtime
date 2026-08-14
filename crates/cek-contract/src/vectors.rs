@@ -70,6 +70,15 @@ pub struct VectorCase {
     /// After the checked submit, whether `intent.cap.id` is consumed.
     #[serde(default)]
     pub expect_once_consumed: Option<bool>,
+    /// Peer profile: `baseline` (default) or `ui`.
+    #[serde(default)]
+    pub peer_profile: Option<String>,
+    /// Expected Peer UI targets after apply. JSON `null` means absent.
+    #[serde(default)]
+    pub expect_peer_ui: Option<BTreeMap<String, Value>>,
+    /// Expected Baseline-lowered Ops of the Host Result (`ui.*` → `kv.set`).
+    #[serde(default)]
+    pub expect_lowered_ops: Option<Vec<Op>>,
 }
 
 /// Load a single vector JSON file.
@@ -134,6 +143,19 @@ pub fn check_result(case: &VectorCase, result: &ResultMsg) -> ContractResult<()>
             "case {}: authority_refusal carried ops",
             case.id
         )));
+    }
+    if let Some(ref expected) = case.expect_lowered_ops {
+        let got: Vec<Op> = result
+            .ops
+            .iter()
+            .filter_map(crate::lower_to_baseline)
+            .collect();
+        if &got != expected {
+            return Err(ContractError::VectorInvalid(format!(
+                "case {}: lowered ops mismatch",
+                case.id
+            )));
+        }
     }
     Ok(())
 }

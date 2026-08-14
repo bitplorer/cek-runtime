@@ -1,13 +1,13 @@
 # Maturity model — CEK runtime reference
 
-## Status: Stage B (interop-hardening) toward Stage C
+## Status: Stage C (domain-generic) underway
 
 | Stage | Meaning | This tree |
 |-------|---------|-----------|
 | A Core frozen | BoundAsk, refuse, once, Baseline, vectors | **Met** |
-| B Interop mature | Digests, sealed-args, receipts, CI, property tables | **Met in reference** |
-| C Domain-generic | Domain Op packs without law change | Baseline only; store traits ready for packs |
-| D Institutional | Multi-port, dual-speak windows | Not yet |
+| B Interop mature | Digests, sealed-args, receipts, CI, property tables | **Met** |
+| C Domain-generic | Domain Op packs without law change | **`ui.*` pack + snapshot reverse + scopes** |
+| D Institutional | Multi-port, dual-speak windows | TS apply-only Peer started |
 
 ## Invariants (must not regress)
 
@@ -33,19 +33,15 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Receipt annotation  
 - [x] Landed-first reverse preference  
 - [x] Reverse classes (Inverse / Compensation / NonReversible)  
-- [x] Executable vectors (31)  
+- [x] Executable vectors (41)  
 - [x] Unknown-meta ignored on the wire  
-- [x] Peer no-mint (CI + `invariants.sh`)  
-- [x] CLI demo + vector runner  
-- [x] HARDENING.md / INVARIANTS.md  
-- [x] GitHub Actions workflow  
-- [x] Durable store traits + file backends  
-- [x] Fail-closed store-down + concurrent once  
-- [x] Property tables (no external proptest)  
-- [ ] Second Peer language port  
+- [x] Peer no-mint (CI + `invariants.sh`, Rust + TS)  
+- [x] Domain `ui.*` with snapshot reverse  
+- [x] Scope attenuation (Host policy; no widen)  
+- [x] Second Peer language port (TS apply-only)  
 - [ ] Cap cryptographic signatures  
-- [ ] Domain `ui.*` with snapshots  
-- [ ] Scope attenuation  
+- [ ] WASM Peer port  
+- [ ] Snapshot reverse for `kv.delete` prior value  
 
 ## Consistency glossary (code ↔ law)
 

@@ -1,0 +1,13 @@
+{
+  "id": "ui-empty-target",
+  "family": "ui_domain",
+  "description": "ui.morph with empty target is a dispatch_error",
+  "now": 1000,
+  "intent": {
+    "action": "ui.morph",
+    "args": { "target": "", "patch": { "t": 1 } },
+    "cap": { "id": "cap-ui-et", "action": "ui.morph", "once": false }
+  },
+  "expect_kind": "dispatch_error",
+  "expect_ops_empty": true
+}

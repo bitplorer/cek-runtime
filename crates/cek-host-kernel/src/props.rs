@@ -429,3 +429,73 @@ impl PipeCap for Intent {
         self
     }
 }
+
+/// ∀ ui.morph with snapshot → reverse is ui.dom.restore of that snapshot
+#[test]
+fn prop_ui_snapshot_reverse() {
+    let host = Host::with_clock(1_000);
+    for target in keys() {
+        let cap = host.mint(format!("ui-{target}"), "ui.morph", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("target".into(), json!(target));
+        args.insert("patch".into(), json!({"v": 2}));
+        args.insert("snapshot".into(), json!({"v": 1}));
+        let aid = format!("act-ui-{target}");
+        let r = host.submit(Intent {
+            action: "ui.morph".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some(aid.clone()),
+        });
+        assert!(matches!(r.kind, ResultKind::Ok), "{target}");
+        assert_eq!(r.ops[0].fq(), "ui.dom.morph");
+        let rev = host.end_activity(&aid).unwrap();
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "ui.dom.restore");
+        assert_eq!(
+            rev.ops[0].payload.get("target").and_then(|v| v.as_str()),
+            Some(target)
+        );
+    }
+}
+
+/// ∀ scope that does not cover the key → refuse ∧ ops=∅
+#[test]
+fn prop_scope_deny_never_effects() {
+    let host = Host::with_clock(1_000);
+    for key in keys() {
+        let mut cap = host.mint(format!("sc-{key}"), "kv.write", false, None);
+        cap.scopes = vec!["kv:__none__".into()];
+        let mut args = BTreeMap::new();
+        args.insert("key".into(), json!(key));
+        args.insert("value".into(), json!(1));
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+}
+
+/// Attenuation never widens a non-empty parent.
+#[test]
+fn prop_attenuate_no_widen() {
+    let host = Host::with_clock(1_000);
+    for key in keys() {
+        let mut parent = host.mint(format!("p-{key}"), "kv.write", false, None);
+        parent.scopes = vec![format!("kv:{key}")];
+        assert!(host
+            .attenuate(&parent, format!("ok-{key}"), vec![format!("kv:{key}")])
+            .is_ok());
+        assert!(host
+            .attenuate(&parent, format!("bad-{key}"), vec!["kv:__other__".into()])
+            .is_err());
+    }
+}

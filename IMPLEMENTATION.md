@@ -18,7 +18,10 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, project, lineage, receipts, reverse, **store traits + file backends** |
 | `cek-peer-kernel` | profile, apply, receipt — **no mint** |
 | `cek-ops-baseline` | In-memory kv |
+| `cek-ops-ui` | In-memory UI targets (`morph` / `restore`) |
 | `cek-cli` | Demo + vector runner |
+
+TypeScript apply-only Peer: `ports/cek-peer-ts` (no mint).
 
 ## Pipeline (Host)
 
@@ -27,6 +30,7 @@ Intent+Cap
   → action match
   → expiry
   → sealed-args bind (if present)
+  → scopes (non-empty allow-list; empty = unrestricted)
   → idempotency lookup (before once; replay or conflict)
   → once ensure_available
   → BoundAsk
@@ -74,6 +78,9 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 9. Commit after Activity ended → dispatch_error (no ghost cause)  
 10. Peer has no mint API  
 
+11. Scope deny → refuse, zero Ops; attenuate cannot widen  
+12. `ui.morph` with snapshot → reverse `ui.dom.restore`; without → non_reversible  
+
 See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 
 ## Layout
@@ -90,8 +97,8 @@ scripts/coverage.sh
 crates/cek-contract/
 crates/cek-host-kernel/   # store.rs + durable.rs + props.rs + fail_closed.rs
 crates/cek-peer-kernel/
-crates/cek-ops-baseline/
-crates/cek-cli/
+crates/cek-ops-ui/
+ports/cek-peer-ts/         # apply-only; no mint
 ```
 
 ## Edge cases & testing

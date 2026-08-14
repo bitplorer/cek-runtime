@@ -38,6 +38,12 @@ cargo test --workspace --offline
 echo "=== vectors ==="
 cargo run -p cek-cli --quiet -- vectors crates/cek-contract/vectors
 
+if command -v node >/dev/null 2>&1; then
+  echo "=== ts peer ==="
+  node --experimental-strip-types --no-warnings \
+    ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
+fi
+
 echo "=== invariants ==="
 ./scripts/invariants.sh
 

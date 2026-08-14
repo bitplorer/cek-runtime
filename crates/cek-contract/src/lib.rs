@@ -21,12 +21,14 @@ pub mod baseline;
 pub mod digest;
 mod error;
 pub mod types;
+pub mod ui;
 mod vectors;
 
 pub use baseline::*;
 pub use digest::*;
 pub use error::*;
 pub use types::*;
+pub use ui::*;
 pub use vectors::*;
 
 /// Law generation this contract claims to speak.

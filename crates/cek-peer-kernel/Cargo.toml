@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 cek-contract = { workspace = true }
 cek-ops-baseline = { workspace = true }
+cek-ops-ui = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

@@ -1,0 +1,14 @@
+{
+  "id": "peer-kv-set-lands",
+  "family": "baseline_apply",
+  "description": "Peer-only: kv.set lands; no Host mint involved",
+  "peer_result": {
+    "kind": "ok",
+    "ops": [
+      { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+    ]
+  },
+  "expect_kind": "ok",
+  "peer_apply": true,
+  "expect_peer_kv": { "a": 1 }
+}

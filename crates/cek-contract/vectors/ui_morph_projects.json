@@ -1,0 +1,27 @@
+{
+  "id": "ui-morph-projects",
+  "family": "ui_domain",
+  "description": "ui.morph projects ui.dom.morph with snapshot on the Op",
+  "now": 1000,
+  "intent": {
+    "action": "ui.morph",
+    "args": {
+      "target": "hdr",
+      "patch": { "t": "new" },
+      "snapshot": { "t": "old" }
+    },
+    "cap": { "id": "cap-ui", "action": "ui.morph", "once": false }
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    {
+      "ns": "ui.dom",
+      "name": "morph",
+      "payload": {
+        "target": "hdr",
+        "patch": { "t": "new" },
+        "snapshot": { "t": "old" }
+      }
+    }
+  ]
+}

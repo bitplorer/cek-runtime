@@ -56,7 +56,8 @@ cargo llvm-cov --workspace --html --output-dir coverage
 | `idempotent_submit` | replay, conflict, once-Cap retry | Idempotent submit |
 | `trace` | shared trace does not grant authority | Trace |
 
-Not yet as vectors: attenuation/scopes, Peer-no-mint (CI + `invariants.sh` grep).
+| `ui_domain` | morph project, snapshot reverse, no-snapshot non-reversible, empty target, Peer lands | Domain pack |
+| `attenuation` | scope allow / deny | Attenuation |
 
 ## Property invariants
 
@@ -74,7 +75,11 @@ Not yet as vectors: attenuation/scopes, Peer-no-mint (CI + `invariants.sh` grep)
 12. ∀ trace → never grants authority  
 13. ∀ once + dispatch miss → Cap not burned  
 14. ∀ once + same idempotency key → retry is cached ok  
-15. SHA-256 matches FIPS known answers  
+15. `ui.morph` + snapshot → restore reverse  
+16. Scope deny → refuse ∧ ops=∅  
+17. Attenuate cannot widen  
+
+Current inventory: **103** `#[test]` + **41** vector fixtures + TS apply-only self-check.
 
 ## Coverage targets
 
@@ -84,9 +89,9 @@ Not yet as vectors: attenuation/scopes, Peer-no-mint (CI + `invariants.sh` grep)
 | cek-contract | ≥ 70% lines |
 | cek-peer-kernel | ≥ 70% lines |
 | cek-ops-baseline | ≥ 70% lines |
-
-Current inventory (this tree): **87** `#[test]` functions + **31** vector fixtures.
+| cek-ops-ui | ≥ 70% lines |
 
 ## CI
 
-`.github/workflows/cek.yml` runs `scripts/invariants.sh`, `cargo test --workspace`, vectors, and `scripts/coverage.sh`.
+`.github/workflows/cek.yml` runs `scripts/invariants.sh`, `cargo test --workspace`, vectors, TS Peer, and `scripts/coverage.sh`.
+

@@ -5,6 +5,7 @@ members = [
     "crates/cek-host-kernel",
     "crates/cek-peer-kernel",
     "crates/cek-ops-baseline",
+    "crates/cek-ops-ui",
     "crates/cek-cli",
 ]
 
@@ -20,6 +21,7 @@ cek-contract = { path = "crates/cek-contract" }
 cek-host-kernel = { path = "crates/cek-host-kernel" }
 cek-peer-kernel = { path = "crates/cek-peer-kernel" }
 cek-ops-baseline = { path = "crates/cek-ops-baseline" }
+cek-ops-ui = { path = "crates/cek-ops-ui" }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 thiserror = "1.0.61"

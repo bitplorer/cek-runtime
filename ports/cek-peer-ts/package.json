@@ -1,0 +1,9 @@
+{
+  "name": "cek-peer-ts",
+  "private": true,
+  "type": "module",
+  "description": "CEK Peer apply-only TypeScript port — no mint",
+  "scripts": {
+    "vectors": "node --experimental-strip-types --no-warnings src/run-vectors.ts"
+  }
+}

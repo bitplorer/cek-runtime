@@ -141,6 +141,35 @@ impl Host {
         cap
     }
 
+    /// Derive a narrower Cap. Widening scopes is refused (fail closed).
+    pub fn attenuate(
+        &self,
+        parent: &Cap,
+        new_id: impl Into<String>,
+        scopes: Vec<String>,
+    ) -> HostResult<Cap> {
+        if !crate::scope::can_attenuate(&parent.scopes, &scopes) {
+            return Err(HostError::Authority(
+                "attenuation would widen scopes".into(),
+            ));
+        }
+        let id = new_id.into();
+        if id.is_empty() {
+            return Err(HostError::Authority("empty Cap id is not allowed".into()));
+        }
+        let mut cap = parent.clone();
+        cap.id = id;
+        cap.scopes = scopes;
+        Ok(cap)
+    }
+
+    /// Lower authorized Ops to Baseline (ui.* → kv.set). Does not change submit.
+    pub fn lower_ops(ops: &[Op]) -> Vec<Op> {
+        ops.iter()
+            .filter_map(cek_contract::lower_to_baseline)
+            .collect()
+    }
+
     /// Full submit pipeline: verify → once → project → lineage → Result+digest.
     ///
     /// Cap refusal returns [`ResultMsg`] with `authority_refusal` and **zero** Ops.
@@ -221,6 +250,7 @@ impl Host {
         if cap.id.is_empty() {
             return Err(HostError::Authority("empty Cap id is not allowed".into()));
         }
+        crate::scope::check_scopes(intent)?;
         Ok(())
     }
 
@@ -414,6 +444,39 @@ fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
                 .ok_or_else(|| "log.append requires string args.message".to_string())?;
             Ok(vec![baseline::log_append(msg)])
         }
+        "ui.morph" => {
+            let target = intent
+                .args
+                .get("target")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "ui.morph requires string args.target".to_string())?;
+            if target.is_empty() {
+                return Err("ui.morph target must be non-empty".into());
+            }
+            let patch = intent
+                .args
+                .get("patch")
+                .cloned()
+                .ok_or_else(|| "ui.morph requires args.patch".to_string())?;
+            let snapshot = intent.args.get("snapshot").cloned();
+            Ok(vec![cek_contract::ui_morph(target, patch, snapshot)])
+        }
+        "ui.restore" => {
+            let target = intent
+                .args
+                .get("target")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "ui.restore requires string args.target".to_string())?;
+            if target.is_empty() {
+                return Err("ui.restore target must be non-empty".into());
+            }
+            let snapshot = intent
+                .args
+                .get("snapshot")
+                .cloned()
+                .ok_or_else(|| "ui.restore requires args.snapshot".to_string())?;
+            Ok(vec![cek_contract::ui_restore(target, snapshot)])
+        }
         other => Err(format!("unknown action: {other}")),
     }
 }
@@ -425,8 +488,10 @@ fn inverse_for(ops: &[Op]) -> Vec<Op> {
             if let Some(key) = op.payload.get("key").and_then(|v| v.as_str()) {
                 inv.push(baseline::kv_delete(key));
             }
+        } else if let Some(ui_inv) = cek_contract::inverse_ui(op) {
+            inv.push(ui_inv);
         }
-        // kv.delete / log.append: non-reversible without snapshot
+        // kv.delete / log.append / restore-without-prior: no inverse
     }
     inv
 }
@@ -855,5 +920,88 @@ mod tests {
         let r = host.submit(intent_write(cap, "a", json!(1)));
         assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
         assert!(r.ops.is_empty());
+    }
+
+    fn intent_morph(cap: Cap, target: &str, patch: Value, snapshot: Option<Value>) -> Intent {
+        let mut args = BTreeMap::new();
+        args.insert("target".into(), json!(target));
+        args.insert("patch".into(), patch);
+        if let Some(s) = snapshot {
+            args.insert("snapshot".into(), s);
+        }
+        Intent {
+            action: "ui.morph".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-ui".into()),
+        }
+    }
+
+    #[test]
+    fn ui_morph_projects_and_restore_reverse() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui", "ui.morph", false, None);
+        let r = host.submit(intent_morph(
+            cap,
+            "hdr",
+            json!({"t": "new"}),
+            Some(json!({"t": "old"})),
+        ));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops.len(), 1);
+        assert_eq!(r.ops[0].fq(), "ui.dom.morph");
+        let lowered = Host::lower_ops(&r.ops);
+        assert_eq!(lowered[0].fq(), "kv.set");
+        let rev = host.end_activity("act-ui").unwrap();
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "ui.dom.restore");
+        assert_eq!(
+            rev.ops[0].payload.get("snapshot"),
+            Some(&json!({"t": "old"}))
+        );
+    }
+
+    #[test]
+    fn ui_morph_without_snapshot_is_non_reversible() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui2", "ui.morph", false, None);
+        let r = host.submit(intent_morph(cap, "hdr", json!({"t": 1}), None));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let rev = host.end_activity("act-ui").unwrap();
+        assert!(rev.ops.is_empty());
+        assert!(!rev.non_reversible.is_empty());
+    }
+
+    #[test]
+    fn scope_denies_wrong_key() {
+        let host = Host::with_clock(1000);
+        let mut cap = host.mint("c-sc", "kv.write", false, None);
+        cap.scopes = vec!["kv:allowed".into()];
+        let r = host.submit(intent_write(cap, "other", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+
+    #[test]
+    fn scope_allows_matching_key() {
+        let host = Host::with_clock(1000);
+        let mut cap = host.mint("c-sc2", "kv.write", false, None);
+        cap.scopes = vec!["kv:greeting".into()];
+        let r = host.submit(intent_write(cap, "greeting", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+    }
+
+    #[test]
+    fn attenuate_narrows_and_refuses_widen() {
+        let host = Host::with_clock(1000);
+        let mut parent = host.mint("p", "kv.write", false, None);
+        parent.scopes = vec!["kv:a".into(), "kv:b".into()];
+        let child = host.attenuate(&parent, "c", vec!["kv:a".into()]).unwrap();
+        assert_eq!(child.scopes, vec!["kv:a".to_string()]);
+        assert!(host.attenuate(&parent, "w", vec!["kv:z".into()]).is_err());
+        assert!(host.attenuate(&parent, "w2", vec![]).is_err());
+        assert!(host.attenuate(&parent, "", vec!["kv:a".into()]).is_err());
     }
 }

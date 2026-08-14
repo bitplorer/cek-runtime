@@ -1,0 +1,11 @@
+[package]
+name = "cek-ops-ui"
+description = "CEK domain ui.* world (in-memory snapshot/morph)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }

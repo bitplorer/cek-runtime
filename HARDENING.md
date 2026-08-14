@@ -9,6 +9,8 @@ This document lists **fail-closed** and **determinism** rules enforced in code.
 | Action match | `intent.action == cap.action` | `authority_refusal`, zero Ops |
 | Expiry | `now >= cap.not_after` | `authority_refusal`, zero Ops |
 | Sealed-args bind | Cap has `sealed_args_bind` | Digest of Intent.args must equal bind; else refuse |
+| Scopes | `cap.scopes` non-empty | Resource must match allow-list; else refuse |
+| Attenuation | `Host::attenuate` | Child scopes must be a narrowing; widen refused |
 | Idempotency | `idempotency_key` set | **Before** once-ensure. Same digest → cached Result; different → refuse |
 | Once available | `cap.once` | Ensure not consumed **before** project |
 | Once commit | after successful project | Mark consumed; dispatch error does **not** burn |
@@ -38,7 +40,8 @@ Vector checker rejects `authority_refusal` with non-empty Ops.
 2. Commit onto an ended Activity is rejected **before** insert.  
 3. Peer receipt → `report_receipt` annotates **landed** Ops.  
 4. `end_activity` prefers inverse of **landed** when annotated; else inverse from commit.  
-5. `NonReversible` / `Compensation` entries are listed; never claimed clean.
+5. `NonReversible` / `Compensation` entries are listed; never claimed clean.  
+6. `ui.dom.morph` reverse is `ui.dom.restore` **only** when `snapshot` is on the Op; otherwise mark non-reversible.
 
 ## Stores
 
@@ -52,8 +55,9 @@ File backends write JSON via temp + rename. They are not a multi-process lock.
 
 ## Peer
 
-- No `mint` / `mint_root`.  
+- No `mint` / `mint_root` (Rust crate **and** `ports/cek-peer-ts`).  
 - Unknown Ops: profile policy (`Skip` or `FailBatch`).  
+- `Peer::with_ui()` adds `ui.dom.morph` / `ui.dom.restore` to apply-set.  
 - Authority refusal Result → no world change.
 
 ## Digests

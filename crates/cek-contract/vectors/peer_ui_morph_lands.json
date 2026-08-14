@@ -1,0 +1,19 @@
+{
+  "id": "peer-ui-morph-lands",
+  "family": "ui_domain",
+  "description": "Peer-only: ui.dom.morph lands on a UI profile Peer",
+  "peer_profile": "ui",
+  "peer_result": {
+    "kind": "ok",
+    "ops": [
+      {
+        "ns": "ui.dom",
+        "name": "morph",
+        "payload": { "target": "hdr", "patch": { "t": "new" }, "snapshot": { "t": "old" } }
+      }
+    ]
+  },
+  "expect_kind": "ok",
+  "peer_apply": true,
+  "expect_peer_ui": { "hdr": { "t": "new" } }
+}
