@@ -31,7 +31,8 @@ Intent+Cap
   → action match
   → expiry
   → sealed-args bind (if present)
-  → scopes (non-empty allow-list; empty = unrestricted)
+  → scopes
+  → subject bind (if Cap.subject set)
   → idempotency lookup (before once; replay or conflict)
   → once ensure_available
   → BoundAsk
@@ -84,6 +85,7 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 14. `kv.delete` with `prior` on the Op → reverse `kv.set`; without → non_reversible  
 15. Host HMAC on → unsigned/forged Cap refuse; Host HMAC off → legacy Caps still work  
 16. Peer never verifies or issues signatures  
+17. `Cap.subject` set → `args.subject` must match; blank bind refuses  
 
 See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 

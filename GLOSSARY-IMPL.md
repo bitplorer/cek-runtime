@@ -15,6 +15,6 @@
 | **Baseline** | Classic Ops every Peer can apply | The UI pack |
 | **Lower** | Project domain Ops to Baseline (`kv.set ui:{target}`) | Change the Cap |
 | **Trace** | Correlation id | Permission |
-| **sig** | Optional Host-policy HMAC on a Cap (`cek1:…`) | Law-level identity; Peer authority |
+| **subject** | Cap bind of who may present; Intent shows `args.subject` | A trace id |
 
 Actions are never applied. Ops are never submitted.

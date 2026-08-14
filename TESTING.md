@@ -44,7 +44,7 @@ cargo llvm-cov --workspace --html --output-dir coverage
 
 | Family | Vectors | CORE/19 row |
 |--------|---------|-------------|
-| `cap_verify` | mismatch, expired, expiry-at-boundary, sealed match/mismatch, empty action, empty cap id, **HMAC ok/missing/tamper** | Cap verify |
+| `cap_verify` | mismatch, expired, sealed, empty id/action, HMAC, **subject bind** | Cap verify |
 | `single_use` | second use, not burned on dispatch error | Single-use |
 | `baseline_apply` | kv.set, apply lands, peer refusal / dispatch_error no-mutate | Baseline apply |
 | `baseline_lowering` | kv.delete, log.append, empty key, unknown action, missing message | Baseline lowering |
@@ -83,7 +83,11 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **120** `#[test]` + **48** vector fixtures + TS/WASM apply-only runners.
+Current inventory: **123** `#[test]` + **51** vector fixtures + TS/WASM apply-only runners.
+
+```bash
+./scripts/llvm-cov.sh   # coverage/summary.txt + coverage/html
+```
 
 ## Coverage targets
 

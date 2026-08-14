@@ -15,7 +15,7 @@ This document lists **fail-closed** and **determinism** rules enforced in code.
 | Once available | `cap.once` | Ensure not consumed **before** project |
 | Once commit | after successful project | Mark consumed; dispatch error does **not** burn |
 | Once second use | already consumed | Refuse (unless idempotent replay already returned) |
-| Cap HMAC | Host constructed with `with_hmac_key` | Missing or invalid `cap.sig` → refuse, zero Ops |
+| Subject bind | `cap.subject` set | `args.subject` must match; blank bind → refuse |
 | Idem store down | lock poison / I/O | Refuse (fail closed) |
 
 ## BoundAsk

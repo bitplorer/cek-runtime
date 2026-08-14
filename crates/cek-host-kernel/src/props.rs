@@ -600,3 +600,27 @@ fn prop_cap_hmac_never_effects_on_bad_sig() {
         assert!(r.ops.is_empty());
     }
 }
+
+/// ∀ Cap.subject set ∧ presenter ≠ bind → refuse ∧ ops=∅
+#[test]
+fn prop_subject_bind_never_effects_on_mismatch() {
+    let host = Host::with_clock(1_000);
+    for k in keys() {
+        let mut cap = host.mint(format!("sub-{k}"), "kv.write", false, None);
+        cap.subject = Some("alice".into());
+        let mut args = BTreeMap::new();
+        args.insert("key".into(), json!(k));
+        args.insert("value".into(), json!(1));
+        args.insert("subject".into(), json!("bob"));
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal), "{k}");
+        assert!(r.ops.is_empty());
+    }
+}

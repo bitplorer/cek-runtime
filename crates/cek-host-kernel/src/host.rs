@@ -281,8 +281,29 @@ impl Host {
             return Err(HostError::Authority("empty Cap id is not allowed".into()));
         }
         crate::scope::check_scopes(intent)?;
+        Self::check_subject(intent)?;
         self.verify_sig(&intent.cap)?;
         Ok(())
+    }
+
+    /// Cap.subject set → Intent.args.subject must match. Blank bind refuses.
+    fn check_subject(intent: &Intent) -> HostResult<()> {
+        match intent.cap.subject.as_deref() {
+            None => Ok(()),
+            Some(s) if s.trim().is_empty() => Err(HostError::Authority(
+                "empty Cap subject is not allowed".into(),
+            )),
+            Some(want) => {
+                let got = intent.args.get("subject").and_then(|v| v.as_str());
+                if got == Some(want) {
+                    Ok(())
+                } else {
+                    Err(HostError::Authority(format!(
+                        "subject bind mismatch: cap `{want}` vs presenter {got:?}"
+                    )))
+                }
+            }
+        }
     }
 
     fn verify_sig(&self, cap: &Cap) -> HostResult<()> {
@@ -1142,5 +1163,36 @@ mod tests {
         let child = host.attenuate(&parent, "c", vec!["kv:a".into()]).unwrap();
         assert_ne!(child.sig, parent.sig);
         assert!(cek_contract::cap_signature_valid(&HMAC_KEY, &child));
+    }
+
+    #[test]
+    fn subject_bind_match_ok_mismatch_refuses() {
+        let host = Host::with_clock(1000);
+        let mut cap = host.mint("c-sub", "kv.write", false, None);
+        cap.subject = Some("alice".into());
+        let mut i = intent_write(cap.clone(), "a", json!(1));
+        i.args.insert("subject".into(), json!("alice"));
+        let r = host.submit(i);
+        assert!(matches!(r.kind, ResultKind::Ok));
+
+        let mut miss = intent_write(cap.clone(), "a", json!(1));
+        miss.args.insert("subject".into(), json!("bob"));
+        let r = host.submit(miss);
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+
+        let r = host.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+
+    #[test]
+    fn empty_cap_subject_refuses() {
+        let host = Host::with_clock(1000);
+        let mut cap = host.mint("c-es", "kv.write", false, None);
+        cap.subject = Some("  ".into());
+        let r = host.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
     }
 }

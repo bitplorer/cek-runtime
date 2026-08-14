@@ -38,3 +38,4 @@
 | `kv.delete` without `prior` | Fake undo | `NonReversible` |
 | Cap HMAC missing / forged | Host has signing key | Refuse, zero Ops |
 | Cap HMAC off | Host has no key | Legacy unsigned Caps still work |
+| Subject mismatch / missing / blank | Wrong presenter | Refuse, zero Ops |

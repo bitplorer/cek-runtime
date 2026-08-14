@@ -2,21 +2,18 @@
 
 Law stays in [cek-framework](https://github.com/bitplorer/cek-framework). This file records **runtime** changes only.
 
-## 2026-08-14 — Cap HMAC (optional Host policy)
+## 2026-08-14 — subject bind + llvm-cov HTML
 
 ### Added
 
-- `Cap.sig` (additive optional). Host `with_hmac_key` mints HMAC-SHA256 (`cek1:`).
-- Verify refuses missing/forged sigs **only** when the Host has a key.
-- Attenuate re-signs. RFC 4231 known answers.
-- Vectors `cap-sig-ok` / `cap-sig-missing` / `cap-sig-tamper` (45 → 48).
+- `Cap.subject` enforced via `args.subject` (Host policy). Mismatch / missing / blank → refuse, zero Ops.
+- `scripts/llvm-cov.sh` → `coverage/summary.txt` + HTML. CI uploads `coverage/`.
+- Vectors `subject-bind-ok` / `subject-bind-mismatch` / `subject-bind-missing` (48 → 51).
 
 ### Unchanged
 
-- Unsigned Hosts accept legacy Caps. Peer does not mint or verify. Law unchanged.
+- Unset `Cap.subject` remains unrestricted. Peer still has no mint.
 
-## 2026-08-14 — WASM apply-only Peer (Stage D)
+## 2026-08-14 — Cap HMAC (optional Host policy)
 
-`cek-peer-wasm` wraps the Rust Peer. No mint.
-
-## 2026-08-14 — kv.delete prior-value reverse
+`Cap.sig` + `Host::with_hmac_key`. Unsigned Hosts accept legacy Caps.

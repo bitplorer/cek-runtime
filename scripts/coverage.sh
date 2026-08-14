@@ -28,8 +28,8 @@ for k in sorted(by):
     print(f"  {k:22} {by[k]:3d}")
 vec = [f for f in os.listdir("crates/cek-contract/vectors") if f.endswith(".json")]
 print(f"{len(vec)} vector fixtures")
-if len(vec) < 48:
-    raise SystemExit(f"expected >= 48 vectors, got {len(vec)}")
+if len(vec) < 51:
+    raise SystemExit(f"expected >= 51 vectors, got {len(vec)}")
 PY
 
 echo "=== cargo test ==="
@@ -58,6 +58,5 @@ elif command -v cargo-tarpaulin >/dev/null 2>&1; then
   echo "=== tarpaulin ==="
   cargo tarpaulin --workspace --out Stdout
 else
-  echo "(llvm-cov not installed — inventory + tests are the gate)"
-  echo "optional: cargo install cargo-llvm-cov && cargo llvm-cov --workspace --html --output-dir coverage"
+echo "(run scripts/llvm-cov.sh for HTML under coverage/)"
 fi

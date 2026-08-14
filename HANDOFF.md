@@ -19,24 +19,21 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-Expected: **120** unit/property tests; **48** vectors PASS; TS + WASM Peers apply-only green.
+Expected: **123** unit/property tests; **51** vectors PASS; TS + WASM Peers apply-only green.
 
 ## Current maturity
 
-**Stage C met.** **Stage D underway** — TS + WASM Peers; Cap HMAC is optional Host policy (not law).
+Stage C met. Stage D underway. Cap HMAC + subject bind are Host policy.
 
-## Done this session (2026-08-14, Cap HMAC)
+## Done this session (2026-08-14, subject + llvm-cov)
 
-- Optional Host policy: `Host::with_hmac_key`. Mint attaches `cek1:` HMAC; verify refuses missing/forged sigs.
-- Unsigned Caps still work when the Host has no key (existing vectors unchanged).
-- Attenuate re-signs the child. Peer never verifies or mints.
-- RFC 4231 HMAC-SHA256 known answers.
+- `Cap.subject` is enforced: presenter is `args.subject`; mismatch / missing / blank → refuse, zero Ops.
+- `scripts/llvm-cov.sh` writes `coverage/summary.txt` + HTML. CI uploads the artifact.
 
 ## Do next
 
-1. llvm-cov HTML in CI.
-2. Real DOM UI store (reference map is enough for now).
-3. Ed25519 / multi-key Host policy if a deployment needs it (HMAC is the v0.1 policy).
+1. Real DOM UI store (reference map is enough for now).
+2. Ed25519 / multi-key Host policy if a deployment needs it (HMAC is the v0.1 policy).
 
 ## Never regress
 

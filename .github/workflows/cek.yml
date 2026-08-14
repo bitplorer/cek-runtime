@@ -26,7 +26,12 @@ jobs:
           bash scripts/run-wasm-peer.sh
       - name: coverage inventory
         run: bash scripts/coverage.sh
-      - name: install cargo-llvm-cov
-        run: cargo install cargo-llvm-cov --locked || true
-      - name: coverage summary
-        run: cargo llvm-cov --workspace --summary-only || echo "llvm-cov optional"
+      - name: llvm-cov HTML
+        run: bash scripts/llvm-cov.sh
+      - name: upload coverage html
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cek-coverage-html
+          path: coverage/
+          if-no-files-found: warn
