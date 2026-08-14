@@ -7,6 +7,14 @@ L1 has exactly two implementations in this framework.
 | `cek-host-kernel-rust` | Decide |
 | `cek-peer-kernel-rust` | Carry out |
 
+**Runtime vs kernel:** the kernel is the CEK core; the runtime is the process that wraps it (transport, stores, drivers). Full picture: [TOPOLOGY.md](../TOPOLOGY.md).
+
+```text
+Host runtime ⊃ Host kernel
+Peer runtime ⊃ Peer kernel
+Wire carries contract messages between runtimes — not a third kernel in the middle.
+```
+
 ## Host API (minimal)
 
 ```text
@@ -39,4 +47,4 @@ Mint code must not be reachable from the apply path (module visibility + CI).
 
 ## Not kernels
 
-Caller · bootstrap config · lineage DB · recovery Cap (still a Cap) · profile declaration · transport · vector runner
+Caller · bootstrap config · lineage DB · recovery Cap (still a Cap) · profile declaration · transport · vector runner · message bus

@@ -3,6 +3,7 @@
 | Doc | Role |
 |-----|------|
 | [README.md](README.md) | Problems solved, what you get, definition of done |
+| [TOPOLOGY.md](TOPOLOGY.md) | Runtime vs kernel; where they sit on the wire |
 | [SCOPE.md](SCOPE.md) | Law vs this repo |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution rules |
 | [CHOICES.md](CHOICES.md) | Implementation rationale |
@@ -42,3 +43,4 @@
 | Edge defaults | [10](diagrams/10-edge-defaults.mmd) |
 | CI gate | [11](diagrams/11-ci-gate.mmd) |
 | Law vs runtime | [12](diagrams/12-law-runtime-split.mmd) |
+| Runtime vs kernel | [13](diagrams/13-runtime-kernel.mmd) |

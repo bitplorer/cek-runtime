@@ -3,6 +3,8 @@
 Mermaid sources for the CEK **runtime** design.  
 Law-level diagrams stay in [cek-framework/diagrams](https://github.com/bitplorer/cek-framework/tree/main/diagrams).
 
+Plain-text topology (no Mermaid required): [TOPOLOGY.md](../TOPOLOGY.md).
+
 | File | Content |
 |------|---------|
 | [01-system-boundary.mmd](01-system-boundary.mmd) | L7 caller, Host, Peer, lineage |
@@ -17,3 +19,4 @@ Law-level diagrams stay in [cek-framework/diagrams](https://github.com/bitplorer
 | [10-edge-defaults.mmd](10-edge-defaults.mmd) | Deterministic edge defaults |
 | [11-ci-gate.mmd](11-ci-gate.mmd) | Vector merge gate |
 | [12-law-runtime-split.mmd](12-law-runtime-split.mmd) | What lives in which repo |
+| [13-runtime-kernel.mmd](13-runtime-kernel.mmd) | Runtime wraps kernel; wire between runtimes |

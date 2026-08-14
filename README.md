@@ -14,6 +14,31 @@
 
 ---
 
+## Runtime vs kernel (glance)
+
+Kernels sit **inside** runtimes. No central broker kernel on the wire.
+
+```text
+┌──────────────────────── Host runtime ────────────────────────┐
+│  transport · once-store · lineage DB · Cap keys · clock        │
+│  ┌────────────────── Host kernel ──────────────────────────┐ │
+│  │ mint · verify · once · dispatch · lineage · project ·    │ │
+│  │ reverse · Result                                         │ │
+│  └──────────────────────────────────────────────────────────┘ │
+└───────────────────────────────┬──────────────────────────────┘
+                                │ wire: Intent+Cap / Result / receipt
+┌───────────────────────────────▼──────────────────────────────┐
+│  transport · apply drivers (DOM, kv, device, …)               │
+│  ┌────────────────── Peer kernel ──────────────────────────┐ │
+│  │ profile · apply Ops · optional receipt · NO mint         │ │
+│  └──────────────────────────────────────────────────────────┘ │
+└──────────────────────── Peer runtime ────────────────────────┘
+```
+
+Full write-up: **[TOPOLOGY.md](TOPOLOGY.md)**.
+
+---
+
 ## Problems this solves
 
 | You’re building | Risk without CEK runtime | What this design provides |
@@ -32,16 +57,20 @@
 ## What you get
 
 ```text
-Your app  --Intent + Cap-->  Host (Rust)  --Result + Ops-->  Peer (Rust)
+Your app  --Intent + Cap-->  Host runtime (kernel inside)
                                 |
-                           lineage / reverse
+                           Result + Ops
+                                |
+                              Peer runtime (kernel inside)
+                                |
+                           lineage / reverse on Host
 ```
 
 | Piece | Job |
 |-------|-----|
 | **Contract** | Schemas + CORE 19-style vectors — the interop product |
-| **Host** | mint, verify, once/idempotency, dispatch, lineage, project, reverse |
-| **Peer** | apply Ops in order; optional receipt; **never** mint root Caps |
+| **Host kernel** | mint, verify, once/idempotency, dispatch, lineage, project, reverse |
+| **Peer kernel** | apply Ops in order; optional receipt; **never** mint root Caps |
 | **Baseline Ops** | Small data-only set so older Peers keep working |
 
 **Host submit order (fail closed):**  
@@ -55,7 +84,7 @@ Cap refuse → **zero** mutate Ops.
 | Need | Open |
 |------|------|
 | Meanings, axioms, kill criteria | [cek-framework](https://github.com/bitplorer/cek-framework) |
-| Host/Peer structure, CI, crates, isolation | **This repo** |
+| Host/Peer structure, topology, CI, crates | **This repo** |
 | Product UI and business handlers | Your app — hold Caps, call `submit` |
 
 **Kernels here:** Host and Peer in **Rust** only. Other languages = callers or later Peer ports.
@@ -70,6 +99,7 @@ Cap refuse → **zero** mutate Ops.
 
 | Path | Role |
 |------|------|
+| [TOPOLOGY.md](TOPOLOGY.md) | Runtime vs kernel; wire placement |
 | [SCOPE.md](SCOPE.md) | Law vs this repo |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to change this playbook |
 | [diagrams/](diagrams/) | Implementation flows |

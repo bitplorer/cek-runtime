@@ -1,0 +1,18 @@
+flowchart TB
+  subgraph HR["Host runtime"]
+    HT[transport · once-store · lineage · keys]
+    HK[Host kernel
+mint verify dispatch lineage project reverse]
+    HT --> HK
+  end
+  subgraph PR["Peer runtime"]
+    PT[transport · apply drivers]
+    PK[Peer kernel
+profile apply receipt
+no mint]
+    PT --> PK
+  end
+  APP[L7 app] -->|Intent+Cap| HR
+  HR -->|Result Ops| APP
+  APP -->|Result Ops| PR
+  PR -->|receipt| HR
