@@ -19,8 +19,8 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | `cek-contract` | Types, Baseline Ops, digests, vector load/check, law_generation |
 | `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, project, lineage, receipts, reverse, **store traits + file backends** |
 | `cek-peer-kernel` | profile, apply, receipt — **no mint** |
-| `cek-ops-baseline` | Peer **driver**: in-memory kv |
-| `cek-ops-ui` | Peer **driver**: UI/DOM world (`apply_op`) |
+| `cek-ops-baseline` | Peer **driver**: in-memory kv — [DRIVERS.md](DRIVERS.md) |
+| `cek-ops-ui` | Peer **driver**: UI map + `DomTree` — [DRIVERS.md](DRIVERS.md) |
 | `cek-cli` | Demo + vector runner |
 
 TypeScript apply-only Peer: `ports/cek-peer-ts`.  

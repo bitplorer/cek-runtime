@@ -11,7 +11,7 @@
 |--------|--------|
 | **v0.1 code** | Host + Peer + drivers, 57 vectors, 147 tests, Python Host + JS Peer, batteries |
 | Proven | Cap refuse → zero Ops; snapshot reverse for ui.morph; scopes cannot widen; Peer no mint (Rust+TS) |
-| Doc | **[GUIDE.md](GUIDE.md)** · [TOPOLOGY.md](TOPOLOGY.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [INVARIANTS.md](INVARIANTS.md) |
+| Doc | **[GUIDE.md](GUIDE.md)** · [DRIVERS.md](DRIVERS.md) · [TOPOLOGY.md](TOPOLOGY.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [INVARIANTS.md](INVARIANTS.md) |
 
 ```bash
 cargo test --workspace

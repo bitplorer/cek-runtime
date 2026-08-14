@@ -1,4 +1,7 @@
-//! Baseline Op world state (reference in-memory).
+//! Baseline **kv driver** — Peer-outer world for `kv.set` / `kv.delete`.
+//!
+//! Not a kernel. The Peer kernel calls [`KvStore`] after Host already decided.
+//! Catalog: repo `DRIVERS.md`.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

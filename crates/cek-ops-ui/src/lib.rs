@@ -1,6 +1,7 @@
-//! Peer **UI/DOM driver** — a document the Peer applies Ops onto.
+//! Peer **UI/DOM driver** — flat [`UiStore`] and tree [`DomTree`].
 //!
-//! Not a kernel. Not a browser. Morph/restore are data.
+//! Not a kernel. Not a browser. The Host projects `ui.morph` → `ui.dom.morph`;
+//! this crate only applies those Ops. Catalog: repo `DRIVERS.md`.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

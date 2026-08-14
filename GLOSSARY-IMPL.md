@@ -18,6 +18,6 @@
 | **subject** | Cap bind of who may present; Intent shows `args.subject` | A trace id |
 | **sig** | Host-policy HMAC (`cek1:`) or Ed25519 (`ed25519:`) | Peer authority |
 | **dual-speak** | Host accepts current + previous `law_generation` | A second law; Peer mint |
-| **driver** | Peer-outer world (`cek-ops-ui`, `cek-ops-baseline`) | A third kernel |
+| **driver** | Peer-outer world (`cek-ops-ui`, `cek-ops-baseline`) — [DRIVERS.md](DRIVERS.md) | A third kernel |
 
 Actions are never applied. Ops are never submitted.

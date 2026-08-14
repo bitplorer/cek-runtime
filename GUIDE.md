@@ -26,12 +26,8 @@ There is **no third kernel**. A bus only moves messages.
 | Host kernel | `crates/cek-host-kernel` | mint, verify, project, once, reverse |
 | Peer kernel | `crates/cek-peer-kernel` | apply loop — **no mint** |
 | Peer driver | `crates/cek-ops-baseline`, `cek-ops-ui` | kv world, UI/DOM world |
-| Demo | `crates/cek-cli` | Host + Peer in one process |
-| Host runtime (Python) | `ports/cek-host-py` | same decide role |
-| Peer runtime (JS) | `ports/cek-peer-js` | apply + DomTree |
-| Peer apply (TS / WASM) | `ports/cek-peer-ts`, `cek-peer-wasm` | apply only |
 
-Map: [TOPOLOGY.md](TOPOLOGY.md).
+Drivers in detail: **[DRIVERS.md](DRIVERS.md)**. Map: [TOPOLOGY.md](TOPOLOGY.md).
 
 ## 3. Words that must not mix
 
@@ -71,6 +67,8 @@ Unknown action → `dispatch_error`, once-Cap **not** burned.
 | `ui.morph` | `ui.dom.morph` | `ui.dom.restore` of `snapshot` |
 
 `ui.morph` is Host **project**. `ui.dom.morph` is the **DOM driver**. Same story, two names.
+
+Driver payloads, addresses (`#id`, `/0/1`), and helpers: [DRIVERS.md](DRIVERS.md).
 
 ## 6. Host policy (not law)
 
@@ -131,7 +129,7 @@ Checks: [INVARIANTS.md](INVARIANTS.md), `scripts/invariants.sh`, `scripts/batter
 
 | File | Use when |
 |------|----------|
-| [TOPOLOGY.md](TOPOLOGY.md) | Kernel vs runtime vs driver |
+| [DRIVERS.md](DRIVERS.md) | kv / log / UI / DOM — Peer-outer only |
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Pipeline detail, store traits |
 | [HARDENING.md](HARDENING.md) | Fail-closed table |
 | [EDGE_CASES.md](EDGE_CASES.md) | Expiry, once, reverse edges |

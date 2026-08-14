@@ -41,6 +41,8 @@ L7 app
 `ui.morph` is a **Host action** (kernel project).  
 `ui.dom.morph` is an **Op** the **UI/DOM driver** applies.
 
+Driver catalog (payloads, addresses, what a driver must never do): **[DRIVERS.md](DRIVERS.md)**.
+
 ## Ports (same roles, other languages)
 
 | Port | Role |
