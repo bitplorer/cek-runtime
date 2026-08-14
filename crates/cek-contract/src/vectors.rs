@@ -85,6 +85,9 @@ pub struct VectorCase {
     /// If true, runner attaches a valid Host HMAC before submit.
     #[serde(default)]
     pub sign_cap: bool,
+    /// Hex-encoded 32-byte Ed25519 seed. When set, Host requires Ed25519 sigs.
+    #[serde(default)]
+    pub ed25519_seed: Option<String>,
 }
 
 /// Load a single vector JSON file.

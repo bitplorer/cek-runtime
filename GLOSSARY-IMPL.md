@@ -16,5 +16,7 @@
 | **Lower** | Project domain Ops to Baseline (`kv.set ui:{target}`) | Change the Cap |
 | **Trace** | Correlation id | Permission |
 | **subject** | Cap bind of who may present; Intent shows `args.subject` | A trace id |
+| **sig** | Host-policy HMAC (`cek1:`) or Ed25519 (`ed25519:`) | Peer authority |
+| **ed25519** | Public-key Cap signature; `trust_ed25519` for rotation | HMAC; mint on the Peer |
 
 Actions are never applied. Ops are never submitted.

@@ -33,7 +33,7 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Receipt annotation  
 - [x] Landed-first reverse preference  
 - [x] Reverse classes (Inverse / Compensation / NonReversible)  
-- [x] Executable vectors (51)  
+- [x] Executable vectors (54)  
 - [x] Unknown-meta ignored on the wire  
 - [x] Peer no-mint (CI + `invariants.sh`, Rust + TS + WASM)  
 - [x] Domain `ui.*` with snapshot reverse  
@@ -44,6 +44,7 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Cap HMAC (optional Host policy; RFC 4231)  
 - [x] Subject bind (`Cap.subject` / `args.subject`)  
 - [x] llvm-cov HTML (`scripts/llvm-cov.sh`, CI artifact)  
+- [x] Ed25519 Host policy + rotation window  
 
 ## Consistency glossary (code ↔ law)
 
@@ -65,3 +66,4 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 | ui Op | `ui.dom.morph` / `ui.dom.restore` |
 | scope | `Cap.scopes` + `check_scopes` / `Host::attenuate` |
 | Cap HMAC | `Cap.sig` + `Host::with_hmac_key` |
+| Ed25519 | `Host::with_ed25519` / `trust_ed25519` |

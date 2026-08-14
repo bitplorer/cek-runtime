@@ -19,21 +19,23 @@ node --experimental-strip-types --no-warnings \
 bash scripts/run-wasm-peer.sh
 ```
 
-Expected: **123** unit/property tests; **51** vectors PASS; TS + WASM Peers apply-only green.
+Expected: **127** unit/property tests; **54** vectors PASS; TS + WASM Peers apply-only green.
 
 ## Current maturity
 
-Stage C met. Stage D underway. Cap HMAC + subject bind are Host policy.
+Stage C met. Stage D: TS + WASM Peers; HMAC **and** Ed25519 Host policy.
 
-## Done this session (2026-08-14, subject + llvm-cov)
+## Done this session (2026-08-14, Ed25519)
 
-- `Cap.subject` is enforced: presenter is `args.subject`; mismatch / missing / blank → refuse, zero Ops.
-- `scripts/llvm-cov.sh` writes `coverage/summary.txt` + HTML. CI uploads the artifact.
+- `Host::with_ed25519(seed)` mints `ed25519:<hex>` over the same authority bytes as HMAC.
+- `trust_ed25519` adds pubs for a rotation window (old Caps still verify).
+- Missing / forged / wrong-key → refuse, zero Ops.
+- RFC 8032 Test 1 known answer. HMAC Hosts unchanged. Peer never signs.
 
 ## Do next
 
 1. Real DOM UI store (reference map is enough for now).
-2. Ed25519 / multi-key Host policy if a deployment needs it (HMAC is the v0.1 policy).
+2. Dual-speak law-generation window (institutional).
 
 ## Never regress
 

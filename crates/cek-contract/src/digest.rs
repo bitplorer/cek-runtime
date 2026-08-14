@@ -13,6 +13,9 @@ use std::collections::BTreeMap;
 /// Algorithm prefix for digests produced by this contract generation.
 pub const DIGEST_ALG: &str = "cek1";
 
+/// Host-policy Ed25519 Cap signature prefix (`ed25519:<hex>`).
+pub const SIG_ED25519: &str = "ed25519";
+
 /// Compute SHA-256 hex of `bytes` without external deps (pure Rust FIPS-180-ish minimal).
 ///
 /// We use a compact standalone SHA-256 so the contract crate stays dependency-light

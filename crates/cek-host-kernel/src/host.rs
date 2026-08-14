@@ -8,6 +8,7 @@ use cek_contract::{
     baseline, ops_digest, result_digest, sealed_args_digest, Cap, Intent, Manifest, Op, Receipt,
     ResultMsg, ReverseClass, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
 };
+use ed25519_dalek::{SigningKey, VerifyingKey};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -22,6 +23,10 @@ pub struct Host {
     enforce_sealed: bool,
     /// When set, mint attaches HMAC and verify refuses missing/invalid sigs.
     signing_key: Option<[u8; 32]>,
+    /// Optional Ed25519 signer (Host mint / attenuate).
+    ed_sign: Option<SigningKey>,
+    /// Trusted Ed25519 public keys (verify; rotation window).
+    ed_trust: Vec<VerifyingKey>,
 }
 
 impl Default for Host {
@@ -58,6 +63,8 @@ impl Host {
             }),
             enforce_sealed: true,
             signing_key: None,
+            ed_sign: None,
+            ed_trust: Vec::new(),
         }
     }
 
@@ -85,6 +92,8 @@ impl Host {
             clock: Box::new(move || now),
             enforce_sealed: true,
             signing_key: None,
+            ed_sign: None,
+            ed_trust: Vec::new(),
         }
     }
 
@@ -92,6 +101,32 @@ impl Host {
     pub fn with_hmac_key(mut self, key: [u8; 32]) -> Self {
         self.signing_key = Some(key);
         self
+    }
+
+    /// Enable Ed25519 mint + verify (Host policy). Seed is RFC 8032 secret.
+    /// The matching public key is trusted automatically.
+    pub fn with_ed25519(mut self, seed: [u8; 32]) -> Self {
+        let sk = crate::sign::signing_key(&seed);
+        self.ed_trust.push(sk.verifying_key());
+        self.ed_sign = Some(sk);
+        self
+    }
+
+    /// Trust an additional Ed25519 public key (rotation / dual-speak window).
+    pub fn trust_ed25519(mut self, public: [u8; 32]) -> HostResult<Self> {
+        self.ed_trust.push(crate::sign::verifying_key(&public)?);
+        Ok(self)
+    }
+
+    /// This Host's Ed25519 public key, if it can mint Ed25519 Caps.
+    pub fn ed25519_public(&self) -> Option<[u8; 32]> {
+        self.ed_sign
+            .as_ref()
+            .map(|sk| sk.verifying_key().to_bytes())
+    }
+
+    fn requires_cap_sig(&self) -> bool {
+        self.signing_key.is_some() || self.ed_sign.is_some() || !self.ed_trust.is_empty()
     }
 
     /// Shared once backend.
@@ -115,7 +150,7 @@ impl Host {
             law_generation: LAW_GENERATION.into(),
             profiles: vec![PROFILE_BASELINE.into(), PROFILE_PRODUCTION_V1.into()],
             fail_closed: cek_contract::FailClosed {
-                cap_signatures: self.signing_key.is_some(),
+                cap_signatures: self.requires_cap_sig(),
                 ..Default::default()
             },
         }
@@ -180,10 +215,14 @@ impl Host {
         Ok(self.attach_sig(cap))
     }
 
-    /// Attach or refresh Host-policy HMAC. No-op when this Host has no key.
-    pub fn attach_sig(&self, mut cap: Cap) -> Cap {
+    /// Attach or refresh Host-policy signature. No-op when this Host has no key.
+    /// Ed25519 wins when both schemes are configured (HMAC remains verifiable).
+    pub fn attach_sig(&self, cap: Cap) -> Cap {
+        if let Some(sk) = &self.ed_sign {
+            return crate::sign::attach_ed25519(sk, cap);
+        }
         if let Some(key) = &self.signing_key {
-            cap.sig = Some(cek_contract::cap_signature(key, &cap));
+            return crate::sign::attach_hmac(key, cap);
         }
         cap
     }
@@ -307,16 +346,24 @@ impl Host {
     }
 
     fn verify_sig(&self, cap: &Cap) -> HostResult<()> {
-        let Some(key) = &self.signing_key else {
+        if !self.requires_cap_sig() {
             return Ok(());
-        };
-        match cap.sig.as_deref() {
-            None => Err(HostError::Authority(
-                "Cap signature required".into(),
-            )),
-            Some(_) if cek_contract::cap_signature_valid(key, cap) => Ok(()),
-            Some(_) => Err(HostError::Authority("Cap signature invalid".into())),
         }
+        let Some(sig) = cap.sig.as_deref() else {
+            return Err(HostError::Authority("Cap signature required".into()));
+        };
+        if sig.starts_with("ed25519:") {
+            if crate::sign::ed25519_valid(&self.ed_trust, cap) {
+                return Ok(());
+            }
+            return Err(HostError::Authority("Cap signature invalid".into()));
+        }
+        if let Some(key) = &self.signing_key {
+            if cek_contract::cap_signature_valid(key, cap) {
+                return Ok(());
+            }
+        }
+        Err(HostError::Authority("Cap signature invalid".into()))
     }
 
     /// Same key + same projected digest → cached Result.
@@ -1192,6 +1239,54 @@ mod tests {
         let mut cap = host.mint("c-es", "kv.write", false, None);
         cap.subject = Some("  ".into());
         let r = host.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+
+    const ED_SEED: [u8; 32] = [0x42; 32];
+
+    #[test]
+    fn ed25519_signed_ok_unsigned_and_tamper_refuse() {
+        let host = Host::with_clock(1000).with_ed25519(ED_SEED);
+        assert!(host.manifest().fail_closed.cap_signatures);
+        let cap = host.mint("c-ed", "kv.write", false, None);
+        assert!(cap.sig.as_deref().unwrap().starts_with("ed25519:"));
+        let r = host.submit(intent_write(cap.clone(), "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+
+        let mut unsigned = cap.clone();
+        unsigned.sig = None;
+        let r = host.submit(intent_write(unsigned, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+
+        let mut bad = cap;
+        bad.sig = Some("ed25519:00".into());
+        let r = host.submit(intent_write(bad, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+
+    #[test]
+    fn ed25519_rotation_window_accepts_old_pub() {
+        let a = Host::with_clock(1000).with_ed25519([0x01; 32]);
+        let cap = a.mint("c-rot", "kv.write", false, None);
+        let pub_a = a.ed25519_public().unwrap();
+        // New Host mints with B but still trusts A (dual-speak).
+        let b = Host::with_clock(1000)
+            .with_ed25519([0x02; 32])
+            .trust_ed25519(pub_a)
+            .unwrap();
+        let r = b.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+    }
+
+    #[test]
+    fn ed25519_untrusted_pub_refuses() {
+        let a = Host::with_clock(1000).with_ed25519([0x01; 32]);
+        let cap = a.mint("c-un", "kv.write", false, None);
+        let b = Host::with_clock(1000).with_ed25519([0x02; 32]);
+        let r = b.submit(intent_write(cap, "a", json!(1)));
         assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
         assert!(r.ops.is_empty());
     }

@@ -86,6 +86,7 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 15. Host HMAC on → unsigned/forged Cap refuse; Host HMAC off → legacy Caps still work  
 16. Peer never verifies or issues signatures  
 17. `Cap.subject` set → `args.subject` must match; blank bind refuses  
+18. Ed25519 (`ed25519:`) is Host policy; rotation via `trust_ed25519`; Peer never signs  
 
 See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 

@@ -206,6 +206,44 @@ fn run_demo() {
         no.ops.len()
     );
 
+    // 8) Ed25519: signed ok, unsigned refuse
+    let seed = [0x11u8; 32];
+    let ed = Host::with_clock(1_000).with_ed25519(seed);
+    let cap = ed.mint("cap-ed", "kv.write", false, None);
+    let mut args = BTreeMap::new();
+    args.insert("key".into(), json!("e"));
+    args.insert("value".into(), json!(1));
+    let ok = ed.submit(Intent {
+        action: "kv.write".into(),
+        args: args.clone(),
+        cap: cap.clone(),
+        trace: None,
+        idempotency_key: None,
+        activity_id: None,
+    });
+    let mut bare = cap;
+    bare.sig = None;
+    let no = ed.submit(Intent {
+        action: "kv.write".into(),
+        args,
+        cap: bare,
+        trace: None,
+        idempotency_key: None,
+        activity_id: None,
+    });
+    println!(
+        "\n8) Ed25519 signed={:?} prefix={} unsigned={:?} ops_unsigned={}",
+        ok.kind,
+        ed.mint("peek", "kv.write", false, None)
+            .sig
+            .unwrap_or_default()
+            .split(':')
+            .next()
+            .unwrap_or(""),
+        no.kind,
+        no.ops.len()
+    );
+
     println!("\n=== demo ok ===");
 }
 
@@ -236,6 +274,9 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
     let mut host = Host::with_clock(case.now.unwrap_or(0));
     if let Some(ref hex) = case.hmac_key {
         host = host.with_hmac_key(parse_hmac_key(hex)?);
+    }
+    if let Some(ref hex) = case.ed25519_seed {
+        host = host.with_ed25519(parse_hmac_key(hex)?);
     }
     let peer = make_peer(case);
 

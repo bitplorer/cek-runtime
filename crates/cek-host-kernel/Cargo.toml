@@ -11,3 +11,4 @@ cek-contract = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+ed25519-dalek = { workspace = true }

@@ -56,8 +56,8 @@ ok "cek1 digest prefix present"
 
 # 6. vector count.
 n=$(find crates/cek-contract/vectors -name '*.json' | wc -l)
-if [ "$n" -lt 51 ]; then
-  fail "expected >= 51 vectors, got $n"
+if [ "$n" -lt 54 ]; then
+  fail "expected >= 54 vectors, got $n"
 fi
 ok "vectors: $n"
 
