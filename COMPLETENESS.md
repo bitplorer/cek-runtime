@@ -1,34 +1,37 @@
 # Completeness (implementation framework)
 
-**Complete** = design stated in enough detail to implement without inventing ambient authority.
+**Complete** = design stated well enough to implement without inventing ambient authority.
 
 ## Covered
 
 | Area | Where |
 |------|--------|
+| Repo glance + problem framing | README |
+| Concept explainers | CONCEPTS.md |
+| Runtime vs kernel; wire | TOPOLOGY.md |
 | Scope vs law | SCOPE.md |
-| Contract (schemas, vectors, Baseline Ops, manifest) | 00-contract/ |
-| Two kernels only; API surface | 01-kernels/ |
-| Ordered Host pipeline | 02-host-pipeline/ |
-| Peer apply + profile + receipt | 03-peer-apply/ |
-| Cap lifecycle machine | 04-cap-machine/ |
-| Lineage + reverse plans | 05-lineage-reverse/ |
-| Baseline vs production profiles | 06-profiles/ |
-| Isolation options | 07-isolation/ |
-| Workspace layout | 08-layout/ |
-| CI vector gate + ambient bans | 09-ci/ |
-| Future ports | 10-ports/ |
-| Flow diagrams (system, pipeline, apply, reverse, CI) | diagrams/ |
-| Rationale | CHOICES.md |
+| Contract, vectors, Baseline, manifest | 00-contract/ |
+| Host/Peer APIs | 01-kernels/ |
+| Submit pipeline | 02-host-pipeline/ |
+| Peer apply + receipt | 03-peer-apply/ |
+| Cap state machine | 04-cap-machine/ |
+| Lineage + reverse | 05-lineage-reverse/ |
+| Profiles | 06-profiles/ |
+| Isolation | 07-isolation/ |
+| Crate layout | 08-layout/ |
+| CI + ambient bans | 09-ci/ |
+| Ports | 10-ports/ |
+| Diagrams | diagrams/ |
+| Rationale / contributing | CHOICES.md, CONTRIBUTING.md |
 
-## Not complete (expected next engineering)
+## Not complete (next engineering)
 
-- Published JSON Schema files (stubs described; fill from CORE shapes)  
-- Executable vector suite checked into CI  
-- Actual Rust source for Host/Peer  
-- Concrete crypto (e.g. Ed25519) and once-store backend  
+- Published JSON Schema files  
+- Executable vector suite in CI  
+- Rust Host/Peer source  
+- Concrete crypto and once-store backends  
 
 ## Verdict
 
-Implementation **design** (including diagrams) is complete for a reference Rust dual-kernel runtime.  
-Shipping code is the next phase, gated by vectors.
+Implementation **design** is complete for a reference Rust dual-kernel runtime.  
+Shipping code is next, gated by vectors.
