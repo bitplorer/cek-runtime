@@ -22,12 +22,27 @@ Python/TS/etc. may be **L7 callers** or later Peer *ports*. They are not Host ke
 
 **Contract is sole product → Host is Cap state machine → Peer is pure apply → reverse before rich Ops → vectors gate merge.**
 
+## Diagrams
+
+Start here: [diagrams/README.md](diagrams/README.md)
+
+| View | Diagram |
+|------|--------|
+| System boundary | [01-system-boundary.mmd](diagrams/01-system-boundary.mmd) |
+| Host submit pipeline | [02-submit-pipeline.mmd](diagrams/02-submit-pipeline.mmd) |
+| End-to-end sequence | [09-happy-path.mmd](diagrams/09-happy-path.mmd) |
+| Reverse | [05-reverse.mmd](diagrams/05-reverse.mmd) |
+| Contract + CI | [06](diagrams/06-contract-product.mmd) · [11](diagrams/11-ci-gate.mmd) |
+
+Law-level diagrams: [cek-framework/diagrams](https://github.com/bitplorer/cek-framework/tree/main/diagrams).
+
 ## Map
 
 | Path | Role |
 |------|------|
 | [SCOPE.md](SCOPE.md) | What belongs here vs cek-framework |
 | [INDEX.md](INDEX.md) | Full navigation |
+| [diagrams/](diagrams/) | Implementation flow diagrams |
 | [00-contract/](00-contract/) | Schemas, vectors, Baseline Ops, manifest |
 | [01-kernels/](01-kernels/) | Host + Peer as only L1 implementations |
 | [02-host-pipeline/](02-host-pipeline/) | Ordered submit machine |

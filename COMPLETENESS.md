@@ -18,6 +18,7 @@
 | Workspace layout | 08-layout/ |
 | CI vector gate + ambient bans | 09-ci/ |
 | Future ports | 10-ports/ |
+| Flow diagrams (system, pipeline, apply, reverse, CI) | diagrams/ |
 | Rationale | CHOICES.md |
 
 ## Not complete (expected next engineering)
@@ -29,5 +30,5 @@
 
 ## Verdict
 
-Implementation **design** is complete for a reference Rust dual-kernel runtime.  
+Implementation **design** (including diagrams) is complete for a reference Rust dual-kernel runtime.  
 Shipping code is the next phase, gated by vectors.
