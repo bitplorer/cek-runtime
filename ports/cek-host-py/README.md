@@ -1,30 +1,21 @@
-# Python Host runtime
+# Python Host — use the published package
 
-In-process **Host kernel**: verify, project, once, lineage, HMAC + Ed25519.  
-Not law. **Does not apply Ops** — hand the Result to a Peer.
+**The Cap machine is `cek-host` on PyPI.** This directory is a historic in-tree sketch (Cap-as-dict, Ed25519, lineage). Do **not** publish it as a second Host.
 
-Completeness matrix: [PORTS.md](../../PORTS.md).
+```bash
+pip install cek-host
+python -m cek_host create-app ./hello && python ./hello/app.py
+```
 
-## Has
+Workspace: [bitplorer/cek-python](https://github.com/bitplorer/cek-python) — Host + Surface.  
+Start: [cek-python/START.md](https://github.com/bitplorer/cek-python/blob/main/START.md)
 
-- Cap verify (action, expiry, sealed-args, scopes, subject, law generation)
-- Project: `kv.write` / `kv.delete` / `log.append` / `ui.morph` / `ui.restore`
-- Once after successful project; idempotency before once
-- HMAC `cek1:` and Ed25519 `ed25519:` (RFC 8032, stdlib)
-- Lineage reverse; landed-first when `report_receipt`
-- Result `digest`
+Law: [cek-framework](https://github.com/bitplorer/cek-framework). Reference vectors stay in `crates/cek-contract/vectors` (this repo).
 
-## Does not have
-
-- File-backed stores, `attenuate`, extra Ed25519 trust keys, Baseline `lower_ops`
-
-## Run
+To exercise the *legacy* in-tree runner (not the published Host):
 
 ```bash
 python3 ports/cek-host-py/run_vectors.py crates/cek-contract/vectors
-python3 ports/cek-host-py/test_batteries.py
-echo '{"action":"kv.write","args":{"key":"a","value":1},"cap":{"id":"c","action":"kv.write","once":false}}' \
-  | python3 ports/cek-host-py/runtime.py --now 1000
 ```
 
-51 CORE vectors pass. Peer-only fixtures are skipped (no apply here).
+51 CORE vectors pass on the sketch. Product authority is `cek-host`.

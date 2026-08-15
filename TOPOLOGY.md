@@ -47,7 +47,7 @@ Driver catalog (payloads, addresses, what a driver must never do): **[DRIVERS.md
 
 | Port | Role |
 |------|------|
-| `ports/cek-host-py` | Host **runtime** (verify, project, once) |
+| `ports/cek-host-py` | Historic contract-vector sketch. Published Host is `pip install cek-host` |
 | `ports/cek-peer-js` | Peer **runtime** (apply + DomTree). No mint |
 | `ports/cek-peer-ts` | Peer apply-only (same contract) |
 | `ports/cek-peer-wasm` | Peer apply-only |

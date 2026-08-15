@@ -1,6 +1,7 @@
 # CEK reference implementation (Rust)
 
-Walkthrough: **[GUIDE.md](GUIDE.md)**. Topology: [TOPOLOGY.md](TOPOLOGY.md).
+**Read [START.md](START.md) first.** Walkthrough: **[GUIDE.md](GUIDE.md)**. Topology: [TOPOLOGY.md](TOPOLOGY.md).
+
 
 Runnable Host + Peer aligned with [cek-framework](https://github.com/bitplorer/cek-framework) law.
 
@@ -25,7 +26,7 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 
 TypeScript apply-only Peer: `ports/cek-peer-ts`.  
 JavaScript Peer **runtime** (apply + DomTree): `ports/cek-peer-js`.  
-Python Host **runtime**: `ports/cek-host-py`.  
+Python Host **runtime (published):** `pip install cek-host`. `ports/cek-host-py` is a contract-vector sketch, not a second published Host.  
 WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm`.
 
 ## Pipeline (Host)

@@ -2,16 +2,23 @@
 
 **Implement a CEK Host (authority) and Peer (apply surface) without ambient power.**
 
+**Start here:** [START.md](START.md)
+
 | | |
 |--|--|
 | **This repo** | Design playbook **+** reference Rust workspace (`crates/`) |
 | **Law** | [cek-framework](https://github.com/bitplorer/cek-framework) |
+| **Python Host** | `pip install cek-host` — [cek-python](https://github.com/bitplorer/cek-python) |
 
 | Status | Detail |
 |--------|--------|
 | **v0.1 code** | Host + Peer + drivers, 57 vectors, 147 tests, Python Host + JS Peer, batteries |
-| Proven | Cap refuse → zero Ops; snapshot reverse for ui.morph; scopes cannot widen; Peer no mint (Rust+TS) |
-| Doc | **[GUIDE.md](GUIDE.md)** · [DRIVERS.md](DRIVERS.md) · [PORTS.md](PORTS.md) · [TOPOLOGY.md](TOPOLOGY.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [INVARIANTS.md](INVARIANTS.md) |
+| Proven | Cap refuse → zero Ops; snapshot reverse; scopes cannot widen; Peer no mint |
+| Doc | **[START.md](START.md)** · [GUIDE.md](GUIDE.md) · [INVARIANTS.md](INVARIANTS.md) · [PORTS.md](PORTS.md) |
+
+```text
+verify → once → project → lineage → Result
+```
 
 ```bash
 cargo test --workspace
@@ -19,81 +26,4 @@ cargo run -p cek-cli -- demo
 cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 ```
 
----
-
-## This repo at a glance
-
-**What this is:** how to **build** Host and Peer. Not new law.
-
-| Piece | Role |
-|-------|------|
-| **cek-contract** | Types + vectors — sole interop product |
-| **Host kernel** | mint, verify, once, BoundAsk, lineage, project, reverse, durable store traits |
-| **Peer kernel** | apply Ops only — **no** mint |
-| **Wire / in-proc** | Contract messages — no third kernel |
-
-**Submit (fail closed)**
-
-```text
-verify → once → project → lineage → Result
-```
-
-**Reverse** on Activity end / Cap revoke — **not** when apply finishes.
-
-| This repo **is** | This repo **is not** |
-|------------------|----------------------|
-| Host/Peer structure, contract, reference Rust | A new set of axioms |
-| Topology and pipelines | A central “CEK cloud” service |
-| Rust reference + Python Host / JS Peer ports | A third kernel or `extensions/` layer |
-
-[TOPOLOGY.md](TOPOLOGY.md) · [CONCEPTS.md](CONCEPTS.md) · [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md)
-
----
-
-## Problems this solves
-
-| You’re building | Risk without CEK runtime | This design |
-|-----------------|--------------------------|-------------|
-| **Agent tools** | Invented permission; weak revoke | Cap verify; Ops under lineage |
-| **UI / DOM channel** | Free client mutate; guesswork undo | Peer applies `dom.*`; Host reverse on end |
-| **Device / robot** | Trusted bypass | Refuse → no effect Op |
-| **Multi-version clients** | Flag-day breaks | Baseline + profile projection |
-| **Cancel / unload / revoke** | Fake rollback | Reverse plan or honest mark |
-| **Authority PR review** | Cap-skip flags | Vectors + Peer no-mint |
-
-**DOM:** morph **stays** until Activity end or Cap revoke — apply complete ≠ undo.
-
----
-
-## Design rule
-
-**Contract is the sole interop product → Host is a Cap state machine → Peer is pure apply → reverse before rich Ops → vectors gate merge.**
-
-| Need | Open |
-|------|------|
-| Axioms and vocabulary | [cek-framework](https://github.com/bitplorer/cek-framework) |
-| Structure, topology, CI, crates | **This repo** |
-| Product handlers | Your app — hold Caps, call `submit` |
-
----
-
-## Navigate
-
-| Path | Role |
-|------|------|
-| [IMPLEMENTATION.md](IMPLEMENTATION.md) · [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md) | Runnable slice docs |
-| [CONCEPTS.md](CONCEPTS.md) | Implementation concepts |
-| [TOPOLOGY.md](TOPOLOGY.md) | Runtime contains kernel; wire |
-| [SCOPE.md](SCOPE.md) | Law vs this repo |
-| `crates/` | Rust workspace |
-| [00-contract/](00-contract/) | Contract design notes |
-| [INDEX.md](INDEX.md) | Full map |
-
-## Definition of done (v0.1 met for core path)
-
-1. Contract types + vector JSON fixtures  
-2. Rust Host + Peer unit tests green  
-3. Baseline Ops end-to-end in `cek demo`  
-4. Cap refuse → zero mutate effects  
-5. Activity end → reverse Ops  
-6. Peer exposes **no** mint API  
+Contract is the sole interop product. Host is a Cap state machine. Peer is pure apply. `ports/cek-host-py` is **not** a second published Host.

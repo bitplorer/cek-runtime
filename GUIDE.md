@@ -1,6 +1,7 @@
 # CEK runtime — guide
 
-One place to understand this tree. Law stays in [cek-framework](https://github.com/bitplorer/cek-framework). This repo is the **runtime**.
+**Read [START.md](START.md) first.** One place to understand this tree. Law stays in [cek-framework](https://github.com/bitplorer/cek-framework). This repo is the **runtime**.
+
 
 ## 1. The idea (one minute)
 
