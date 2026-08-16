@@ -1,0 +1,46 @@
+# Publish the workspace to crates.io via Trusted Publishing (OIDC).
+#
+# One-time setup (each crate, crates.io → Settings → Trusted Publishing):
+#   Owner: bitplorer
+#   Repository: cek-runtime
+#   Workflow: publish-crates.yml
+#   Environment: crates-io
+#
+# Fallback: repo secret CARGO_REGISTRY_TOKEN (crates.io API token).
+#
+# Trigger: workflow_dispatch or tag vX.Y.Z
+# Order: contract → ops → kernels → wasm → cli
+
+name: publish-crates
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: crates.io OIDC token
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+        continue-on-error: true
+      - name: publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -z "${CARGO_REGISTRY_TOKEN:-}" ]; then
+            echo "No OIDC token and no CARGO_REGISTRY_TOKEN secret." >&2
+            echo "Add trusted publishers on crates.io (env crates-io) or set the secret." >&2
+            exit 2
+          fi
+          DRY_RUN=0 sh scripts/publish_crates.sh
