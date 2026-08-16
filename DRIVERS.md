@@ -35,6 +35,9 @@ Law: [cek-framework](https://github.com/bitplorer/cek-framework). Walkthrough: [
 Baseline Peers ship **kv + log** only. Unknown Ops follow profile policy (`skip` / `fail_batch`).  
 A UI/DOM Peer is constructed with `Peer::with_ui()` (flat) or the JS `--profile dom` (tree).
 
+Wire identity is the **pair** `(ns, name)`, not the concatenated FQ. `name` is a single token.
+`("ui.dom", "morph")` applies; `("ui", "dom.morph")` is illegal even though it concatenates to the same string.
+
 ## kv (`cek-ops-baseline`)
 
 - **`kv.set`**

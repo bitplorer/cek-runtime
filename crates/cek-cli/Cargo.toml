@@ -6,6 +6,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+readme = "README.md"
+homepage = "https://github.com/bitplorer/cek-runtime"
+documentation = "https://docs.rs/cek-cli"
+keywords = ["cek", "capability", "authorization"]
+categories = ["authentication"]
+
 [[bin]]
 name = "cek"
 path = "src/main.rs"
@@ -14,4 +20,5 @@ path = "src/main.rs"
 cek-contract = { workspace = true }
 cek-host-kernel = { workspace = true }
 cek-peer-kernel = { workspace = true }
+cek-peer-wasm = { workspace = true }
 serde_json = { workspace = true }

@@ -5,15 +5,19 @@
 //! Baseline Peers skip these Ops (unknown); [`lower_to_baseline`] is the
 //! optional classic projection.
 
-use crate::{baseline, Op};
+//! Domain `ui.dom` constructors — L5 pack, not Baseline.
+//!
+//! FQ list lives in [`crate::domain`]. This module builds Ops and lowering.
+
+use crate::{baseline, domain, Op};
 use serde_json::{json, Value};
 
-/// Fully-qualified UI domain Ops.
-pub const UI_OPS: &[&str] = &["ui.dom.morph", "ui.dom.restore"];
+/// Fully-qualified UI domain Ops (from isolated Domain catalog).
+pub const UI_OPS: &[&str] = domain::DOMAIN_FQS;
 
 /// True if `ns.name` is a UI domain Op.
 pub fn is_ui(ns: &str, name: &str) -> bool {
-    UI_OPS.contains(&format!("{ns}.{name}").as_str())
+    domain::is_domain_pair(ns, name)
 }
 
 /// Build `ui.dom.morph`. Snapshot lives **on the Op** so landed-first reverse

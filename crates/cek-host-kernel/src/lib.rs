@@ -33,9 +33,11 @@ mod host;
 mod idem;
 mod lineage;
 mod once;
+mod project;
 mod scope;
 mod sign;
 mod store;
+mod verify;
 
 pub use bound::*;
 pub use durable::*;

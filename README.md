@@ -1,29 +1,21 @@
 # CEK Runtime
 
-**Implement a CEK Host (authority) and Peer (apply surface) without ambient power.**
+Reference **Host** (decide) and **Peer** (apply). No ambient power. Peer never mints.
 
-**Start here:** [START.md](START.md)
-
-| | |
-|--|--|
-| **This repo** | Design playbook **+** reference Rust workspace (`crates/`) |
-| **Law** | [cek-framework](https://github.com/bitplorer/cek-framework) |
-| **Python Host** | `pip install cek-host` — [cek-python](https://github.com/bitplorer/cek-python) |
-
-| Status | Detail |
-|--------|--------|
-| **v0.1 code** | Host + Peer + drivers, 57 vectors, 147 tests, Python Host + JS Peer, batteries |
-| Proven | Cap refuse → zero Ops; snapshot reverse; scopes cannot widen; Peer no mint |
-| Doc | **[START.md](START.md)** · [GUIDE.md](GUIDE.md) · [INVARIANTS.md](INVARIANTS.md) · [PORTS.md](PORTS.md) |
-
-```text
-verify → once → project → lineage → Result
-```
+| Crate | Role |
+|-------|------|
+| `cek-contract` | Types, S, vectors |
+| `cek-host-kernel` | Cap verify → project → lineage |
+| `cek-peer-kernel` | Apply S only |
+| `cek-ops-baseline` / `cek-ops-ui` | Drivers |
+| `cek-peer-wasm` | Same Peer kernel, WASM ABI |
+| `cek-cli` | `cek demo` · `cek vectors` · `cek apply` · `cek host-json` |
 
 ```bash
 cargo test --workspace
 cargo run -p cek-cli -- demo
-cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 ```
 
-Contract is the sole interop product. Host is a Cap state machine. Peer is pure apply. `ports/cek-host-py` is **not** a second published Host.
+Law: [cek-framework](https://github.com/bitplorer/cek-framework) · Python: [cek-python](https://github.com/bitplorer/cek-python)
+
+S = `kv.set` `kv.delete` `log.append` `ui.dom.morph` `ui.dom.restore`. Pair identity is `(ns, name)`.

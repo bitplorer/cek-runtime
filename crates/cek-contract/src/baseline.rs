@@ -1,4 +1,7 @@
 //! Baseline Ops — permanent classic catalog.
+//!
+//! Legality is a **pair** `(ns, name)`, not the concatenated FQ string.
+//! `name` is a single token (no dots).
 
 use crate::Op;
 use serde_json::json;
@@ -6,10 +9,12 @@ use serde_json::json;
 /// Fully-qualified Baseline Op names every correct Peer can aim at.
 pub const BASELINE_OPS: &[&str] = &["kv.set", "kv.delete", "log.append"];
 
-/// True if `ns.name` is in the Baseline catalog.
+/// Declared Baseline `(ns, name)` pairs. Source of `is_baseline`.
+pub const BASELINE_PAIRS: &[(&str, &str)] = &[("kv", "set"), ("kv", "delete"), ("log", "append")];
+
+/// True if `(ns, name)` is a declared Baseline pair.
 pub fn is_baseline(ns: &str, name: &str) -> bool {
-    let fq = format!("{ns}.{name}");
-    BASELINE_OPS.contains(&fq.as_str())
+    BASELINE_PAIRS.iter().any(|(n, m)| *n == ns && *m == name)
 }
 
 /// Build a `kv.set` Op.
@@ -101,5 +106,13 @@ mod tests {
         let inv = inverse_kv(&kv_set("k", json!(1))).unwrap();
         assert_eq!(inv.fq(), "kv.delete");
         assert!(inv.payload.get("prior").is_none());
+    }
+
+    #[test]
+    fn pair_not_concat() {
+        assert!(is_baseline("kv", "set"));
+        assert!(!is_baseline("k", "v.set"));
+        assert!(!is_baseline("kv.set", ""));
+        assert_eq!(BASELINE_PAIRS.len(), BASELINE_OPS.len());
     }
 }

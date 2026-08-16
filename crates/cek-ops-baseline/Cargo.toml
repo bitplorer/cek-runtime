@@ -6,5 +6,11 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+readme = "README.md"
+homepage = "https://github.com/bitplorer/cek-runtime"
+documentation = "https://docs.rs/cek-ops-baseline"
+keywords = ["cek", "capability", "authorization"]
+categories = ["authentication"]
+
 [dependencies]
 serde_json = { workspace = true }

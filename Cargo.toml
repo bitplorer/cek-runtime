@@ -13,17 +13,17 @@ members = [
 [workspace.package]
 edition = "2021"
 license = "Apache-2.0"
-version = "0.1.0"
+version = "0.1.2"
 repository = "https://github.com/bitplorer/cek-runtime"
 rust-version = "1.70"
 
 [workspace.dependencies]
-cek-contract = { path = "crates/cek-contract" }
-cek-host-kernel = { path = "crates/cek-host-kernel" }
-cek-peer-kernel = { path = "crates/cek-peer-kernel" }
-cek-peer-wasm = { path = "crates/cek-peer-wasm" }
-cek-ops-baseline = { path = "crates/cek-ops-baseline" }
-cek-ops-ui = { path = "crates/cek-ops-ui" }
+cek-contract = { path = "crates/cek-contract", version = "0.1.2" }
+cek-host-kernel = { path = "crates/cek-host-kernel", version = "0.1.2" }
+cek-peer-kernel = { path = "crates/cek-peer-kernel", version = "0.1.2" }
+cek-peer-wasm = { path = "crates/cek-peer-wasm", version = "0.1.2" }
+cek-ops-baseline = { path = "crates/cek-ops-baseline", version = "0.1.2" }
+cek-ops-ui = { path = "crates/cek-ops-ui", version = "0.1.2" }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 thiserror = "1.0.61"

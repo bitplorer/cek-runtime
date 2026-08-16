@@ -1,5 +1,6 @@
 //! Host kernel orchestrator — mature reference implementation.
 
+use crate::project::{inverse_ops, project_ops};
 use crate::{
     BoundAsk, HostError, HostResult, IdemBackend, IdemStore, LineageBackend, LineageStore,
     OnceBackend, OnceStore, ReverseOutcome,
@@ -9,26 +10,26 @@ use cek_contract::{
     ResultMsg, ReverseClass, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
 };
 use ed25519_dalek::{SigningKey, VerifyingKey};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// Reference Host kernel. Stores are trait objects so durable backends can be swapped.
 pub struct Host {
-    once: Arc<dyn OnceBackend>,
-    idem: Arc<dyn IdemBackend>,
-    lineage: Arc<dyn LineageBackend>,
-    clock: Box<dyn Fn() -> u64 + Send + Sync>,
+    pub(crate) once: Arc<dyn OnceBackend>,
+    pub(crate) idem: Arc<dyn IdemBackend>,
+    pub(crate) lineage: Arc<dyn LineageBackend>,
+    pub(crate) clock: Box<dyn Fn() -> u64 + Send + Sync>,
     /// When true, sealed_args_bind mismatch refuses (always on for maturity).
-    enforce_sealed: bool,
+    pub(crate) enforce_sealed: bool,
     /// When set, mint attaches HMAC and verify refuses missing/invalid sigs.
-    signing_key: Option<[u8; 32]>,
+    pub(crate) signing_key: Option<[u8; 32]>,
     /// Optional Ed25519 signer (Host mint / attenuate).
-    ed_sign: Option<SigningKey>,
+    pub(crate) ed_sign: Option<SigningKey>,
     /// Trusted Ed25519 public keys (verify; rotation window).
-    ed_trust: Vec<VerifyingKey>,
+    pub(crate) ed_trust: Vec<VerifyingKey>,
     /// Law generations this Host accepts (always includes current).
-    accepted_generations: Vec<String>,
+    pub(crate) accepted_generations: Vec<String>,
 }
 
 impl Default for Host {
@@ -127,10 +128,6 @@ impl Host {
         self.ed_sign
             .as_ref()
             .map(|sk| sk.verifying_key().to_bytes())
-    }
-
-    fn requires_cap_sig(&self) -> bool {
-        self.signing_key.is_some() || self.ed_sign.is_some() || !self.ed_trust.is_empty()
     }
 
     /// Accept an additional law generation (dual-speak window). Current is always accepted.
@@ -307,101 +304,6 @@ impl Host {
         }
     }
 
-    /// Cap integrity (action, expiry, sealed-args, id, scopes). No once, no idem.
-    fn verify_cap(&self, intent: &Intent, now: u64) -> HostResult<()> {
-        let cap = &intent.cap;
-        if intent.action != cap.action {
-            return Err(HostError::Authority(format!(
-                "action mismatch: intent `{}` vs Cap `{}`",
-                intent.action, cap.action
-            )));
-        }
-        if let Some(na) = cap.not_after {
-            if now >= na {
-                return Err(HostError::Authority(format!(
-                    "Cap expired: now={now} not_after={na}"
-                )));
-            }
-        }
-        if self.enforce_sealed {
-            if let Some(ref bind) = cap.sealed_args_bind {
-                let got = sealed_args_digest(&intent.args);
-                if &got != bind {
-                    return Err(HostError::Authority(format!(
-                        "sealed-args bind mismatch: cap expects {bind}, got {got}"
-                    )));
-                }
-            }
-        }
-        if intent.action.is_empty() || cap.action.is_empty() {
-            return Err(HostError::Authority("empty action is not allowed".into()));
-        }
-        if cap.id.is_empty() {
-            return Err(HostError::Authority("empty Cap id is not allowed".into()));
-        }
-        crate::scope::check_scopes(intent)?;
-        Self::check_subject(intent)?;
-        self.check_generation(&intent.cap)?;
-        self.verify_sig(&intent.cap)?;
-        Ok(())
-    }
-
-    /// Unset generation = legacy current. Set generation must be in the window.
-    fn check_generation(&self, cap: &Cap) -> HostResult<()> {
-        match cap.law_generation.as_deref() {
-            None => Ok(()),
-            Some(g) if g.trim().is_empty() => Err(HostError::Authority(
-                "empty law generation is not allowed".into(),
-            )),
-            Some(g) if self.accepted_generations.iter().any(|a| a == g) => Ok(()),
-            Some(g) => Err(HostError::Authority(format!(
-                "law generation `{g}` not in {:?}",
-                self.accepted_generations
-            ))),
-        }
-    }
-
-    /// Cap.subject set → Intent.args.subject must match. Blank bind refuses.
-    fn check_subject(intent: &Intent) -> HostResult<()> {
-        match intent.cap.subject.as_deref() {
-            None => Ok(()),
-            Some(s) if s.trim().is_empty() => Err(HostError::Authority(
-                "empty Cap subject is not allowed".into(),
-            )),
-            Some(want) => {
-                let got = intent.args.get("subject").and_then(|v| v.as_str());
-                if got == Some(want) {
-                    Ok(())
-                } else {
-                    Err(HostError::Authority(format!(
-                        "subject bind mismatch: cap `{want}` vs presenter {got:?}"
-                    )))
-                }
-            }
-        }
-    }
-
-    fn verify_sig(&self, cap: &Cap) -> HostResult<()> {
-        if !self.requires_cap_sig() {
-            return Ok(());
-        }
-        let Some(sig) = cap.sig.as_deref() else {
-            return Err(HostError::Authority("Cap signature required".into()));
-        };
-        if sig.starts_with("ed25519:") {
-            if crate::sign::ed25519_valid(&self.ed_trust, cap) {
-                return Ok(());
-            }
-            return Err(HostError::Authority("Cap signature invalid".into()));
-        }
-        if let Some(key) = &self.signing_key {
-            if cek_contract::cap_signature_valid(key, cap) {
-                return Ok(());
-            }
-        }
-        Err(HostError::Authority("Cap signature invalid".into()))
-    }
-
     /// Same key + same projected digest → cached Result.
     /// Same key + different digest → authority refusal.
     /// Missing key → None (first use).
@@ -557,95 +459,6 @@ impl Host {
             used_landed,
         })
     }
-}
-
-fn project_baseline(intent: &Intent) -> Result<Vec<Op>, String> {
-    match intent.action.as_str() {
-        cek_contract::ACTION_KV_WRITE => {
-            let key = intent
-                .args
-                .get("key")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| "kv.write requires string args.key".to_string())?;
-            if key.is_empty() {
-                return Err("kv.write key must be non-empty".into());
-            }
-            let value = intent.args.get("value").cloned().unwrap_or(json!(null));
-            Ok(vec![baseline::kv_set(key, value)])
-        }
-        cek_contract::ACTION_KV_DELETE => {
-            let key = intent
-                .args
-                .get("key")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| "kv.delete requires string args.key".to_string())?;
-            if key.is_empty() {
-                return Err("kv.delete key must be non-empty".into());
-            }
-            let prior = intent.args.get("prior").cloned();
-            Ok(vec![baseline::kv_delete_prior(key, prior)])
-        }
-        cek_contract::ACTION_LOG_APPEND => {
-            let msg = intent
-                .args
-                .get("message")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| "log.append requires string args.message".to_string())?;
-            Ok(vec![baseline::log_append(msg)])
-        }
-        other => Err(format!("unknown action: {other}")),
-    }
-}
-
-fn project_ops(intent: &Intent) -> Result<Vec<Op>, String> {
-    match intent.action.as_str() {
-        cek_contract::ACTION_UI_MORPH => {
-            let target = intent
-                .args
-                .get("target")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| "ui.morph requires string args.target".to_string())?;
-            if target.is_empty() {
-                return Err("ui.morph target must be non-empty".into());
-            }
-            let patch = intent
-                .args
-                .get("patch")
-                .cloned()
-                .ok_or_else(|| "ui.morph requires args.patch".to_string())?;
-            let snapshot = intent.args.get("snapshot").cloned();
-            Ok(vec![cek_contract::ui_morph(target, patch, snapshot)])
-        }
-        cek_contract::ACTION_UI_RESTORE => {
-            let target = intent
-                .args
-                .get("target")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| "ui.restore requires string args.target".to_string())?;
-            if target.is_empty() {
-                return Err("ui.restore target must be non-empty".into());
-            }
-            let snapshot = intent
-                .args
-                .get("snapshot")
-                .cloned()
-                .ok_or_else(|| "ui.restore requires args.snapshot".to_string())?;
-            Ok(vec![cek_contract::ui_restore(target, snapshot)])
-        }
-        _ => project_baseline(intent),
-    }
-}
-
-fn inverse_ops(ops: &[Op]) -> Vec<Op> {
-    let mut inv = Vec::new();
-    for op in ops.iter().rev() {
-        if let Some(kv_inv) = cek_contract::inverse_kv(op) {
-            inv.push(kv_inv);
-        } else if let Some(ui_inv) = cek_contract::inverse_ui(op) {
-            inv.push(ui_inv);
-        }
-    }
-    inv
 }
 
 #[cfg(test)]

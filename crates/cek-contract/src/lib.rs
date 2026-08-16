@@ -21,7 +21,10 @@
 pub mod actions;
 pub mod baseline;
 pub mod digest;
+pub mod domain;
 mod error;
+pub mod pair;
+pub mod structure;
 pub mod types;
 pub mod ui;
 mod vectors;
@@ -29,7 +32,15 @@ mod vectors;
 pub use actions::*;
 pub use baseline::*;
 pub use digest::*;
+pub use domain::{
+    is_domain_fq, is_domain_pair, is_legal_fq, is_legal_pair, name_is_token, pack_is_scoped,
+    pack_of, pack_of_pair, project_domain_ops, DomainOpDecl, DOMAIN_DECLS, DOMAIN_FQS,
+};
 pub use error::*;
+pub use pair::{baseline_ui_pairset, Pair, PairSet};
+pub use structure::{
+    validate_domain_name, validate_op_name, validate_pair, StructureError, StructureRules,
+};
 pub use types::*;
 pub use ui::*;
 pub use vectors::*;

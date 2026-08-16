@@ -134,8 +134,17 @@ impl Peer {
     }
 
     fn can_apply(&self, op: &Op) -> bool {
-        let fq = op.fq();
-        self.profile.apply_set.iter().any(|s| s == &fq)
+        // Core S only (kernel does not apply Phase 2 extensions).
+        if !cek_contract::is_legal_pair(&op.ns, &op.name) {
+            return false;
+        }
+        // Pair identity: apply_set stores display FQs; match (ns, name), not a
+        // concatenated-string equality that could alias splits.
+        self.profile.apply_set.iter().any(|s| {
+            cek_contract::Pair::from_fq(s)
+                .map(|p| p.ns == op.ns && p.name == op.name)
+                .unwrap_or(false)
+        })
     }
 
     fn apply_one(&self, op: &Op) -> Result<(), ()> {

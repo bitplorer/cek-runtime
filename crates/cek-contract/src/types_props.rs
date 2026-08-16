@@ -2,9 +2,9 @@
 #![cfg(test)]
 
 use crate::{
-    baseline, is_baseline, kv_set_inverse, Cap, FailClosed, Intent, Manifest, Op, Profile, Receipt,
-    ResultKind, ResultMsg, ReverseClass, UnknownOpPolicy, LAW_GENERATION, PROFILE_BASELINE,
-    PROFILE_PRODUCTION_V1,
+    baseline, is_baseline, is_legal_pair, kv_set_inverse, Cap, FailClosed, Intent, Manifest, Op,
+    Profile, Receipt, ResultKind, ResultMsg, ReverseClass, UnknownOpPolicy, LAW_GENERATION,
+    PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
 };
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -84,6 +84,8 @@ fn prop_baseline_catalog() {
     assert!(!is_baseline("ui", "morph"));
     assert!(!is_baseline("kv", "write"));
     assert_eq!(baseline::BASELINE_OPS.len(), 3);
+    assert_eq!(baseline::BASELINE_PAIRS.len(), 3);
+    assert!(!is_legal_pair("ui", "dom.morph"));
     let inv_none = kv_set_inverse("k", None);
     assert_eq!(inv_none.fq(), "kv.delete");
     let inv_some = kv_set_inverse("k", Some(json!(1)));

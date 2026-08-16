@@ -1,4 +1,4 @@
-//! cek CLI — demo S1 and vector runner.
+//! cek CLI — demo, vectors, and kernel-wrap JSON (apply / host-json).
 
 use cek_contract::{
     check_result, load_vector_dir, sealed_args_digest, Intent, ResultKind, ResultMsg,
@@ -9,6 +9,7 @@ use cek_peer_kernel::Peer;
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::env;
+use std::io::{self, Read};
 use std::path::PathBuf;
 
 fn main() {
@@ -22,8 +23,12 @@ fn main() {
                 .unwrap_or_else(|| PathBuf::from("crates/cek-contract/vectors"));
             run_vectors(&dir);
         }
+        Some("apply") => run_apply(),
+        Some("host-json") => run_host_json(),
         _ => {
-            eprintln!("Usage:\n  cek demo\n  cek vectors [dir]");
+            eprintln!(
+                "Usage:\n  cek demo\n  cek vectors [dir]\n  cek apply\n  cek host-json"
+            );
             std::process::exit(2);
         }
     }
@@ -425,5 +430,76 @@ fn run_vectors(dir: &PathBuf) {
     }
     if failed > 0 {
         std::process::exit(1);
+    }
+}
+
+fn read_stdin() -> String {
+    let mut buf = String::new();
+    io::stdin().read_to_string(&mut buf).expect("stdin");
+    buf
+}
+
+/// Wrap cek-peer-kernel (via cek-peer-wasm::apply_json). No mint.
+fn run_apply() {
+    match cek_peer_wasm::apply_json(&read_stdin()) {
+        Ok(s) => {
+            println!("{s}");
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Wrap cek-host-kernel over JSON. Commands: mint | submit.
+///
+/// mint:    {"cmd":"mint","id":"...","action":"kv.write","once":false}
+/// submit:  {"cmd":"submit","intent":{...Intent...}}
+fn run_host_json() {
+    let v: serde_json::Value = match serde_json::from_str(&read_stdin()) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("json: {e}");
+            std::process::exit(1);
+        }
+    };
+    let cmd = v.get("cmd").and_then(|c| c.as_str()).unwrap_or("");
+    let host = Host::new();
+    match cmd {
+        "mint" => {
+            let id = v.get("id").and_then(|x| x.as_str()).unwrap_or("cap");
+            let action = v.get("action").and_then(|x| x.as_str()).unwrap_or("");
+            let once = v.get("once").and_then(|x| x.as_bool()).unwrap_or(false);
+            let cap = host.mint(id, action, once, None);
+            match serde_json::to_string(&cap) {
+                Ok(s) => println!("{s}"),
+                Err(e) => {
+                    eprintln!("{e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        "submit" => {
+            let intent: Intent = match serde_json::from_value(v.get("intent").cloned().unwrap_or(json!({}))) {
+                Ok(i) => i,
+                Err(e) => {
+                    eprintln!("intent: {e}");
+                    std::process::exit(1);
+                }
+            };
+            let result = host.submit(intent);
+            match serde_json::to_string(&result) {
+                Ok(s) => println!("{s}"),
+                Err(e) => {
+                    eprintln!("{e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        _ => {
+            eprintln!("cmd must be mint|submit");
+            std::process::exit(2);
+        }
     }
 }

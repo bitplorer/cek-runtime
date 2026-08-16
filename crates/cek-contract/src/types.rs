@@ -60,9 +60,9 @@ pub struct Intent {
 /// Single ordered effect as pure data.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Op {
-    /// Namespace (e.g. `kv`, `log`, `ui`).
+    /// Namespace (e.g. `kv`, `log`, `ui.dom`). Domain ns is the pack.
     pub ns: String,
-    /// Op name within namespace (e.g. `set`, `append`, `morph`).
+    /// Op name within namespace — single token (e.g. `set`, `append`, `morph`).
     pub name: String,
     /// Data-only payload.
     #[serde(default)]

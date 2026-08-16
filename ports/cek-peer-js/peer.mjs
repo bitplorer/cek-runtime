@@ -200,6 +200,11 @@ export class Peer {
         failed.push(op);
         continue;
       }
+      if (typeof op.name === "string" && op.name.includes(".")) {
+        failed.push(op);
+        if (this.unknownOpPolicy === "fail_batch") abort = true;
+        continue;
+      }
       if (!this.applySet.has(fq(op))) {
         failed.push(op);
         if (this.unknownOpPolicy === "fail_batch") abort = true;
