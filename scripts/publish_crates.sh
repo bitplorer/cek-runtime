@@ -30,6 +30,12 @@ publish_one() {
       echo "skip $crate (already on crates.io)"
       return 0
     fi
+    if echo "$out" | grep -qiE 'too many new crates|Too Many Requests|429'; then
+      echo "crates.io rate limit; wait 70s ($i/8)"
+      sleep 70
+      i=$((i + 1))
+      continue
+    fi
     if echo "$out" | grep -qiE 'no matching package named|failed to select a version'; then
       echo "index lag; retry $i/8 in 20s"
       sleep 20
