@@ -2151,6 +2151,26 @@ mod tests {
     }
 
     #[test]
+    fn context_limit_is_not_cap_scope() {
+        let host = Host::with_clock(1000);
+        let mut cap = host.mint("c-ctx-vs-sc", "kv.write", false, None);
+        cap.scopes = vec!["kv:other".into()];
+        host.inject("act-1", vec!["kv:greeting".into()]).unwrap();
+        let r = host.submit(intent_write(cap, "greeting", json!(1)));
+        assert!(
+            matches!(r.kind, ResultKind::AuthorityRefusal),
+            "Cap.scopes still bind independently of Context: {:?}",
+            r.error
+        );
+        assert!(r.ops.is_empty());
+        assert!(
+            !r.error.as_deref().unwrap_or("").contains("over-limit"),
+            "must be Cap scope deny, not Context limit: {:?}",
+            r.error
+        );
+    }
+
+    #[test]
     fn context_limit_is_not_isolate() {
         let host = Host::with_clock(1000);
         let cap_b = host.mint("c-lim-b", "kv.write", false, None);

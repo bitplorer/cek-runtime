@@ -2,6 +2,8 @@
 
 Peer is treated as untrusted for Host truth even when written in Rust.
 
+This crate note is **process/WASM Peer split**, not LAW §8 **isolate** (Context slice). Context `inject` / `limit` / `isolate` live on Host.
+
 ## Options (increasing assurance)
 
 | Mode | Description |

@@ -122,7 +122,7 @@ Ordered, fail closed:
 8 Result
 ```
 
-Cap refuse at (1) or store-down at (2) → **no** mutate Ops, **no** cause.
+Cap refuse at (1), Context refuse at (2), or store-down at (3) → **no** mutate Ops, **no** cause.
 
 → [02-host-pipeline](02-host-pipeline/README.md)
 

@@ -8,6 +8,10 @@
 //! - **isolate** separates a slice so names/services do not leak across Activities.
 //!
 //! `limit` ≠ `isolate`. They must not be collapsed.
+//!
+//! **Not** [`crate::scope`] / `Cap.scopes` / [`Host::attenuate`] (Cap allow-list).
+//! **Not** crate `07-isolation/` (process/WASM Peer split). Token grammar is
+//! reused only as `kv:name` matching; the Host path is Context.
 
 use crate::scope::{can_attenuate, resource_of, scope_allows};
 use crate::{Host, HostError, HostResult};
