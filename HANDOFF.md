@@ -41,7 +41,7 @@ Follow official topology. Domain *worlds* are Peer drivers (`cek-ops-*`). Host *
 - Cap refuse → zero mutate Ops
 - BoundAsk only after verify
 - Peer has no mint (Rust **and** TS)
-- Once commit only after successful project
+- Once commit only after successful dispatch
 - Idempotency before once-ensure
 - Landed-first reverse when receipt annotated
 - Digests `cek1:` (FIPS SHA-256)

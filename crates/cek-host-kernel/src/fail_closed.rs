@@ -147,7 +147,7 @@ fn lineage_store_down_is_dispatch_error_not_ok_with_ops_committed() {
         1000,
     );
     let r = host.submit(write_intent(&host, "c-lin", false, None));
-    // Project succeeded; lineage commit failed → dispatch_error, zero new world
+    // Dispatch succeeded; lineage commit failed → dispatch_error, zero new world
     // (Host does not apply; Peer never sees an ok Result).
     assert!(matches!(r.kind, ResultKind::DispatchError));
     assert!(r.ops.is_empty());

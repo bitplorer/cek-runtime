@@ -1,6 +1,6 @@
 # cek-host-kernel
 
-Reference Host: verify Cap → idempotency → once → project → lineage → Result.
+Reference Host: verify Cap → idempotency → once → dispatch → lineage → project → Result.
 
 Refuse → `ops: []`. Peer does not live in this crate.
 

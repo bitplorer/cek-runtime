@@ -9,7 +9,7 @@
 //!
 //! | Trait | Fail closed | Sequencing |
 //! |-------|-------------|------------|
-//! | [`OnceBackend`] | store down → refuse | `ensure_available` **before** project; `commit` **only after** successful project |
+//! | [`OnceBackend`] | store down → refuse | `ensure_available` **before** dispatch; `commit` **only after** successful dispatch |
 //! | [`IdemBackend`] | store down → refuse | same key + same digest → replay; same key + different digest → refuse |
 //! | [`LineageBackend`] | store down → error | no commit after Activity ended; landed annotation is optional |
 
@@ -29,7 +29,7 @@ pub trait OnceBackend: Send + Sync {
     /// Refuse if this once-Cap is already consumed. Does **not** record.
     fn ensure_available(&self, cap_id: &str, once: bool) -> HostResult<()>;
 
-    /// Record consumption after a successful project. No-op when `once` is false.
+    /// Record consumption after a successful dispatch. No-op when `once` is false.
     fn commit(&self, cap_id: &str, once: bool) -> HostResult<()>;
 
     /// Whether `cap_id` is marked consumed. `false` if the store cannot be read.

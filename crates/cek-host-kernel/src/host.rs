@@ -1,6 +1,6 @@
 //! Host kernel orchestrator — mature reference implementation.
 
-use crate::project::{inverse_ops, project_ops};
+use crate::project::{dispatch_ops, inverse_ops, project_authorized};
 use crate::{
     BoundAsk, HostError, HostResult, IdemBackend, IdemStore, LineageBackend, LineageStore,
     OnceBackend, OnceStore, ReverseOutcome,
@@ -251,7 +251,9 @@ impl Host {
             .collect()
     }
 
-    /// Full submit pipeline: verify → once → project → lineage → Result+digest.
+    /// Full submit pipeline (LAW §4 / CORE 06 Host duties):
+    /// verify Cap → consume once / idempotency bind → dispatch → **record lineage**
+    /// → **project Ops** → Result+digest.
     ///
     /// Cap refusal returns [`ResultMsg`] with `authority_refusal` and **zero** Ops.
     pub fn submit(&self, intent: Intent) -> ResultMsg {
@@ -311,7 +313,7 @@ impl Host {
         let Some(prior) = self.idem.get(key)? else {
             return Ok(None);
         };
-        match project_ops(intent) {
+        match dispatch_ops(intent) {
             Ok(ops) => {
                 let digest = result_digest("ok", &ops, None);
                 if prior.digest.as_deref() == Some(digest.as_str()) {
@@ -339,81 +341,97 @@ impl Host {
         Ok(BoundAsk { intent, now })
     }
 
+    fn law4_note(step: &'static str) {
+        #[cfg(test)]
+        tests::LAW4_STEPS.with(|s| s.borrow_mut().push(step));
+        let _ = step;
+    }
+
     fn dispatch_and_finish(&self, bound: BoundAsk) -> ResultMsg {
         let intent = bound.intent();
 
-        match project_ops(intent) {
-            Ok(ops) => {
-                let kind = "ok";
-                let digest = result_digest(kind, &ops, None);
-                let mut r = ResultMsg::ok(ops.clone());
-                r.digest = Some(digest.clone());
+        // LAW §4 step 3: Dispatch → authorized Ops. Miss does not burn a once-Cap.
+        let authorized = match dispatch_ops(intent) {
+            Ok(ops) => ops,
+            Err(msg) => {
+                let mut r = ResultMsg::dispatch_error(msg);
+                r.digest = Some(result_digest("dispatch_error", &[], r.error.as_deref()));
+                return r;
+            }
+        };
+        Self::law4_note("dispatch");
 
-                // Idempotency: record or detect conflict (after we know digest)
-                if let Some(ref key) = intent.idempotency_key {
-                    match self.idem.put_or_check(key, &digest, &r) {
-                        Ok(crate::IdemOutcome::Recorded) => {}
-                        Ok(crate::IdemOutcome::ReplaySame { result }) => {
-                            return result;
-                        }
-                        Err(HostError::Authority(msg)) => {
-                            let mut rr = ResultMsg::authority_refusal(msg);
-                            rr.digest =
-                                Some(result_digest("authority_refusal", &[], rr.error.as_deref()));
-                            return rr;
-                        }
-                        Err(e) => {
-                            let mut rr = ResultMsg::dispatch_error(e.to_string());
-                            rr.digest =
-                                Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
-                            return rr;
-                        }
-                    }
+        let digest = result_digest("ok", &authorized, None);
+
+        // Idempotency bind after digest is known, **before** lineage (no second cause).
+        if let Some(ref key) = intent.idempotency_key {
+            let cached = ResultMsg {
+                kind: cek_contract::ResultKind::Ok,
+                ops: authorized.clone(),
+                error: None,
+                digest: Some(digest.clone()),
+            };
+            match self.idem.put_or_check(key, &digest, &cached) {
+                Ok(crate::IdemOutcome::Recorded) => {}
+                Ok(crate::IdemOutcome::ReplaySame { result }) => {
+                    return result;
                 }
-
-                // Commit once-Cap only after successful project (no burn on dispatch miss).
-                if let Err(e) = self.once.commit(&intent.cap.id, intent.cap.once) {
-                    let mut rr = ResultMsg::authority_refusal(e.to_string());
+                Err(HostError::Authority(msg)) => {
+                    let mut rr = ResultMsg::authority_refusal(msg);
                     rr.digest = Some(result_digest("authority_refusal", &[], rr.error.as_deref()));
                     return rr;
                 }
-
-                if let Some(ref aid) = intent.activity_id {
-                    if aid.is_empty() {
-                        let mut rr = ResultMsg::dispatch_error("empty activity_id");
-                        rr.digest = Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
-                        return rr;
-                    }
-                    let inverse = inverse_ops(&ops);
-                    let class = if inverse.is_empty() {
-                        ReverseClass::NonReversible
-                    } else {
-                        ReverseClass::Inverse
-                    };
-                    if let Err(e) = self.lineage.commit(
-                        &intent.cap.id,
-                        Some(aid),
-                        &intent.action,
-                        ops.clone(),
-                        class,
-                        inverse,
-                    ) {
-                        let mut rr = ResultMsg::dispatch_error(e.to_string());
-                        rr.digest = Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
-                        return rr;
-                    }
+                Err(e) => {
+                    let mut rr = ResultMsg::dispatch_error(e.to_string());
+                    rr.digest = Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
+                    return rr;
                 }
-
-                let _ = ops_digest(&r.ops);
-                r
-            }
-            Err(msg) => {
-                // Dispatch failure: once-Cap NOT committed — Cap remains usable.
-                let mut r = ResultMsg::dispatch_error(msg);
-                r.digest = Some(result_digest("dispatch_error", &[], r.error.as_deref()));
-                r
             }
         }
+
+        // Consume once only after successful dispatch (no burn on dispatch miss).
+        if let Err(e) = self.once.commit(&intent.cap.id, intent.cap.once) {
+            let mut rr = ResultMsg::authority_refusal(e.to_string());
+            rr.digest = Some(result_digest("authority_refusal", &[], rr.error.as_deref()));
+            return rr;
+        }
+
+        // LAW §4 step 4: Record lineage (authorized set + reverse plan) **before** project.
+        if let Some(ref aid) = intent.activity_id {
+            if aid.is_empty() {
+                let mut rr = ResultMsg::dispatch_error("empty activity_id");
+                rr.digest = Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
+                return rr;
+            }
+            let inverse = inverse_ops(&authorized);
+            let class = if inverse.is_empty() {
+                ReverseClass::NonReversible
+            } else {
+                ReverseClass::Inverse
+            };
+            if let Err(e) = self.lineage.commit(
+                &intent.cap.id,
+                Some(aid),
+                &intent.action,
+                authorized.clone(),
+                class,
+                inverse,
+            ) {
+                let mut rr = ResultMsg::dispatch_error(e.to_string());
+                rr.digest = Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
+                return rr;
+            }
+            Self::law4_note("record_lineage");
+        }
+
+        // LAW §4 steps 5–6: Project Ops onto Result, then return.
+        // First-cut project is identity (profile negotiate / Baseline lower is out of scope).
+        let projected = project_authorized(authorized);
+        Self::law4_note("project");
+        let mut r = ResultMsg::ok(projected);
+        r.digest = Some(digest);
+        let _ = ops_digest(&r.ops);
+        r
     }
 
     /// Record Peer receipt against latest lineage for Activity (landed-first reverse).
@@ -467,8 +485,17 @@ mod tests {
     use crate::{FileIdemStore, FileLineageStore, FileOnceStore};
     use cek_contract::ResultKind;
     use serde_json::json;
+    use std::cell::RefCell;
     use std::collections::BTreeMap;
     use std::sync::atomic::{AtomicU64, Ordering};
+
+    thread_local! {
+        pub(super) static LAW4_STEPS: RefCell<Vec<&'static str>> = RefCell::new(Vec::new());
+    }
+
+    fn law4_take() -> Vec<&'static str> {
+        LAW4_STEPS.with(|s| std::mem::take(&mut *s.borrow_mut()))
+    }
 
     fn intent_write(cap: Cap, key: &str, val: Value) -> Intent {
         let mut args = BTreeMap::new();
@@ -1156,5 +1183,75 @@ mod tests {
         let r = host.submit(intent_write(bad, "a", json!(1)));
         assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
         assert!(r.ops.is_empty());
+    }
+
+    /// LAW §4: dispatch → record lineage → project. Probe is filled in `dispatch_and_finish`.
+    #[test]
+    fn law4_records_lineage_before_project() {
+        let _ = law4_take();
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-law4", "kv.write", false, None);
+        let r = host.submit(intent_write(cap, "greeting", json!("hello")));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops.len(), 1);
+        assert_eq!(r.ops[0].fq(), "kv.set");
+
+        let steps = law4_take();
+        let lin = steps
+            .iter()
+            .position(|s| *s == "record_lineage")
+            .expect("lineage must be recorded");
+        let proj = steps
+            .iter()
+            .position(|s| *s == "project")
+            .expect("project must run");
+        assert!(
+            lin < proj,
+            "LAW §4: record lineage before project, got {steps:?}"
+        );
+        assert_eq!(steps, ["dispatch", "record_lineage", "project"]);
+
+        let entries = host.lineage_store().for_activity("act-1").unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].authorized_ops, r.ops);
+    }
+
+    /// Refuse path still returns Result with empty Ops (LAW: verify fail → no mutate Ops).
+    #[test]
+    fn law4_refuse_still_zero_ops() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-law4-refuse", "kv.read", false, None);
+        let r = host.submit(intent_write(cap, "a", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+        assert!(host
+            .lineage_store()
+            .for_activity("act-1")
+            .unwrap()
+            .is_empty());
+    }
+
+    /// Source order in `dispatch_and_finish`: `lineage.commit` before `ResultMsg::ok`.
+    #[test]
+    fn law4_dispatch_and_finish_source_records_lineage_before_result_ok() {
+        let src = include_str!("host.rs");
+        let start = src
+            .find("fn dispatch_and_finish")
+            .expect("dispatch_and_finish");
+        let rest = &src[start..];
+        let end = rest
+            .find("\n    pub fn report_receipt")
+            .unwrap_or(rest.len());
+        let body = &rest[..end];
+        let lineage = body
+            .find("self.lineage.commit")
+            .expect("lineage.commit in dispatch_and_finish");
+        let project = body
+            .find("ResultMsg::ok")
+            .expect("ResultMsg::ok project in dispatch_and_finish");
+        assert!(
+            lineage < project,
+            "LAW §4: lineage.commit must appear before ResultMsg::ok in dispatch_and_finish"
+        );
     }
 }

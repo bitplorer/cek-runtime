@@ -3,9 +3,9 @@
 //! ## Edge cases closed
 //!
 //! - **Check before claim**: `ensure_available` refuses if already consumed
-//!   without recording a new claim (used before project).
+//!   without recording a new claim (used before dispatch).
 //! - **Commit after success**: `commit` records consumption only after
-//!   successful projection so a dispatch failure does not burn a once-Cap.
+//!   successful dispatch so a dispatch failure does not burn a once-Cap.
 //! - **Non-once Caps**: always available; commit is a no-op.
 //!
 //! Implements [`crate::OnceBackend`] so a durable backend can replace this.
