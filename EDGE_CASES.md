@@ -7,7 +7,7 @@
 | Empty action / empty Cap id | Degenerate Cap | Refuse |
 | Sealed-args tamper | Arg widening | Refuse |
 | Once Cap second use | Double cause | Refuse |
-| **Once Cap + dispatch error** | Burn Cap with no effect | **Commit once only after successful project** |
+| **Once Cap + dispatch error** | Burn Cap with no effect | **Commit once only after successful dispatch** |
 | Empty kv key | Nonsense Op | `dispatch_error` |
 | Empty `activity_id` | Bad lineage key | `dispatch_error` |
 | Idempotency same key + same body | Duplicate causes | Return **cached** Result |

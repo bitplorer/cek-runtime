@@ -5,7 +5,7 @@ Reference **Host** (decide) and **Peer** (apply). No ambient power. Peer never m
 | Crate | Role |
 |-------|------|
 | `cek-contract` | Types, S, vectors |
-| `cek-host-kernel` | Cap verify → project → lineage |
+| `cek-host-kernel` | Cap verify → dispatch → lineage → project |
 | `cek-peer-kernel` | Apply S only |
 | `cek-ops-baseline` / `cek-ops-ui` | Drivers |
 | `cek-peer-wasm` | Same Peer kernel, WASM ABI |

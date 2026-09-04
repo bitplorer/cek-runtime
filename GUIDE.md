@@ -49,9 +49,10 @@ action match → expiry → sealed-args → scopes → subject
   → idempotency lookup (before once)
   → once ensure (do not burn yet)
   → BoundAsk
-  → project Ops
-  → once commit          ← only if project succeeded
-  → lineage (if activity_id)
+  → dispatch (authorized Ops)
+  → once commit          ← only if dispatch succeeded
+  → lineage (if activity_id)   ← LAW §4: before project
+  → project Ops onto Result
   → Result
 ```
 
@@ -124,7 +125,7 @@ Python Host and JS Peer are that split in two languages.
 1. Cap refuse → zero mutate Ops  
 2. BoundAsk only after verify  
 3. Peer has no mint (every language)  
-4. Once commit only after successful project  
+4. Once commit only after successful dispatch  
 5. Idempotency lookup before once  
 6. Landed-first reverse when a receipt was reported  
 7. Digests start with `cek1:`  

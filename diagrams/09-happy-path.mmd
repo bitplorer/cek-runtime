@@ -7,7 +7,7 @@ sequenceDiagram
   Host-->>App: Cap
   App->>Host: submit Intent + Cap
   Host->>Host: verify → once → truth → dispatch
-  Host->>Host: lineage + project
+  Host->>Host: lineage → project
   Host-->>App: Result Ops
   App->>Peer: apply Result
   Peer->>Peer: apply Ops in order

@@ -10,9 +10,10 @@
 //!   → idempotency lookup (before once)
 //!   → once ensure_available (before effects; do not burn yet)
 //!   → BoundAsk
-//!   → project Ops
-//!   → once commit (only after successful project)
-//!   → lineage commit (if Activity)
+//!   → dispatch (authorized Ops)
+//!   → once commit (only after successful dispatch; no burn on miss)
+//!   → lineage commit (if Activity)     // LAW §4: before project
+//!   → project Ops onto Result          // first-cut: identity
 //!   → Result + digest
 //! ```
 //!

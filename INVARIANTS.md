@@ -10,7 +10,7 @@ This file lists **what the reference runtime actually checks** and where.
 | 1 | Cap refuse → zero mutate Ops | `prop_action_mismatch_never_effects`, `prop_expired_never_effects`, vector checker |
 | 2 | BoundAsk only after verify + once-ensure | `BoundAsk` fields are `pub(crate)`; no public constructor |
 | 3 | Peer has no mint | CI + `invariants.sh` (Rust + TS) |
-| 4 | Once commit only after successful project | `prop_once_not_burned_on_dispatch_error` |
+| 4 | Once commit only after successful dispatch | `prop_once_not_burned_on_dispatch_error` |
 | 5 | Idempotency before once-ensure | `prop_once_idempotent_retry`, `prop_idempotency_replay_and_conflict` |
 | 6 | Same key + different body → refuse | `prop_idempotency_replay_and_conflict` |
 | 7 | Landed-first reverse when receipt annotated | vector `receipt-landed-first-reverse` |

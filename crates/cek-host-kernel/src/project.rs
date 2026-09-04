@@ -1,7 +1,23 @@
-//! Project Intent → Ops. Kernel actions only. Surface passes project_ops.
+//! Dispatch Intent → authorized Ops, then first-cut project onto Result.
+//!
+//! Kernel actions only. `dispatch_ops` is LAW §4 step 3 (the mapper currently
+//! named `project_ops`). `project_authorized` is LAW §4 step 5 (identity;
+//! profile negotiate / Baseline lower on submit is out of scope).
 
 use cek_contract::{baseline, Intent, Op};
 use serde_json::json;
+
+/// LAW §4 step 3: dispatch Intent → authorized Ops. Miss is an error string.
+pub(crate) fn dispatch_ops(intent: &Intent) -> Result<Vec<Op>, String> {
+    project_ops(intent)
+}
+
+/// LAW §4 step 5: project authorized Ops for the Result.
+///
+/// First-cut: identity. Peer-profile negotiate / Baseline lower is not done here.
+pub(crate) fn project_authorized(authorized: Vec<Op>) -> Vec<Op> {
+    authorized
+}
 
 pub(crate) fn project_baseline(intent: &Intent) -> Result<Vec<Op>, String> {
     match intent.action.as_str() {

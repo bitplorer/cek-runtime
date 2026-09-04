@@ -12,8 +12,8 @@ This document lists **fail-closed** and **determinism** rules enforced in code.
 | Scopes | `cap.scopes` non-empty | Resource must match allow-list; blank token → refuse |
 | Attenuation | `Host::attenuate` | Child scopes must be a narrowing; widen refused |
 | Idempotency | `idempotency_key` set | **Before** once-ensure. Empty key → refuse. Same digest → cached Result; different → refuse |
-| Once available | `cap.once` | Ensure not consumed **before** project |
-| Once commit | after successful project | Mark consumed; dispatch error does **not** burn |
+| Once available | `cap.once` | Ensure not consumed **before** dispatch |
+| Once commit | after successful dispatch | Mark consumed; dispatch error does **not** burn |
 | Once second use | already consumed | Refuse (unless idempotent replay already returned) |
 | Subject bind | `cap.subject` set | `args.subject` must match; blank bind → refuse |
 | Dual-speak | `Cap.law_generation` set | Must be in Host `accepted_generations`; blank/unknown → refuse |

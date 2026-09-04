@@ -25,7 +25,7 @@ cek-runtime            RUNTIME      this repo
 | Name | What it is |
 |------|------------|
 | **Law** | Cap, Intent, Ops, Host/Peer *roles* — not code |
-| **Host kernel** | mint · verify · once · project · lineage · reverse |
+| **Host kernel** | mint · verify · once · dispatch · lineage · project · reverse |
 | **Host runtime** | kernel + store + keys + clock (this process) |
 | **Peer kernel** | profile · apply Ops · receipt · **no mint** |
 | **Peer driver** | the world: kv, UI/DOM, device — **outer**, not a kernel |

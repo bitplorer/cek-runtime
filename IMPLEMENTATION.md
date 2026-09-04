@@ -18,7 +18,7 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | Crate | Responsibility |
 |-------|----------------|
 | `cek-contract` | Types, Baseline Ops, digests, vector load/check, law_generation |
-| `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, project, lineage, receipts, reverse, **store traits + file backends** |
+| `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, dispatch, lineage, project, receipts, reverse, **store traits + file backends** |
 | `cek-peer-kernel` | profile, apply, receipt — **no mint** |
 | `cek-ops-baseline` | Peer **driver**: in-memory kv — [DRIVERS.md](DRIVERS.md) |
 | `cek-ops-ui` | Peer **driver**: UI map + `DomTree` — [DRIVERS.md](DRIVERS.md) |
@@ -41,10 +41,11 @@ Intent+Cap
   → idempotency lookup (before once; replay or conflict)
   → once ensure_available
   → BoundAsk
-  → project Ops (kv.write → kv.set, …)
+  → dispatch (kv.write → authorized kv.set, …)
   → idempotency record
-  → once commit (only after successful project)
+  → once commit (only after successful dispatch)
   → lineage commit (if activity_id)
+  → project Ops onto Result
   → ResultMsg { kind, ops, digest }
 ```
 

@@ -42,11 +42,17 @@ if ! grep -q 'authority_refusal carried ops' crates/cek-contract/src/vectors.rs;
 fi
 ok "vector checker rejects refusal with Ops"
 
-# 4. once commit is after project (comment + call site order in host.rs).
-if ! grep -q 'Commit once-Cap only after successful project' crates/cek-host-kernel/src/host.rs; then
-  fail "once-after-project comment missing"
+# 4. once commit is after dispatch (comment + call site order in host.rs).
+if ! grep -q 'Consume once only after successful dispatch' crates/cek-host-kernel/src/host.rs; then
+  fail "once-after-dispatch comment missing"
 fi
-ok "once-after-project documented in Host"
+ok "once-after-dispatch documented in Host"
+
+# 8. LAW §4: lineage recorded before project in dispatch_and_finish.
+if ! grep -q 'LAW §4 step 4: Record lineage' crates/cek-host-kernel/src/host.rs; then
+  fail "LAW §4 lineage-before-project comment missing"
+fi
+ok "LAW §4 lineage-before-project documented"
 
 # 5. digest prefix.
 if ! grep -q 'cek1' crates/cek-contract/src/digest.rs; then
