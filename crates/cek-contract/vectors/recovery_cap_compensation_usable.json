@@ -1,0 +1,27 @@
+{
+  "id": "recovery-cap-compensation-usable",
+  "family": "recovery_cap",
+  "description": "LAW §13: Recovery Cap mint; compensation Intents under it are ordinary submit; reverse Ops from Result",
+  "now": 1000,
+  "mint_recovery": {
+    "id": "cap-recover",
+    "action": "kv.write",
+    "for_activity": "act-log",
+    "sealed": { "key": "compensated", "value": true }
+  },
+  "intent": {
+    "action": "log.append",
+    "args": { "message": "hi" },
+    "cap": { "id": "cap-nr", "action": "log.append", "once": false },
+    "activity_id": "act-log"
+  },
+  "expect_kind": "ok",
+  "end_activity": "act-log",
+  "expect_reverse_ops": [
+    {
+      "ns": "kv",
+      "name": "set",
+      "payload": { "key": "compensated", "value": true }
+    }
+  ]
+}

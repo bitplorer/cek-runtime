@@ -103,6 +103,36 @@ pub struct VectorCase {
     /// Call `revoke` a second time (expects error).
     #[serde(default)]
     pub revoke_again: bool,
+    /// Mint a Recovery Cap (LAW §13) before submit / reverse.
+    #[serde(default)]
+    pub mint_recovery: Option<VectorRecoveryMint>,
+    /// After `end_activity`, require a NonReversible listing (compensation failure).
+    #[serde(default)]
+    pub expect_end_non_reversible: bool,
+}
+
+/// Vector fixture for [`VectorCase::mint_recovery`] (LAW §13).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VectorRecoveryMint {
+    /// Recovery Cap id.
+    pub id: String,
+    /// Declared compensation action.
+    pub action: String,
+    /// Once-Cap flag.
+    #[serde(default)]
+    pub once: bool,
+    /// Optional expiry (unix seconds).
+    #[serde(default)]
+    pub not_after: Option<u64>,
+    /// Bind to this Activity's reverse plan.
+    #[serde(default)]
+    pub for_activity: Option<String>,
+    /// Bind to this lineage entry id.
+    #[serde(default)]
+    pub for_lineage: Option<String>,
+    /// Sealed compensation args (ordinary Intent args under the Recovery Cap).
+    #[serde(default)]
+    pub sealed: BTreeMap<String, Value>,
 }
 
 /// Load a single vector JSON file.

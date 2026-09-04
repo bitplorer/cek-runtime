@@ -1,0 +1,36 @@
+{
+  "id": "recovery-cap-revoke-compensation",
+  "family": "recovery_cap",
+  "description": "LAW §13 + revoke as-shipped: Cap-dead after revoke; Compensation under Recovery Cap on Cap-scoped reverse",
+  "now": 1000,
+  "mint_recovery": {
+    "id": "cap-recover-rev",
+    "action": "kv.write",
+    "for_activity": "act-rev-comp",
+    "sealed": { "key": "rev-comp", "value": 1 }
+  },
+  "prior_intent": {
+    "action": "log.append",
+    "args": { "message": "hi" },
+    "cap": { "id": "cap-rev-comp", "action": "log.append", "once": false },
+    "activity_id": "act-rev-comp"
+  },
+  "prior_must_ok": true,
+  "revoke_cap": "cap-rev-comp",
+  "expect_revoke_reverse_ops": [
+    {
+      "ns": "kv",
+      "name": "set",
+      "payload": { "key": "rev-comp", "value": 1 }
+    }
+  ],
+  "revoke_again": true,
+  "intent": {
+    "action": "log.append",
+    "args": { "message": "again" },
+    "cap": { "id": "cap-rev-comp", "action": "log.append", "once": false },
+    "activity_id": "act-rev-comp-2"
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

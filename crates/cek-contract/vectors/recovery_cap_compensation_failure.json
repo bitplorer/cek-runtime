@@ -1,0 +1,23 @@
+{
+  "id": "recovery-cap-compensation-failure",
+  "family": "recovery_cap",
+  "description": "LAW §13: compensation failure marks NonReversible; never a clean reverse",
+  "now": 1000,
+  "mint_recovery": {
+    "id": "cap-recover-exp",
+    "action": "kv.write",
+    "not_after": 1,
+    "for_activity": "act-log-fail",
+    "sealed": { "key": "compensated", "value": true }
+  },
+  "intent": {
+    "action": "log.append",
+    "args": { "message": "hi" },
+    "cap": { "id": "cap-nr-fail", "action": "log.append", "once": false },
+    "activity_id": "act-log-fail"
+  },
+  "expect_kind": "ok",
+  "end_activity": "act-log-fail",
+  "expect_reverse_ops": [],
+  "expect_end_non_reversible": true
+}

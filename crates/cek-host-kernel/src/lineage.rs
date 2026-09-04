@@ -233,9 +233,9 @@ impl LineageStore {
 /// Outcome of reversing an Activity or a Cap (LAW §9).
 #[derive(Debug, Clone)]
 pub struct ReverseOutcome {
-    /// Ops to apply for undo (inverse / restore).
+    /// Ops to apply for undo (inverse / restore / compensation Result.ops).
     pub ops: Vec<Op>,
-    /// Entries marked non-reversible.
+    /// Entries marked non-reversible (including failed compensation).
     pub non_reversible: Vec<String>,
     /// Whether any entry used landed set (receipt-informed).
     pub used_landed: bool,
