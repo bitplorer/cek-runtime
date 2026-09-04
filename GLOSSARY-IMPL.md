@@ -19,5 +19,9 @@
 | **sig** | Host-policy HMAC (`cek1:`) or Ed25519 (`ed25519:`) | Peer authority |
 | **dual-speak** | Host accepts current + previous `law_generation` | A second law; Peer mint |
 | **driver** | Peer-outer world (`cek-ops-ui`, `cek-ops-baseline`) — [DRIVERS.md](DRIVERS.md) | A third kernel |
+| **Context** | Mediated visible world of an Activity (LAW §8) | Ambient authority; a Cap substitute |
+| **inject** | Declare what an Activity requires; undeclared access fails closed | A grant of parent rights |
+| **limit** | Restrict what an Activity Context may see/do (narrow only) | **isolate**; `Cap.scopes` / `Host::attenuate` |
+| **isolate** | Separate a Context slice so names/services do not leak | **limit**; crate `07-isolation/` (process/WASM Peer) |
 
 Actions are never applied. Ops are never submitted.

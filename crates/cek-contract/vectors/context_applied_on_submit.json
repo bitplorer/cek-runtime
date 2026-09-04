@@ -1,0 +1,17 @@
+{
+  "id": "context-applied-on-submit",
+  "family": "context",
+  "description": "LAW §8: inject declares Context; matching submit is applied (mediated, not ambient)",
+  "now": 1000,
+  "inject": { "activity_id": "act-1", "names": ["kv:greeting"] },
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "greeting", "value": 1 },
+    "activity_id": "act-1",
+    "cap": { "id": "cap-ctx-ok", "action": "kv.write", "once": false }
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    { "ns": "kv", "name": "set", "payload": { "key": "greeting", "value": 1 } }
+  ]
+}

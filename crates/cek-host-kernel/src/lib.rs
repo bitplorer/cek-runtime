@@ -24,12 +24,15 @@
 //! - Reverse prefers **landed** Ops when a receipt was annotated.
 //! - [`Host::revoke`] marks the Cap revoked (LAW §5) and reverses Cap-scoped lineage (LAW §9).
 //! - [`Host::mint_recovery`] mints a Recovery Cap (LAW §13); Compensation submits ordinary Intents.
+//! - [`Host::inject`] / [`Host::limit`] / [`Host::isolate`] mediate Activity Context (LAW §8).
+//!   `limit` ≠ `isolate`. Both only narrow (A8).
 //! - Durable state is behind [`OnceBackend`] / [`IdemBackend`] / [`LineageBackend`].
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
 mod bound;
+mod context;
 mod durable;
 mod error;
 mod host;

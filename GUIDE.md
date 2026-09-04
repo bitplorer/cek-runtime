@@ -46,6 +46,7 @@ Full table: [GLOSSARY-IMPL.md](GLOSSARY-IMPL.md).
 
 ```text
 action match → expiry → sealed-args → scopes → subject
+  → Context mediate (LAW §8: inject / limit / isolate)
   → idempotency lookup (before once)
   → once ensure (do not burn yet)
   → BoundAsk

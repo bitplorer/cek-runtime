@@ -10,6 +10,9 @@ This document lists **fail-closed** and **determinism** rules enforced in code.
 | Expiry | `now >= cap.not_after` | `authority_refusal`, zero Ops |
 | Sealed-args bind | Cap has `sealed_args_bind` | Digest of Intent.args must equal bind; else refuse |
 | Scopes | `cap.scopes` non-empty | Resource must match allow-list; blank token → refuse |
+| Context inject | Activity has injected names | Resource must be declared; else `authority_refusal`, zero Ops |
+| Context limit | Activity has limits | Over-limit → `authority_refusal`, zero Ops (narrow only; ≠ isolate) |
+| Context isolate | Another Activity isolated the resource | Leak → `authority_refusal`, zero Ops |
 | Attenuation | `Host::attenuate` | Child scopes must be a narrowing; widen refused |
 | Idempotency | `idempotency_key` set | **Before** once-ensure. Empty key → refuse. Same digest → cached Result; different → refuse |
 | Once available | `cap.once` | Ensure not consumed **before** dispatch |

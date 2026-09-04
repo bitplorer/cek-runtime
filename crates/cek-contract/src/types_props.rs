@@ -2,9 +2,9 @@
 #![cfg(test)]
 
 use crate::{
-    baseline, is_baseline, is_legal_pair, kv_set_inverse, Cap, FailClosed, Intent, Manifest, Op,
-    Profile, Receipt, ResultKind, ResultMsg, ReverseClass, UnknownOpPolicy, LAW_GENERATION,
-    PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
+    baseline, is_baseline, is_legal_pair, kv_set_inverse, Cap, Context, FailClosed, Intent,
+    Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, ReverseClass, UnknownOpPolicy,
+    LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
 };
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -137,4 +137,13 @@ fn constants_and_defaults() {
         landed: vec![],
         failed: vec![],
     };
+    let ctx = Context {
+        activity_id: "act-1".into(),
+        injected: vec!["kv:greeting".into()],
+        limits: vec!["kv:greeting".into()],
+        isolated: true,
+    };
+    let ctx2: Context = serde_json::from_value(serde_json::to_value(&ctx).unwrap()).unwrap();
+    assert_eq!(ctx, ctx2);
+    assert!(ctx.isolated);
 }

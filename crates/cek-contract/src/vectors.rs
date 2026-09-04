@@ -112,6 +112,24 @@ pub struct VectorCase {
     /// After `end_activity`, require a NonReversible listing (compensation failure).
     #[serde(default)]
     pub expect_end_non_reversible: bool,
+    /// `inject` names/services into an Activity Context before submit (LAW §8).
+    #[serde(default)]
+    pub inject: Option<VectorContextNames>,
+    /// `limit` an Activity Context before submit (LAW §8). Only narrows.
+    #[serde(default)]
+    pub limit: Option<VectorContextNames>,
+    /// `isolate` this Activity's Context slice before submit (LAW §8).
+    #[serde(default)]
+    pub isolate: Option<String>,
+}
+
+/// Vector fixture for [`VectorCase::inject`] / [`VectorCase::limit`] (LAW §8).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VectorContextNames {
+    /// Activity whose Context is mediated.
+    pub activity_id: String,
+    /// Name/service tokens (`kv:greeting`, `kv`, `log`).
+    pub names: Vec<String>,
 }
 
 /// Vector fixture for [`VectorCase::mint_recovery`] (LAW §13).

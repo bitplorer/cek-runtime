@@ -24,6 +24,8 @@
 | Empty `idempotency_key` | Accidental global key | Refuse |
 | Blank scope token | Unclear allow-list | Refuse |
 | Attenuate widen | Derived Cap stronger than parent | `Host::attenuate` errors |
+| Undeclared inject / over-limit | Ambient Context | `authority_refusal`, zero Ops (LAW §8) |
+| isolate leak | Names/services cross Activities | `authority_refusal`, zero Ops; `limit` ≠ `isolate` |
 | `ui.morph` with snapshot | Undo DOM | Inverse `ui.dom.restore` from Op payload |
 | `ui.morph` without snapshot | Fake undo | `NonReversible` |
 | Baseline Peer + `ui.dom.*` | Crash / mutate | Skip (unknown); lowering is optional `kv.set` |

@@ -28,6 +28,7 @@ cek-contract/
 | **receipt** | landed_ops, failed_ops (not a Cap) |
 | **profile** | apply_set, unknown_op_policy |
 | **manifest** | law_generation, profiles[], fail_closed, optional families |
+| **Context** | activity_id, injected[], limits[], isolated — LAW §8 mediated world (not a Cap) |
 
 ## Vector families (must be executable)
 

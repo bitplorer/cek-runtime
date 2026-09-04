@@ -1,0 +1,16 @@
+{
+  "id": "context-isolate-holds",
+  "family": "context",
+  "description": "LAW §8: isolate holds — names/services do not leak to another Activity",
+  "now": 1000,
+  "inject": { "activity_id": "act-a", "names": ["kv:secret"] },
+  "isolate": "act-a",
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "secret", "value": 1 },
+    "activity_id": "act-b",
+    "cap": { "id": "cap-ctx-iso", "action": "kv.write", "once": false }
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

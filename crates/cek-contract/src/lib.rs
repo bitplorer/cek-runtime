@@ -4,7 +4,7 @@
 //!
 //! Law meanings live in [cek-framework](https://github.com/bitplorer/cek-framework).
 //! This crate freezes **shapes** used on the wire and in tests:
-//! Intent, Cap, Result, Op, lineage, receipt, profile, manifest.
+//! Intent, Cap, Result, Op, lineage, receipt, profile, manifest, Context.
 //!
 //! ## Aging rules
 //!

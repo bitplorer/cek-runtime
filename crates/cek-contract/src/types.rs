@@ -210,6 +210,25 @@ pub enum UnknownOpPolicy {
     FailBatch,
 }
 
+/// Mediated visible world of an Activity (LAW §8 / CORE 07).
+///
+/// Not ambient authority, not a Cap substitute, not a global bag of power.
+/// Host `inject` / `limit` / `isolate` only **narrow** (axiom A8).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Context {
+    /// Activity this Context is bound to.
+    pub activity_id: String,
+    /// Names/services the Activity requires (`inject`). Undeclared access fails closed.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub injected: Vec<String>,
+    /// Restriction tokens (`limit`). Only narrow what may be seen or done.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub limits: Vec<String>,
+    /// When true, this slice is `isolate`d — names/services do not leak across Activities.
+    #[serde(default)]
+    pub isolated: bool,
+}
+
 /// Process handshake document.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Manifest {

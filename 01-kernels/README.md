@@ -20,6 +20,9 @@ Wire carries contract messages between runtimes — not a third kernel in the mi
 ```text
 mint(policy) -> Cap
 mint_recovery(...) -> Cap          # LAW §13 Host-only Recovery Cap; never Peer root
+inject(activity_id, names) -> Context  # LAW §8 declare required names/services
+limit(activity_id, names) -> Context   # LAW §8 restrict (narrow only; ≠ isolate)
+isolate(activity_id) -> Context        # LAW §8 slice; names/services do not leak
 submit(Intent, Cap) -> Result          # orchestrates the pipeline; must not skip stages
 end_activity(activity_id) -> ReverseOutcome
 revoke(cap_id) -> ReverseOutcome       # LAW §5 Active→Revoked; LAW §9 reverse

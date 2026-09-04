@@ -1,0 +1,15 @@
+{
+  "id": "context-undeclared-inject-refuse",
+  "family": "context",
+  "description": "LAW §8: undeclared inject fails closed (empty Ops, authority_refusal)",
+  "now": 1000,
+  "inject": { "activity_id": "act-1", "names": ["kv:greeting"] },
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "other", "value": 1 },
+    "activity_id": "act-1",
+    "cap": { "id": "cap-ctx-und", "action": "kv.write", "once": false }
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}
