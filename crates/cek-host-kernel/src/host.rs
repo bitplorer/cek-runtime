@@ -40,10 +40,6 @@ impl RecoveryRecord {
         };
         (self.for_activity.is_some() || self.for_lineage.is_some()) && lin_ok && act_ok
     }
-
-    fn covers_activity(&self, activity_id: &str) -> bool {
-        self.for_activity.as_deref() == Some(activity_id)
-    }
 }
 
 /// Reference Host kernel. Stores are trait objects so durable backends can be swapped.
@@ -308,13 +304,6 @@ impl Host {
         }
     }
 
-    fn recovery_covers_activity(&self, activity_id: &str) -> bool {
-        self.recovery
-            .lock()
-            .map(|g| g.records.iter().any(|r| r.covers_activity(activity_id)))
-            .unwrap_or(false)
-    }
-
     /// Compensation Intents under registered Recovery Caps (ordinary submit).
     /// `None` = no path or a submit failed — caller marks NonReversible.
     fn try_compensate(&self, entry: &LineageEntry) -> Option<Vec<Op>> {
@@ -544,12 +533,10 @@ impl Host {
                 return rr;
             }
             let inverse = inverse_ops(&authorized);
-            let class = if !inverse.is_empty() {
-                ReverseClass::Inverse
-            } else if self.recovery_covers_activity(aid) {
-                ReverseClass::Compensation
-            } else {
+            let class = if inverse.is_empty() {
                 ReverseClass::NonReversible
+            } else {
+                ReverseClass::Inverse
             };
             if let Err(e) = self.lineage.commit(
                 &intent.cap.id,
@@ -1043,20 +1030,56 @@ mod tests {
     }
 
     #[test]
+    fn compensation_listed_honestly() {
+        let host = Host::with_clock(1000);
+        let mut sealed = BTreeMap::new();
+        sealed.insert("key".into(), json!("compensated"));
+        sealed.insert("value".into(), json!(true));
+        host.mint_recovery(
+            "rec-use",
+            "kv.write",
+            false,
+            None,
+            Some("act-comp"),
+            None,
+            &sealed,
+        )
+        .unwrap();
+        host.lineage_store()
+            .commit(
+                "cap",
+                Some("act-comp"),
+                "log.append",
+                vec![baseline::log_append("hi")],
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .unwrap();
+        let rev = host.end_activity("act-comp").unwrap();
+        assert!(
+            rev.non_reversible.is_empty(),
+            "successful compensation must not mark NonReversible"
+        );
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "kv.set");
+        assert_eq!(rev.ops[0].payload.get("key"), Some(&json!("compensated")));
+    }
+
+    #[test]
     fn compensation_without_recovery_cap_is_non_reversible() {
         let host = Host::with_clock(1000);
         host.lineage_store()
             .commit(
                 "cap",
-                Some("act-comp"),
+                Some("act-comp-bare"),
                 "kv.write",
                 vec![baseline::kv_set("k", json!(1))],
                 ReverseClass::Compensation,
                 vec![],
             )
             .unwrap();
-        let rev = host.end_activity("act-comp").unwrap();
-        assert!(rev.ops.is_empty());
+        let rev = host.end_activity("act-comp-bare").unwrap();
+        assert!(rev.ops.is_empty(), "must not report clean reverse");
         assert_eq!(rev.non_reversible.len(), 1);
     }
 
@@ -1133,42 +1156,6 @@ mod tests {
     }
 
     #[test]
-    fn compensation_under_recovery_cap_is_usable() {
-        let host = Host::with_clock(1000);
-        let mut sealed = BTreeMap::new();
-        sealed.insert("key".into(), json!("compensated"));
-        sealed.insert("value".into(), json!(true));
-        host.mint_recovery(
-            "rec-use",
-            "kv.write",
-            false,
-            None,
-            Some("act-comp-use"),
-            None,
-            &sealed,
-        )
-        .unwrap();
-        host.lineage_store()
-            .commit(
-                "cap-orig",
-                Some("act-comp-use"),
-                "log.append",
-                vec![baseline::log_append("hi")],
-                ReverseClass::Compensation,
-                vec![],
-            )
-            .unwrap();
-        let rev = host.end_activity("act-comp-use").unwrap();
-        assert!(
-            rev.non_reversible.is_empty(),
-            "successful compensation must not mark NonReversible"
-        );
-        assert_eq!(rev.ops.len(), 1);
-        assert_eq!(rev.ops[0].fq(), "kv.set");
-        assert_eq!(rev.ops[0].payload.get("key"), Some(&json!("compensated")));
-    }
-
-    #[test]
     fn compensation_failure_marks_non_reversible() {
         let host = Host::with_clock(1000);
         let mut sealed = BTreeMap::new();
@@ -1200,7 +1187,7 @@ mod tests {
     }
 
     #[test]
-    fn submit_classifies_compensation_when_recovery_present() {
+    fn submit_never_auto_classifies_compensation() {
         let host = Host::with_clock(1000);
         let mut sealed = BTreeMap::new();
         sealed.insert("key".into(), json!("restored"));
@@ -1229,13 +1216,13 @@ mod tests {
         assert!(matches!(r.kind, ResultKind::Ok));
         let entries = host.lineage_store().for_activity("act-cls").unwrap();
         assert_eq!(entries.len(), 1);
-        assert!(matches!(
-            entries[0].reverse_class,
-            ReverseClass::Compensation
-        ));
+        assert!(
+            matches!(entries[0].reverse_class, ReverseClass::NonReversible),
+            "submit auto-class is Inverse vs NonReversible only"
+        );
         let rev = host.end_activity("act-cls").unwrap();
-        assert!(rev.non_reversible.is_empty());
-        assert_eq!(rev.ops[0].fq(), "kv.set");
+        assert!(rev.ops.is_empty());
+        assert!(!rev.non_reversible.is_empty());
     }
 
     #[test]
@@ -1718,24 +1705,6 @@ mod tests {
     #[test]
     fn revoke_compensation_listed_not_silent_success() {
         let host = Host::with_clock(1000);
-        host.lineage_store()
-            .commit(
-                "cap-comp-rev",
-                Some("act-comp-rev"),
-                "kv.write",
-                vec![baseline::kv_set("k", json!(1))],
-                ReverseClass::Compensation,
-                vec![],
-            )
-            .unwrap();
-        let rev = host.revoke("cap-comp-rev").unwrap();
-        assert!(rev.ops.is_empty());
-        assert_eq!(rev.non_reversible.len(), 1);
-    }
-
-    #[test]
-    fn revoke_compensation_under_recovery_cap_is_usable() {
-        let host = Host::with_clock(1000);
         let mut sealed = BTreeMap::new();
         sealed.insert("key".into(), json!("rev-comp"));
         sealed.insert("value".into(), json!(1));
@@ -1744,26 +1713,30 @@ mod tests {
             "kv.write",
             false,
             None,
-            Some("act-rev-comp"),
+            Some("act-comp-rev"),
             None,
             &sealed,
         )
         .unwrap();
-        let orig = host.mint("cap-rev-comp", "log.append", false, None);
-        let mut args = BTreeMap::new();
-        args.insert("message".into(), json!("hi"));
-        let r = host.submit(Intent {
-            action: "log.append".into(),
-            args,
-            cap: orig.clone(),
-            trace: None,
-            idempotency_key: None,
-            activity_id: Some("act-rev-comp".into()),
-        });
-        assert!(matches!(r.kind, ResultKind::Ok));
+        host.lineage_store()
+            .commit(
+                "cap-comp-rev",
+                Some("act-comp-rev"),
+                "log.append",
+                vec![baseline::log_append("hi")],
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .unwrap();
+        let orig = host.mint("cap-comp-rev", "log.append", false, None);
         let rev = host.revoke(&orig.id).unwrap();
-        assert!(rev.non_reversible.is_empty());
+        assert!(
+            rev.non_reversible.is_empty(),
+            "successful compensation must not mark NonReversible"
+        );
+        assert_eq!(rev.ops.len(), 1);
         assert_eq!(rev.ops[0].fq(), "kv.set");
+        assert_eq!(rev.ops[0].payload.get("key"), Some(&json!("rev-comp")));
         assert!(host.lineage_store().is_revoked(&orig.id));
         let r2 = host.submit(Intent {
             action: "log.append".into(),
@@ -1775,7 +1748,7 @@ mod tests {
             cap: orig,
             trace: None,
             idempotency_key: None,
-            activity_id: Some("act-rev-comp-2".into()),
+            activity_id: Some("act-comp-rev-2".into()),
         });
         assert!(matches!(r2.kind, ResultKind::AuthorityRefusal));
         assert!(r2.ops.is_empty());

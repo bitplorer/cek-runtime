@@ -37,11 +37,11 @@ Vector checker rejects `authority_refusal` with non-empty Ops.
 
 ## Lineage and reverse
 
-1. Commit stores **authorized** Ops + inverse plan class.  
+1. Commit stores **authorized** Ops + reverse-plan class. Submit auto-class is Inverse vs NonReversible only (never auto-Compensation).  
 2. Commit onto an ended Activity is rejected **before** insert.  
 3. Peer receipt → `report_receipt` annotates **landed** Ops.  
 4. `end_activity` prefers inverse of **landed** when annotated; else inverse from commit.  
-5. `Compensation` submits ordinary Intents under a Recovery Cap (`Host::mint_recovery`, LAW §13). Failure (no Cap, expired, refuse) → NonReversible for the original cause; never claim clean reverse.  
+5. `Compensation` (seeded class) submits ordinary Intents under a Recovery Cap (`Host::mint_recovery`, LAW §13). Failure (no Cap, expired, refuse) → NonReversible for the original cause; never claim clean reverse.  
 6. `ui.dom.morph` reverse is `ui.dom.restore` **only** when `snapshot` is on the Op; otherwise mark non-reversible.  
 7. `kv.delete` reverse is `kv.set` **only** when `prior` is on the Op; otherwise mark non-reversible.
 

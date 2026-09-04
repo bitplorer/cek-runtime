@@ -2,7 +2,7 @@
 
 use cek_contract::{
     check_result, load_vector_dir, sealed_args_digest, Intent, ResultKind, ResultMsg,
-    UnknownOpPolicy, VectorCase,
+    ReverseClass, UnknownOpPolicy, VectorCase,
 };
 use cek_host_kernel::Host;
 use cek_peer_kernel::Peer;
@@ -299,6 +299,18 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
             &rec.sealed,
         )
         .map_err(|e| e.to_string())?;
+    }
+    if let Some(ref cc) = case.compensation_commit {
+        host.lineage_store()
+            .commit(
+                &cc.cap_id,
+                Some(cc.activity_id.as_str()),
+                &cc.action,
+                cc.ops.clone(),
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .map_err(|e| e.to_string())?;
     }
     let peer = make_peer(case);
 

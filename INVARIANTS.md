@@ -31,7 +31,7 @@ This file lists **what the reference runtime actually checks** and where.
 | 22 | Ed25519 missing/tamper/wrong key → zero Ops | `ed25519_*` tests + `ed25519-*` vectors |
 | 23 | Unknown/blank law generation → zero Ops | `law-gen-*` |
 | 24 | Batteries: refuse never leaks Ops | `batteries::*`, `scripts/batteries.sh` |
-| 25 | Recovery Cap compensation (LAW §13) | `compensation_under_recovery_cap_is_usable`, vectors `recovery-cap-*` |
+| 25 | Recovery Cap compensation (LAW §13) | `compensation_listed_honestly`, `revoke_compensation_listed_not_silent_success`, vectors `recovery-cap-*` |
 
 ## Coverage
 

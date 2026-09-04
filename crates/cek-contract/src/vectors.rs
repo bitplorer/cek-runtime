@@ -106,6 +106,9 @@ pub struct VectorCase {
     /// Mint a Recovery Cap (LAW §13) before submit / reverse.
     #[serde(default)]
     pub mint_recovery: Option<VectorRecoveryMint>,
+    /// Seed a Compensation lineage entry (submit auto-class is Inverse vs NonReversible only).
+    #[serde(default)]
+    pub compensation_commit: Option<VectorCompensationCommit>,
     /// After `end_activity`, require a NonReversible listing (compensation failure).
     #[serde(default)]
     pub expect_end_non_reversible: bool,
@@ -133,6 +136,22 @@ pub struct VectorRecoveryMint {
     /// Sealed compensation args (ordinary Intent args under the Recovery Cap).
     #[serde(default)]
     pub sealed: BTreeMap<String, Value>,
+}
+
+/// Seed [`crate::ReverseClass::Compensation`] lineage for reverse (LAW §13).
+///
+/// Submit never auto-classifies Compensation; vectors commit this class explicitly.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VectorCompensationCommit {
+    /// Cap id that authorized the original cause.
+    pub cap_id: String,
+    /// Activity the cause belongs to.
+    pub activity_id: String,
+    /// Original action.
+    pub action: String,
+    /// Authorized Ops snapshot.
+    #[serde(default)]
+    pub ops: Vec<Op>,
 }
 
 /// Load a single vector JSON file.

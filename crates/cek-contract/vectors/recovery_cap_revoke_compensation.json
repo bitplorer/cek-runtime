@@ -9,13 +9,12 @@
     "for_activity": "act-rev-comp",
     "sealed": { "key": "rev-comp", "value": 1 }
   },
-  "prior_intent": {
+  "compensation_commit": {
+    "cap_id": "cap-rev-comp",
+    "activity_id": "act-rev-comp",
     "action": "log.append",
-    "args": { "message": "hi" },
-    "cap": { "id": "cap-rev-comp", "action": "log.append", "once": false },
-    "activity_id": "act-rev-comp"
+    "ops": [{ "ns": "log", "name": "append", "payload": { "message": "hi" } }]
   },
-  "prior_must_ok": true,
   "revoke_cap": "cap-rev-comp",
   "expect_revoke_reverse_ops": [
     {
