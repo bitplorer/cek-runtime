@@ -6,8 +6,8 @@ use crate::{
     OnceBackend, OnceStore, ReverseOutcome,
 };
 use cek_contract::{
-    baseline, ops_digest, result_digest, sealed_args_digest, Cap, Intent, Manifest, Op, Receipt,
-    ResultMsg, ReverseClass, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
+    ops_digest, result_digest, sealed_args_digest, Cap, Intent, Manifest, Op, Receipt, ResultMsg,
+    ReverseClass, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
 };
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use serde_json::Value;
@@ -483,7 +483,7 @@ impl Host {
 mod tests {
     use super::*;
     use crate::{FileIdemStore, FileLineageStore, FileOnceStore};
-    use cek_contract::ResultKind;
+    use cek_contract::{baseline, ResultKind};
     use serde_json::json;
     use std::cell::RefCell;
     use std::collections::BTreeMap;
