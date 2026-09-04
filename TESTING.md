@@ -30,7 +30,7 @@ cargo run -p cek-cli -- demo
 | **Fail-closed** | `fail_closed.rs` | Store-down refuse; concurrent once (exactly one `ok`) |
 | **Batteries** | `batteries.rs`, `ports/*/test_batteries*`, `scripts/batteries.sh` | Stress, load, chaos, pen — refuse stays zero-Ops |
 | **Store contract** | `store::tests` | Memory backends satisfy trait contracts |
-| **Vectors** | `crates/cek-contract/vectors/*.json` | CORE families — **57** cases |
+| **Vectors** | `crates/cek-contract/vectors/*.json` | CORE families — **64** cases |
 # llvm-cov (optional install)
 cargo install cargo-llvm-cov
 cargo llvm-cov --workspace --summary-only

@@ -24,7 +24,8 @@
 
 ## Projection
 
-Host projects to `profile ∩ ability ∪ Baseline fallback`.  
+Host projects Result Ops to `peer.apply_set ∪ Baseline` (LAW §11).  
+Missing Manifest → assume Baseline-only Peer. Manifest never grants Cap.  
 Empty Ops on success is allowed (pure decision).
 
 ## Bootstrap

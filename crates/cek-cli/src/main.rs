@@ -1,7 +1,7 @@
 //! cek CLI — demo, vectors, and kernel-wrap JSON (apply / host-json).
 
 use cek_contract::{
-    check_result, load_vector_dir, sealed_args_digest, Intent, ResultKind, ResultMsg,
+    check_result, load_vector_dir, sealed_args_digest, Intent, Profile, ResultKind, ResultMsg,
     ReverseClass, UnknownOpPolicy, VectorCase,
 };
 use cek_host_kernel::Host;
@@ -117,20 +117,23 @@ fn run_demo() {
     // 5) ui.morph + snapshot reverse
     let peer_ui = Peer::with_ui();
     let cap_ui = host.mint("cap-ui", "ui.morph", false, None);
-    let r = host.submit(Intent {
-        action: "ui.morph".into(),
-        args: {
-            let mut a = BTreeMap::new();
-            a.insert("target".into(), json!("hdr"));
-            a.insert("patch".into(), json!({"t": "hello"}));
-            a.insert("snapshot".into(), json!({"t": ""}));
-            a
+    let r = host.submit_for(
+        Intent {
+            action: "ui.morph".into(),
+            args: {
+                let mut a = BTreeMap::new();
+                a.insert("target".into(), json!("hdr"));
+                a.insert("patch".into(), json!({"t": "hello"}));
+                a.insert("snapshot".into(), json!({"t": ""}));
+                a
+            },
+            cap: cap_ui,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-ui".into()),
         },
-        cap: cap_ui,
-        trace: None,
-        idempotency_key: None,
-        activity_id: Some("act-ui".into()),
-    });
+        Some(peer_ui.profile()),
+    );
     println!("\n5) ui.morph → {:?} ops={}", r.kind, r.ops[0].fq());
     let rec = peer_ui.apply(&r).unwrap();
     host.report_receipt("act-ui", &rec).expect("ui receipt");
@@ -313,13 +316,15 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
     }
     let peer = make_peer(case);
+    // Omitted peer_profile → missing Manifest → Baseline-only (LAW §11).
+    let profile = case.peer_profile.is_some().then(|| peer.profile().clone());
 
     if let Some(ref prior) = case.prior_intent {
         let mut prior = prior.clone();
         if case.sign_cap {
             prior.cap = host.attach_sig(prior.cap);
         }
-        let r0 = host.submit(prior);
+        let r0 = host.submit_for(prior, profile.as_ref());
         if case.prior_must_ok && !matches!(r0.kind, ResultKind::Ok) {
             return Err(format!("prior_intent was {:?}, expected ok", r0.kind));
         }
@@ -355,7 +360,7 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
         if case.sign_cap {
             intent.cap = host.attach_sig(intent.cap);
         }
-        host.submit(intent)
+        host.submit_for(intent, profile.as_ref())
     };
 
     check_result(case, &result).map_err(|e| e.to_string())?;
@@ -497,7 +502,8 @@ fn run_apply() {
 /// Wrap cek-host-kernel over JSON. Commands: mint | submit.
 ///
 /// mint:    {"cmd":"mint","id":"...","action":"kv.write","once":false}
-/// submit:  {"cmd":"submit","intent":{...Intent...}}
+/// submit:  {"cmd":"submit","intent":{...Intent...},"profile":{...Profile...}?}
+///          omitted profile → missing Manifest → Baseline-only (LAW §11).
 fn run_host_json() {
     let v: serde_json::Value = match serde_json::from_str(&read_stdin()) {
         Ok(v) => v,
@@ -531,7 +537,17 @@ fn run_host_json() {
                         std::process::exit(1);
                     }
                 };
-            let result = host.submit(intent);
+            let profile: Option<Profile> = match v.get("profile") {
+                None | Some(serde_json::Value::Null) => None,
+                Some(p) => match serde_json::from_value(p.clone()) {
+                    Ok(p) => Some(p),
+                    Err(e) => {
+                        eprintln!("profile: {e}");
+                        std::process::exit(1);
+                    }
+                },
+            };
+            let result = host.submit_for(intent, profile.as_ref());
             match serde_json::to_string(&result) {
                 Ok(s) => println!("{s}"),
                 Err(e) => {
