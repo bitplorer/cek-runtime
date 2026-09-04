@@ -97,7 +97,7 @@ node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-Expect about **147** Rust tests, **57** vectors, batteries green.  
+Expect about **190** Rust tests, **64** vectors, batteries green.  
 Python Host skips Peer-only fixtures (Ed25519 is implemented). JS Peer runs apply-only fixtures.
 
 ## 8. Use it from an app

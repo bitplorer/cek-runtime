@@ -13,7 +13,7 @@
 //!   → dispatch (authorized Ops)
 //!   → once commit (only after successful dispatch; no burn on miss)
 //!   → lineage commit (if Activity)     // LAW §4: before project
-//!   → project Ops onto Result          // first-cut: identity
+//!   → project Ops onto Result          // LAW §11: ability ∪ Baseline
 //!   → Result + digest
 //! ```
 //!

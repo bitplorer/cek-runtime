@@ -13,6 +13,7 @@
     "cap": { "id": "cap-ui", "action": "ui.morph", "once": false }
   },
   "expect_kind": "ok",
+  "peer_profile": "ui",
   "expect_ops": [
     {
       "ns": "ui.dom",

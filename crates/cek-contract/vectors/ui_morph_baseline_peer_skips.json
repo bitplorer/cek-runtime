@@ -1,7 +1,7 @@
 {
   "id": "ui-morph-baseline-peer-skips",
   "family": "unknown_ops",
-  "description": "Baseline Peer skips ui.dom.morph; no crash, no UI write",
+  "description": "Baseline Peer: Host projects ui.morph away from ui.dom.*; no UI write",
   "now": 1000,
   "intent": {
     "action": "ui.morph",

@@ -1,0 +1,23 @@
+{
+  "id": "ui-morph-missing-manifest-baseline",
+  "family": "ui_domain",
+  "description": "LAW §11: missing Manifest → Baseline-only projection, not ui.dom.* catalog",
+  "now": 1000,
+  "intent": {
+    "action": "ui.morph",
+    "args": {
+      "target": "hdr",
+      "patch": { "t": 1 }
+    },
+    "cap": { "id": "cap-ui-miss", "action": "ui.morph", "once": false },
+    "activity_id": "act-ui-miss"
+  },
+  "expect_kind": "ok",
+  "expect_ops": [
+    {
+      "ns": "kv",
+      "name": "set",
+      "payload": { "key": "ui:hdr", "value": { "t": 1 } }
+    }
+  ]
+}

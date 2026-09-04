@@ -1,0 +1,26 @@
+{
+  "id": "ui-morph-baseline-profile-no-catalog",
+  "family": "ui_domain",
+  "description": "LAW §11: Baseline profile → projected kv.set, not full ui.dom.* catalog",
+  "now": 1000,
+  "intent": {
+    "action": "ui.morph",
+    "args": {
+      "target": "hdr",
+      "patch": { "t": "new" }
+    },
+    "cap": { "id": "cap-ui-base", "action": "ui.morph", "once": false }
+  },
+  "peer_profile": "baseline",
+  "expect_kind": "ok",
+  "expect_ops": [
+    {
+      "ns": "kv",
+      "name": "set",
+      "payload": { "key": "ui:hdr", "value": { "t": "new" } }
+    }
+  ],
+  "peer_apply": true,
+  "expect_peer_ui": { "hdr": null },
+  "expect_peer_kv": { "ui:hdr": { "t": "new" } }
+}

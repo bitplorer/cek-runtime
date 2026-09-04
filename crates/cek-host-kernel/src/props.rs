@@ -441,14 +441,17 @@ fn prop_ui_snapshot_reverse() {
         args.insert("patch".into(), json!({"v": 2}));
         args.insert("snapshot".into(), json!({"v": 1}));
         let aid = format!("act-ui-{target}");
-        let r = host.submit(Intent {
-            action: "ui.morph".into(),
-            args,
-            cap,
-            trace: None,
-            idempotency_key: None,
-            activity_id: Some(aid.clone()),
-        });
+        let r = host.submit_for(
+            Intent {
+                action: "ui.morph".into(),
+                args,
+                cap,
+                trace: None,
+                idempotency_key: None,
+                activity_id: Some(aid.clone()),
+            },
+            Some(&Host::ui_peer_profile()),
+        );
         assert!(matches!(r.kind, ResultKind::Ok), "{target}");
         assert_eq!(r.ops[0].fq(), "ui.dom.morph");
         let rev = host.end_activity(&aid).unwrap();

@@ -7,8 +7,8 @@ use crate::{
 };
 use cek_contract::{
     ops_digest, result_digest, sealed_args_digest, Cap, Intent, LineageEntry, Manifest, Op,
-    Receipt, ResultKind, ResultMsg, ReverseClass, LAW_GENERATION, PROFILE_BASELINE,
-    PROFILE_PRODUCTION_V1,
+    Profile, Receipt, ResultKind, ResultMsg, ReverseClass, UnknownOpPolicy, LAW_GENERATION,
+    PROFILE_BASELINE, PROFILE_PRODUCTION_V1, PROFILE_UI, UI_OPS,
 };
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use serde_json::Value;
@@ -60,6 +60,8 @@ pub struct Host {
     pub(crate) accepted_generations: Vec<String>,
     /// Recovery Caps minted under LAW §13 (Host-only; never Peer root).
     recovery: Mutex<RecoveryIndex>,
+    /// Bound Peer Profile for LAW §11 project. `None` = missing Manifest → Baseline-only.
+    peer_profile: Option<Profile>,
 }
 
 impl Default for Host {
@@ -100,6 +102,7 @@ impl Host {
             ed_trust: Vec::new(),
             accepted_generations: vec![LAW_GENERATION.into()],
             recovery: Mutex::new(RecoveryIndex::default()),
+            peer_profile: None,
         }
     }
 
@@ -131,6 +134,7 @@ impl Host {
             ed_trust: Vec::new(),
             accepted_generations: vec![LAW_GENERATION.into()],
             recovery: Mutex::new(RecoveryIndex::default()),
+            peer_profile: None,
         }
     }
 
@@ -202,6 +206,54 @@ impl Host {
                 ..Default::default()
             },
         }
+    }
+
+    /// Baseline-only Peer Profile (missing Manifest / Baseline claim). LAW §11.
+    pub fn baseline_peer_profile() -> Profile {
+        Profile {
+            name: PROFILE_BASELINE.into(),
+            apply_set: cek_contract::BASELINE_OPS
+                .iter()
+                .map(|s| (*s).to_string())
+                .collect(),
+            unknown_op_policy: UnknownOpPolicy::Skip,
+        }
+    }
+
+    /// Baseline ∪ `ui.dom.*` apply-set. LAW §11 ability, not a Cap grant.
+    pub fn ui_peer_profile() -> Profile {
+        let mut apply_set: Vec<String> = cek_contract::BASELINE_OPS
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect();
+        apply_set.extend(UI_OPS.iter().map(|s| (*s).to_string()));
+        Profile {
+            name: PROFILE_UI.into(),
+            apply_set,
+            unknown_op_policy: UnknownOpPolicy::Skip,
+        }
+    }
+
+    /// Map a Peer Manifest to a Profile. Unknown/empty names → Baseline.
+    /// Manifest never grants Cap (LAW §11).
+    pub fn profile_from_manifest(manifest: &Manifest) -> Profile {
+        if manifest.profiles.iter().any(|p| p == PROFILE_UI) {
+            Self::ui_peer_profile()
+        } else {
+            Self::baseline_peer_profile()
+        }
+    }
+
+    /// Bind this Host to a Peer Profile for [`Host::submit`] (LAW §11).
+    pub fn with_peer_profile(mut self, profile: Profile) -> Self {
+        self.peer_profile = Some(profile);
+        self
+    }
+
+    /// Bind this Host from a Peer Manifest. Missing/non-ui names → Baseline.
+    pub fn with_peer_manifest(self, manifest: Manifest) -> Self {
+        let profile = Self::profile_from_manifest(&manifest);
+        self.with_peer_profile(profile)
     }
 
     /// Mint a Cap (Host bootstrap / policy path).
@@ -373,7 +425,7 @@ impl Host {
         cap
     }
 
-    /// Lower authorized Ops to Baseline (ui.* → kv.set). Does not change submit.
+    /// Lower authorized Ops to Baseline (ui.* → kv.set). Used by LAW §11 project.
     pub fn lower_ops(ops: &[Op]) -> Vec<Op> {
         ops.iter()
             .filter_map(cek_contract::lower_to_baseline)
@@ -382,10 +434,20 @@ impl Host {
 
     /// Full submit pipeline (LAW §4 / CORE 06 Host duties):
     /// verify Cap → consume once / idempotency bind → dispatch → **record lineage**
-    /// → **project Ops** → Result+digest.
+    /// → **project Ops** (LAW §11: ability ∪ Baseline) → Result+digest.
     ///
+    /// Missing Peer Profile/Manifest → Baseline-only projection.
     /// Cap refusal returns [`ResultMsg`] with `authority_refusal` and **zero** Ops.
     pub fn submit(&self, intent: Intent) -> ResultMsg {
+        self.submit_for(intent, None)
+    }
+
+    /// Submit projecting Result Ops to `profile.apply_set ∪ Baseline` (LAW §11).
+    ///
+    /// `None` uses the Host-bound Peer Profile if set, else missing Manifest →
+    /// Baseline-only. Lineage still records the **authorized** set.
+    pub fn submit_for(&self, intent: Intent, profile: Option<&Profile>) -> ResultMsg {
+        let profile = profile.or(self.peer_profile.as_ref());
         let now = (self.clock)();
         if let Err(e) = self.verify_cap(&intent, now) {
             return Self::err_result(e);
@@ -398,14 +460,14 @@ impl Host {
                     "empty idempotency key is not allowed".into(),
                 ));
             }
-            match self.idempotency_lookup(key, &intent) {
+            match self.idempotency_lookup(key, &intent, profile) {
                 Ok(Some(prior)) => return prior,
                 Ok(None) => {}
                 Err(e) => return Self::err_result(e),
             }
         }
         match self.once.ensure_available(&intent.cap.id, intent.cap.once) {
-            Ok(()) => self.dispatch_and_finish(BoundAsk { intent, now }),
+            Ok(()) => self.dispatch_and_finish(BoundAsk { intent, now }, profile),
             Err(e) => Self::err_result(e),
         }
     }
@@ -438,13 +500,19 @@ impl Host {
     /// Same key + same projected digest → cached Result.
     /// Same key + different digest → authority refusal.
     /// Missing key → None (first use).
-    fn idempotency_lookup(&self, key: &str, intent: &Intent) -> HostResult<Option<ResultMsg>> {
+    fn idempotency_lookup(
+        &self,
+        key: &str,
+        intent: &Intent,
+        profile: Option<&Profile>,
+    ) -> HostResult<Option<ResultMsg>> {
         let Some(prior) = self.idem.get(key)? else {
             return Ok(None);
         };
         match dispatch_ops(intent) {
             Ok(ops) => {
-                let digest = result_digest("ok", &ops, None);
+                let projected = project_authorized(ops, profile);
+                let digest = result_digest("ok", &projected, None);
                 if prior.digest.as_deref() == Some(digest.as_str()) {
                     Ok(Some(prior))
                 } else {
@@ -476,7 +544,7 @@ impl Host {
         let _ = step;
     }
 
-    fn dispatch_and_finish(&self, bound: BoundAsk) -> ResultMsg {
+    fn dispatch_and_finish(&self, bound: BoundAsk, profile: Option<&Profile>) -> ResultMsg {
         let intent = bound.intent();
 
         // LAW §4 step 3: Dispatch → authorized Ops. Miss does not burn a once-Cap.
@@ -490,13 +558,17 @@ impl Host {
         };
         Self::law4_note("dispatch");
 
-        let digest = result_digest("ok", &authorized, None);
+        // Projection is a pure function of authorized Ops + Peer Profile (LAW §11).
+        // Compute here so idempotency caches the Result the Peer will see; the
+        // LAW §4 project *step* still lands after lineage (Result assembly).
+        let projected = project_authorized(authorized.clone(), profile);
+        let digest = result_digest("ok", &projected, None);
 
         // Idempotency bind after digest is known, **before** lineage (no second cause).
         if let Some(ref key) = intent.idempotency_key {
             let cached = ResultMsg {
                 kind: cek_contract::ResultKind::Ok,
-                ops: authorized.clone(),
+                ops: projected.clone(),
                 error: None,
                 digest: Some(digest.clone()),
             };
@@ -553,9 +625,7 @@ impl Host {
             Self::law4_note("record_lineage");
         }
 
-        // LAW §4 steps 5–6: Project Ops onto Result, then return.
-        // First-cut project is identity (profile negotiate / Baseline lower is out of scope).
-        let projected = project_authorized(authorized);
+        // LAW §4 steps 5–6: Project Ops onto Result (LAW §11), then return.
         Self::law4_note("project");
         let mut r = ResultMsg::ok(projected);
         r.digest = Some(digest);
@@ -657,7 +727,9 @@ fn recovery_scopes(action: &str, sealed: &BTreeMap<String, Value>) -> Vec<String
 mod tests {
     use super::*;
     use crate::{FileIdemStore, FileLineageStore, FileOnceStore};
-    use cek_contract::{baseline, ResultKind, ReverseClass};
+    use cek_contract::{
+        baseline, Manifest, Profile, ResultKind, ReverseClass, LAW_GENERATION, PROFILE_UI,
+    };
     use serde_json::json;
     use std::cell::RefCell;
     use std::collections::BTreeMap;
@@ -1319,12 +1391,10 @@ mod tests {
     fn ui_morph_projects_and_restore_reverse() {
         let host = Host::with_clock(1000);
         let cap = host.mint("c-ui", "ui.morph", false, None);
-        let r = host.submit(intent_morph(
-            cap,
-            "hdr",
-            json!({"t": "new"}),
-            Some(json!({"t": "old"})),
-        ));
+        let r = host.submit_for(
+            intent_morph(cap, "hdr", json!({"t": "new"}), Some(json!({"t": "old"}))),
+            Some(&Host::ui_peer_profile()),
+        );
         assert!(matches!(r.kind, ResultKind::Ok));
         assert_eq!(r.ops[0].fq(), "ui.dom.morph");
         let rev = host.end_activity("act-ui").unwrap();
@@ -1340,6 +1410,115 @@ mod tests {
         let rev = host.end_activity("act-ui").unwrap();
         assert!(rev.ops.is_empty());
         assert!(!rev.non_reversible.is_empty());
+    }
+
+    /// LAW §11: missing Manifest → Baseline-only Peer. Result Ops are projected,
+    /// not the full `ui.dom.*` catalog.
+    #[test]
+    fn missing_manifest_projects_baseline_not_ui_catalog() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui-miss", "ui.morph", false, None);
+        let r = host.submit(intent_morph(
+            cap,
+            "hdr",
+            json!({"t": 1}),
+            Some(json!({"t": 0})),
+        ));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops.len(), 1);
+        assert_eq!(r.ops[0].fq(), "kv.set");
+        assert_eq!(
+            r.ops[0].payload.get("key").and_then(|v| v.as_str()),
+            Some("ui:hdr")
+        );
+        assert!(r.ops.iter().all(|op| op.ns != "ui.dom"));
+        let entries = host.lineage_store().for_activity("act-ui").unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].authorized_ops[0].fq(), "ui.dom.morph");
+        assert_ne!(entries[0].authorized_ops, r.ops);
+    }
+
+    #[test]
+    fn baseline_profile_projects_baseline_not_ui_catalog() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui-base", "ui.morph", false, None);
+        let r = host.submit_for(
+            intent_morph(cap, "hdr", json!({"t": 1}), None),
+            Some(&Host::baseline_peer_profile()),
+        );
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops[0].fq(), "kv.set");
+        assert!(r.ops.iter().all(|op| op.ns != "ui.dom"));
+    }
+
+    #[test]
+    fn limited_profile_unions_baseline_not_full_catalog() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui-lim", "ui.morph", false, None);
+        let limited = Profile {
+            name: "limited".into(),
+            apply_set: vec!["kv.set".into()],
+            unknown_op_policy: Default::default(),
+        };
+        let r = host.submit_for(
+            intent_morph(cap, "hdr", json!({"t": 1}), None),
+            Some(&limited),
+        );
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops[0].fq(), "kv.set");
+        assert!(r.ops.iter().all(|op| op.fq() != "ui.dom.morph"));
+    }
+
+    #[test]
+    fn ui_profile_keeps_domain_ops() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui-keep", "ui.morph", false, None);
+        let r = host.submit_for(
+            intent_morph(cap, "hdr", json!({"t": 1}), None),
+            Some(&Host::ui_peer_profile()),
+        );
+        assert_eq!(r.ops[0].fq(), "ui.dom.morph");
+    }
+
+    #[test]
+    fn empty_manifest_defaults_baseline() {
+        let host = Host::with_clock(1000).with_peer_manifest(Manifest {
+            law_generation: LAW_GENERATION.into(),
+            accepted_generations: vec![],
+            profiles: vec![],
+            fail_closed: Default::default(),
+        });
+        let cap = host.mint("c-ui-man", "ui.morph", false, None);
+        let r = host.submit(intent_morph(cap, "hdr", json!({"t": 1}), None));
+        assert_eq!(r.ops[0].fq(), "kv.set");
+        assert!(r.ops.iter().all(|op| op.ns != "ui.dom"));
+    }
+
+    #[test]
+    fn ui_manifest_keeps_domain_ops() {
+        let host = Host::with_clock(1000).with_peer_manifest(Manifest {
+            law_generation: LAW_GENERATION.into(),
+            accepted_generations: vec![],
+            profiles: vec![PROFILE_UI.into()],
+            fail_closed: Default::default(),
+        });
+        let cap = host.mint("c-ui-man-ui", "ui.morph", false, None);
+        let r = host.submit(intent_morph(cap, "hdr", json!({"t": 1}), None));
+        assert_eq!(r.ops[0].fq(), "ui.dom.morph");
+    }
+
+    #[test]
+    fn same_authorized_and_profile_same_projected_ops() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ui-det", "ui.morph", false, None);
+        let intent = intent_morph(cap, "hdr", json!({"t": 1}), None);
+        let a = host.submit_for(intent.clone(), Some(&Host::baseline_peer_profile()));
+        let host2 = Host::with_clock(1000);
+        let cap2 = host2.mint("c-ui-det2", "ui.morph", false, None);
+        let intent2 = intent_morph(cap2, "hdr", json!({"t": 1}), None);
+        let b = host2.submit_for(intent2, Some(&Host::baseline_peer_profile()));
+        assert_eq!(a.ops, b.ops);
+        assert_eq!(a.digest, b.digest);
     }
 
     #[test]

@@ -16,6 +16,8 @@ Permanent interop profile: classic Ops only, receipts optional, idempotency opti
 Baseline Peers remain valid without production-v1.  
 Claims of “production CEK” in *this* framework should target production-v1 vectors.
 
+Host projects Result Ops to this Peer's ability ∪ Baseline (LAW §11). Missing Manifest → Baseline-only.
+
 ## Unknown Op policy
 
 | Policy | Behavior |

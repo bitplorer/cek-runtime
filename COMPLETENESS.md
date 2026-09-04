@@ -12,7 +12,7 @@
 | Concept explainers | CONCEPTS.md |
 | Runtime vs kernel; wire | TOPOLOGY.md |
 | Scope vs law | SCOPE.md |
-| Contract, vectors, Baseline, manifest | 00-contract/ + `crates/cek-contract` (57 JSON vectors) |
+| Contract, vectors, Baseline, manifest | 00-contract/ + `crates/cek-contract` (64 JSON vectors) |
 | Host/Peer APIs | 01-kernels/ + `crates/cek-host-kernel` + `cek-peer-kernel` |
 | Submit pipeline | 02-host-pipeline/ + `host.rs` |
 | Peer apply + receipt | 03-peer-apply/ |
@@ -28,7 +28,7 @@
 
 ## Honest residuals (not “shipping code is next”)
 
-v0.1 **code is shipped**: Host + Peer + drivers, 57 vectors, 24 executable invariants, Python Host + JS/TS/WASM Peers, batteries. See README status table.
+v0.1 **code is shipped**: Host + Peer + drivers, 64 vectors, 24 executable invariants, Python Host + JS/TS/WASM Peers, batteries. See README status table.
 
 Still not a published JSON Schema file dump (`cek-contract` types live in Rust). File-backed stores exist in the Rust kernel; Redis does not. Published crates.io kernels are Phase 3.
 
