@@ -2,7 +2,7 @@
 
 use cek_contract::{
     check_result, load_vector_dir, sealed_args_digest, Intent, ResultKind, ResultMsg,
-    UnknownOpPolicy, VectorCase,
+    ReverseClass, UnknownOpPolicy, VectorCase,
 };
 use cek_host_kernel::Host;
 use cek_peer_kernel::Peer;
@@ -288,6 +288,30 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
                 .map_err(|e| e.to_string())?;
         }
     }
+    if let Some(ref rec) = case.mint_recovery {
+        host.mint_recovery(
+            rec.id.clone(),
+            rec.action.clone(),
+            rec.once,
+            rec.not_after,
+            rec.for_activity.as_deref(),
+            rec.for_lineage.as_deref(),
+            &rec.sealed,
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    if let Some(ref cc) = case.compensation_commit {
+        host.lineage_store()
+            .commit(
+                &cc.cap_id,
+                Some(cc.activity_id.as_str()),
+                &cc.action,
+                cc.ops.clone(),
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .map_err(|e| e.to_string())?;
+    }
     let peer = make_peer(case);
 
     if let Some(ref prior) = case.prior_intent {
@@ -405,6 +429,9 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
             if rev.used_landed != want {
                 return Err(format!("used_landed want {want} got {}", rev.used_landed));
             }
+        }
+        if case.expect_end_non_reversible && rev.non_reversible.is_empty() {
+            return Err("end_activity expected NonReversible listing, got none".into());
         }
         if case.end_activity_again && host.end_activity(aid).is_ok() {
             return Err("second end_activity unexpectedly succeeded".into());

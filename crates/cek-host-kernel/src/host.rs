@@ -7,12 +7,40 @@ use crate::{
 };
 use cek_contract::{
     ops_digest, result_digest, sealed_args_digest, Cap, Intent, LineageEntry, Manifest, Op,
-    Receipt, ResultMsg, ReverseClass, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
+    Receipt, ResultKind, ResultMsg, ReverseClass, LAW_GENERATION, PROFILE_BASELINE,
+    PROFILE_PRODUCTION_V1,
 };
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use serde_json::Value;
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+
+/// Host-only Recovery Cap registry (LAW §13). Ordinary [`Host::mint`] is not a recovery bypass.
+#[derive(Default)]
+struct RecoveryIndex {
+    records: Vec<RecoveryRecord>,
+}
+
+struct RecoveryRecord {
+    cap: Cap,
+    args: BTreeMap<String, Value>,
+    for_activity: Option<String>,
+    for_lineage: Option<String>,
+}
+
+impl RecoveryRecord {
+    fn covers_entry(&self, entry: &LineageEntry) -> bool {
+        let lin_ok = match &self.for_lineage {
+            Some(id) => id == &entry.id,
+            None => true,
+        };
+        let act_ok = match &self.for_activity {
+            Some(aid) => entry.activity_id.as_deref() == Some(aid.as_str()),
+            None => true,
+        };
+        (self.for_activity.is_some() || self.for_lineage.is_some()) && lin_ok && act_ok
+    }
+}
 
 /// Reference Host kernel. Stores are trait objects so durable backends can be swapped.
 pub struct Host {
@@ -30,6 +58,8 @@ pub struct Host {
     pub(crate) ed_trust: Vec<VerifyingKey>,
     /// Law generations this Host accepts (always includes current).
     pub(crate) accepted_generations: Vec<String>,
+    /// Recovery Caps minted under LAW §13 (Host-only; never Peer root).
+    recovery: Mutex<RecoveryIndex>,
 }
 
 impl Default for Host {
@@ -69,6 +99,7 @@ impl Host {
             ed_sign: None,
             ed_trust: Vec::new(),
             accepted_generations: vec![LAW_GENERATION.into()],
+            recovery: Mutex::new(RecoveryIndex::default()),
         }
     }
 
@@ -99,6 +130,7 @@ impl Host {
             ed_sign: None,
             ed_trust: Vec::new(),
             accepted_generations: vec![LAW_GENERATION.into()],
+            recovery: Mutex::new(RecoveryIndex::default()),
         }
     }
 
@@ -207,6 +239,103 @@ impl Host {
         cap.sealed_args_bind = Some(sealed_args_digest(sealed));
         cap.sig = None;
         self.attach_sig(cap)
+    }
+
+    /// Mint a Recovery Cap (LAW §13). Host-only; never Peer root power.
+    ///
+    /// Still a normal Cap: verify, sealed args, fail closed, lineage for its own
+    /// effects if later submitted with an Activity. Scope is the declared
+    /// compensation action plus a resource allow-list derived from `sealed`.
+    /// Bind at least one of `for_activity` / `for_lineage` — ordinary
+    /// [`Host::mint`] is not a standing recovery bypass.
+    #[allow(clippy::too_many_arguments)]
+    pub fn mint_recovery(
+        &self,
+        id: impl Into<String>,
+        action: impl Into<String>,
+        once: bool,
+        not_after: Option<u64>,
+        for_activity: Option<&str>,
+        for_lineage: Option<&str>,
+        sealed: &BTreeMap<String, Value>,
+    ) -> HostResult<Cap> {
+        let id = id.into();
+        let action = action.into();
+        if id.trim().is_empty() {
+            return Err(HostError::Authority("empty Cap id is not allowed".into()));
+        }
+        if action.trim().is_empty() {
+            return Err(HostError::Authority("empty action is not allowed".into()));
+        }
+        let activity = Self::recovery_bind(for_activity)?;
+        let lineage = Self::recovery_bind(for_lineage)?;
+        if activity.is_none() && lineage.is_none() {
+            return Err(HostError::Authority(
+                "Recovery Cap requires for_activity or for_lineage (LAW §13)".into(),
+            ));
+        }
+        let mut cap = self.mint(id, action, once, not_after);
+        cap.scopes = recovery_scopes(&cap.action, sealed);
+        if !sealed.is_empty() {
+            cap.sealed_args_bind = Some(sealed_args_digest(sealed));
+        }
+        cap.sig = None;
+        let cap = self.attach_sig(cap);
+        let mut g = self
+            .recovery
+            .lock()
+            .map_err(|_| HostError::Lineage("recovery lock".into()))?;
+        g.records.push(RecoveryRecord {
+            cap: cap.clone(),
+            args: sealed.clone(),
+            for_activity: activity,
+            for_lineage: lineage,
+        });
+        Ok(cap)
+    }
+
+    fn recovery_bind(s: Option<&str>) -> HostResult<Option<String>> {
+        match s {
+            None => Ok(None),
+            Some(s) if s.trim().is_empty() => Err(HostError::Authority(
+                "empty Recovery Cap bind is not allowed".into(),
+            )),
+            Some(s) => Ok(Some(s.to_string())),
+        }
+    }
+
+    /// Compensation Intents under registered Recovery Caps (ordinary submit).
+    /// `None` = no path or a submit failed — caller marks NonReversible.
+    fn try_compensate(&self, entry: &LineageEntry) -> Option<Vec<Op>> {
+        let intents = {
+            let g = self.recovery.lock().ok()?;
+            let v: Vec<Intent> = g
+                .records
+                .iter()
+                .filter(|r| r.covers_entry(entry))
+                .map(|r| Intent {
+                    action: r.cap.action.clone(),
+                    args: r.args.clone(),
+                    cap: r.cap.clone(),
+                    trace: None,
+                    idempotency_key: None,
+                    activity_id: None,
+                })
+                .collect();
+            v
+        };
+        if intents.is_empty() {
+            return None;
+        }
+        let mut out = Vec::new();
+        for intent in intents {
+            let r = self.submit(intent);
+            if !matches!(r.kind, ResultKind::Ok) {
+                return None;
+            }
+            out.extend(r.ops);
+        }
+        Some(out)
     }
 
     /// Derive a narrower Cap. Widening scopes is refused (fail closed).
@@ -443,30 +572,32 @@ impl Host {
     /// End Activity → reverse lineage (LAW §9).
     ///
     /// Preference: if landed_ops annotated → build inverse from landed;
-    /// else use inverse_ops recorded at commit; NonReversible listed honestly.
+    /// else use inverse_ops recorded at commit; Compensation submits Intents
+    /// under a Recovery Cap (LAW §13); NonReversible listed honestly.
     pub fn end_activity(&self, activity_id: &str) -> HostResult<ReverseOutcome> {
         if activity_id.is_empty() {
             return Err(HostError::Lineage("empty activity_id".into()));
         }
         self.lineage.mark_ended(activity_id)?;
         let entries = self.lineage.for_activity(activity_id)?;
-        Ok(Self::reverse_entries(entries))
+        Ok(self.reverse_entries(entries))
     }
 
     /// Revoke a Cap (LAW §5 Active→Revoked) and reverse causes under it (LAW §9).
     ///
-    /// Same reverse classes as [`Host::end_activity`]: Inverse Ops, or an explicit
-    /// NonReversible listing. Compensation is mark-only (no Recovery Cap Intents).
+    /// Same reverse classes as [`Host::end_activity`]: Inverse Ops, Compensation
+    /// Intents under a Recovery Cap (LAW §13), or an explicit NonReversible listing.
+    /// Revoke surface is unchanged: Cap dead + Cap-scoped reverse.
     pub fn revoke(&self, cap_id: &str) -> HostResult<ReverseOutcome> {
         if cap_id.is_empty() {
             return Err(HostError::Authority("empty Cap id is not allowed".into()));
         }
         self.lineage.mark_revoked(cap_id)?;
         let entries = self.lineage.for_cap(cap_id)?;
-        Ok(Self::reverse_entries(entries))
+        Ok(self.reverse_entries(entries))
     }
 
-    fn reverse_entries(entries: Vec<LineageEntry>) -> ReverseOutcome {
+    fn reverse_entries(&self, entries: Vec<LineageEntry>) -> ReverseOutcome {
         let mut ops = Vec::new();
         let mut non_reversible = Vec::new();
         let mut used_landed = false;
@@ -485,7 +616,11 @@ impl Host {
                         ops.extend(inv);
                     }
                 }
-                ReverseClass::Compensation | ReverseClass::NonReversible => {
+                ReverseClass::Compensation => match self.try_compensate(&entry) {
+                    Some(comp_ops) => ops.extend(comp_ops),
+                    None => non_reversible.push(entry.id),
+                },
+                ReverseClass::NonReversible => {
                     non_reversible.push(entry.id);
                 }
             }
@@ -498,11 +633,31 @@ impl Host {
     }
 }
 
+/// Narrow Recovery Cap scopes from declared compensation args (LAW §13).
+fn recovery_scopes(action: &str, sealed: &BTreeMap<String, Value>) -> Vec<String> {
+    match action {
+        cek_contract::ACTION_KV_WRITE | cek_contract::ACTION_KV_DELETE => sealed
+            .get("key")
+            .and_then(|v| v.as_str())
+            .filter(|k| !k.is_empty())
+            .map(|k| vec![format!("kv:{k}")])
+            .unwrap_or_default(),
+        cek_contract::ACTION_UI_MORPH | cek_contract::ACTION_UI_RESTORE => sealed
+            .get("target")
+            .and_then(|v| v.as_str())
+            .filter(|t| !t.is_empty())
+            .map(|t| vec![format!("ui:{t}")])
+            .unwrap_or_default(),
+        cek_contract::ACTION_LOG_APPEND => vec!["log".into()],
+        _ => Vec::new(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{FileIdemStore, FileLineageStore, FileOnceStore};
-    use cek_contract::{baseline, ResultKind};
+    use cek_contract::{baseline, ResultKind, ReverseClass};
     use serde_json::json;
     use std::cell::RefCell;
     use std::collections::BTreeMap;
@@ -877,19 +1032,229 @@ mod tests {
     #[test]
     fn compensation_listed_honestly() {
         let host = Host::with_clock(1000);
+        let mut sealed = BTreeMap::new();
+        sealed.insert("key".into(), json!("compensated"));
+        sealed.insert("value".into(), json!(true));
+        host.mint_recovery(
+            "rec-use",
+            "kv.write",
+            false,
+            None,
+            Some("act-comp"),
+            None,
+            &sealed,
+        )
+        .unwrap();
         host.lineage_store()
             .commit(
                 "cap",
                 Some("act-comp"),
+                "log.append",
+                vec![baseline::log_append("hi")],
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .unwrap();
+        let rev = host.end_activity("act-comp").unwrap();
+        assert!(
+            rev.non_reversible.is_empty(),
+            "successful compensation must not mark NonReversible"
+        );
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "kv.set");
+        assert_eq!(rev.ops[0].payload.get("key"), Some(&json!("compensated")));
+    }
+
+    #[test]
+    fn compensation_without_recovery_cap_is_non_reversible() {
+        let host = Host::with_clock(1000);
+        host.lineage_store()
+            .commit(
+                "cap",
+                Some("act-comp-bare"),
                 "kv.write",
                 vec![baseline::kv_set("k", json!(1))],
                 ReverseClass::Compensation,
                 vec![],
             )
             .unwrap();
-        let rev = host.end_activity("act-comp").unwrap();
-        assert!(rev.ops.is_empty());
+        let rev = host.end_activity("act-comp-bare").unwrap();
+        assert!(rev.ops.is_empty(), "must not report clean reverse");
         assert_eq!(rev.non_reversible.len(), 1);
+    }
+
+    #[test]
+    fn mint_recovery_is_ordinary_cap() {
+        let host = Host::with_clock(1000);
+        let mut sealed = BTreeMap::new();
+        sealed.insert("key".into(), json!("compensated"));
+        sealed.insert("value".into(), json!(true));
+        let cap = host
+            .mint_recovery(
+                "rec-1",
+                "kv.write",
+                false,
+                None,
+                Some("act-rec"),
+                None,
+                &sealed,
+            )
+            .unwrap();
+        assert_eq!(cap.action, "kv.write");
+        assert_eq!(cap.scopes, vec!["kv:compensated".to_string()]);
+        assert!(cap.sealed_args_bind.is_some());
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args: sealed,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::Ok));
+        assert_eq!(r.ops[0].fq(), "kv.set");
+    }
+
+    #[test]
+    fn mint_recovery_refuses_empty_bind_and_peer_root_shape() {
+        let host = Host::with_clock(1000);
+        let sealed = BTreeMap::new();
+        assert!(host
+            .mint_recovery("r", "kv.write", false, None, None, None, &sealed)
+            .is_err());
+        assert!(host
+            .mint_recovery("", "kv.write", false, None, Some("act"), None, &sealed)
+            .is_err());
+        assert!(host
+            .mint_recovery("r", "", false, None, Some("act"), None, &sealed)
+            .is_err());
+        assert!(host
+            .mint_recovery("r", "kv.write", false, None, Some(""), None, &sealed)
+            .is_err());
+        assert!(host
+            .mint_recovery("r", "kv.write", false, None, None, Some("  "), &sealed)
+            .is_err());
+    }
+
+    #[test]
+    fn ordinary_mint_is_not_recovery_bypass() {
+        let host = Host::with_clock(1000);
+        let _ = host.mint("bootstrap", "kv.write", false, None);
+        host.lineage_store()
+            .commit(
+                "cap",
+                Some("act-boot"),
+                "kv.write",
+                vec![baseline::kv_set("k", json!(1))],
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .unwrap();
+        let rev = host.end_activity("act-boot").unwrap();
+        assert!(rev.ops.is_empty(), "bootstrap mint must not compensate");
+        assert_eq!(rev.non_reversible.len(), 1);
+    }
+
+    #[test]
+    fn compensation_failure_marks_non_reversible() {
+        let host = Host::with_clock(1000);
+        let mut sealed = BTreeMap::new();
+        sealed.insert("key".into(), json!("compensated"));
+        sealed.insert("value".into(), json!(true));
+        host.mint_recovery(
+            "rec-exp",
+            "kv.write",
+            false,
+            Some(1),
+            Some("act-comp-fail"),
+            None,
+            &sealed,
+        )
+        .unwrap();
+        host.lineage_store()
+            .commit(
+                "cap-orig",
+                Some("act-comp-fail"),
+                "log.append",
+                vec![baseline::log_append("hi")],
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .unwrap();
+        let rev = host.end_activity("act-comp-fail").unwrap();
+        assert!(rev.ops.is_empty(), "must not report clean reverse");
+        assert_eq!(rev.non_reversible.len(), 1);
+    }
+
+    #[test]
+    fn submit_never_auto_classifies_compensation() {
+        let host = Host::with_clock(1000);
+        let mut sealed = BTreeMap::new();
+        sealed.insert("key".into(), json!("restored"));
+        sealed.insert("value".into(), json!(1));
+        host.mint_recovery(
+            "rec-cls",
+            "kv.write",
+            false,
+            None,
+            Some("act-cls"),
+            None,
+            &sealed,
+        )
+        .unwrap();
+        let cap = host.mint("c-cls", "log.append", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("message".into(), json!("hi"));
+        let r = host.submit(Intent {
+            action: "log.append".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-cls".into()),
+        });
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let entries = host.lineage_store().for_activity("act-cls").unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(
+            matches!(entries[0].reverse_class, ReverseClass::NonReversible),
+            "submit auto-class is Inverse vs NonReversible only"
+        );
+        let rev = host.end_activity("act-cls").unwrap();
+        assert!(rev.ops.is_empty());
+        assert!(!rev.non_reversible.is_empty());
+    }
+
+    #[test]
+    fn recovery_cap_scope_narrow_refuses_other_resource() {
+        let host = Host::with_clock(1000);
+        let mut sealed = BTreeMap::new();
+        sealed.insert("key".into(), json!("only-this"));
+        sealed.insert("value".into(), json!(1));
+        let cap = host
+            .mint_recovery(
+                "rec-sc",
+                "kv.write",
+                false,
+                None,
+                Some("act-sc"),
+                None,
+                &sealed,
+            )
+            .unwrap();
+        let mut args = BTreeMap::new();
+        args.insert("key".into(), json!("other"));
+        args.insert("value".into(), json!(1));
+        let r = host.submit(Intent {
+            action: "kv.write".into(),
+            args,
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: None,
+        });
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
     }
 
     #[test]
@@ -1340,19 +1705,54 @@ mod tests {
     #[test]
     fn revoke_compensation_listed_not_silent_success() {
         let host = Host::with_clock(1000);
+        let mut sealed = BTreeMap::new();
+        sealed.insert("key".into(), json!("rev-comp"));
+        sealed.insert("value".into(), json!(1));
+        host.mint_recovery(
+            "rec-rev",
+            "kv.write",
+            false,
+            None,
+            Some("act-comp-rev"),
+            None,
+            &sealed,
+        )
+        .unwrap();
         host.lineage_store()
             .commit(
                 "cap-comp-rev",
                 Some("act-comp-rev"),
-                "kv.write",
-                vec![baseline::kv_set("k", json!(1))],
+                "log.append",
+                vec![baseline::log_append("hi")],
                 ReverseClass::Compensation,
                 vec![],
             )
             .unwrap();
-        let rev = host.revoke("cap-comp-rev").unwrap();
-        assert!(rev.ops.is_empty());
-        assert_eq!(rev.non_reversible.len(), 1);
+        let orig = host.mint("cap-comp-rev", "log.append", false, None);
+        let rev = host.revoke(&orig.id).unwrap();
+        assert!(
+            rev.non_reversible.is_empty(),
+            "successful compensation must not mark NonReversible"
+        );
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "kv.set");
+        assert_eq!(rev.ops[0].payload.get("key"), Some(&json!("rev-comp")));
+        assert!(host.lineage_store().is_revoked(&orig.id));
+        let r2 = host.submit(Intent {
+            action: "log.append".into(),
+            args: {
+                let mut a = BTreeMap::new();
+                a.insert("message".into(), json!("again"));
+                a
+            },
+            cap: orig,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-comp-rev-2".into()),
+        });
+        assert!(matches!(r2.kind, ResultKind::AuthorityRefusal));
+        assert!(r2.ops.is_empty());
+        assert!(r2.error.as_deref().unwrap().contains("revoked"));
     }
 
     #[test]

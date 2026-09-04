@@ -186,7 +186,7 @@ At lineage commit, every mutate cause gets a class:
 
 ```text
 inverse        → undo Ops
-compensation   → Intents under recovery Cap
+compensation   → Intents under recovery Cap (LAW §13; Host::mint_recovery)
 non_reversible → mark + audit; never claim clean reverse
 ```
 

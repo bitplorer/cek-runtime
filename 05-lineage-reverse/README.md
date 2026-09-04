@@ -20,7 +20,7 @@ reverse_plan       # inverse | compensation | non_reversible class
 | Class | Behavior |
 |-------|----------|
 | Inverse | Direct undo Ops where possible |
-| Compensation | Submit Intents under a **recovery Cap** |
+| Compensation | Submit Intents under a **recovery Cap** (LAW §13; `Host::mint_recovery`) |
 | Non-reversible | Explicit mark + audit; never report clean reverse |
 
 ## Rule (implementation strictness)
@@ -35,4 +35,4 @@ Causal order: typically reverse order of causes unless compensation graph says o
 
 ## Activity end / Cap revoke
 
-Must run reverse (LAW §9). `end_activity` is Activity-scoped; `Host::revoke` is Cap-scoped (`for_cap`). Failed reverse → NonReversible mark, not silent success. Compensation is mark-only here (Recovery Cap Intents are out of scope).
+Must run reverse (LAW §9). `end_activity` is Activity-scoped; `Host::revoke` is Cap-scoped (`for_cap`). Failed reverse → NonReversible mark, not silent success. Compensation submits ordinary Intents under a Recovery Cap (`Host::mint_recovery`, LAW §13); failure is NonReversible.
