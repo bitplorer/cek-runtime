@@ -17,6 +17,7 @@
 | Stage | On failure |
 |-------|------------|
 | Verify | Authority refusal; **no** mutate Ops; **no** lineage cause |
+| Context mediate (LAW §8) | Undeclared inject / over-limit / isolate leak → `authority_refusal`, zero Ops |
 | Once / idempotency store down | Refuse |
 | Duplicate idempotency bind | Return prior Result; no second cause |
 | Dispatch policy deny after verify | Error Result; no silent partial world change |

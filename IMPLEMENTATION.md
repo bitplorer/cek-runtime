@@ -38,6 +38,7 @@ Intent+Cap
   → sealed-args bind (if present)
   → scopes
   → subject bind (if Cap.subject set)
+  → Context mediate (LAW §8: inject / limit / isolate; fail closed)
   → idempotency lookup (before once; replay or conflict)
   → once ensure_available
   → BoundAsk

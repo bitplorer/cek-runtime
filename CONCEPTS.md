@@ -113,12 +113,13 @@ Ordered, fail closed:
 
 ```text
 1 verify Cap
-2 once / idempotency
-3 reload truth (Host store)
-4 dispatch
-5 lineage (if required)
-6 project Ops to profile ∪ Baseline
-7 Result
+2 Context mediate (LAW §8: inject / limit / isolate)
+3 once / idempotency
+4 reload truth (Host store)
+5 dispatch
+6 lineage (if required)
+7 project Ops to profile ∪ Baseline
+8 Result
 ```
 
 Cap refuse at (1) or store-down at (2) → **no** mutate Ops, **no** cause.
@@ -221,6 +222,23 @@ Ops stay **data only** — no eval, no closures in Baseline.
 Profile negotiates **apply ability**, not Cap power.
 
 → [06-profiles](06-profiles/README.md)
+
+---
+
+## Activity & Context (LAW §8)
+
+**Activity** = bounded work; on end Host reverses lineage.  
+**Context** = mediated visible world of that Activity — not ambient authority, not a Cap substitute.
+
+```text
+inject  → declare required names/services; undeclared access fails closed
+limit   → restrict what may be seen or done (narrow only)
+isolate → separate a slice so names/services do not leak across Activities
+```
+
+`limit` ≠ `isolate`. Both only **narrow** (A8). Host mediates on submit.
+
+→ [cek-framework CORE/07](https://github.com/bitplorer/cek-framework/blob/main/CORE/07-activity-context.md)
 
 ---
 

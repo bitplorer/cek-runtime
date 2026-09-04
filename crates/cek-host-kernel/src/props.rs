@@ -622,3 +622,40 @@ fn prop_subject_bind_never_effects_on_mismatch() {
         assert!(r.ops.is_empty());
     }
 }
+
+/// ∀ undeclared inject / over-limit / isolate leak → refuse ∧ ops=∅ (LAW §8)
+#[test]
+fn prop_context_mediation_never_effects_on_refuse() {
+    let host = Host::with_clock(1_000);
+    host.inject("act-prop", vec!["kv:allowed".into()]).unwrap();
+    host.limit("act-prop", vec!["kv:allowed".into()]).unwrap();
+    host.isolate("act-prop").unwrap();
+    for (i, key) in keys().iter().enumerate() {
+        if *key == "allowed" {
+            continue;
+        }
+        let intent = {
+            let mut i = intent_write(
+                &host,
+                &format!("ctx-{i}-{key}"),
+                "kv.write",
+                "kv.write",
+                key,
+                1,
+            );
+            i.activity_id = Some("act-prop".into());
+            i
+        };
+        let r = host.submit(intent);
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal), "{key}");
+        assert!(r.ops.is_empty());
+    }
+    let leak = {
+        let mut i = intent_write(&host, "ctx-leak", "kv.write", "kv.write", "allowed", 1);
+        i.activity_id = Some("act-other".into());
+        i
+    };
+    let r = host.submit(leak);
+    assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+    assert!(r.ops.is_empty());
+}

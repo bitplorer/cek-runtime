@@ -315,6 +315,17 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
             )
             .map_err(|e| e.to_string())?;
     }
+    if let Some(ref inj) = case.inject {
+        host.inject(&inj.activity_id, inj.names.clone())
+            .map_err(|e| e.to_string())?;
+    }
+    if let Some(ref lim) = case.limit {
+        host.limit(&lim.activity_id, lim.names.clone())
+            .map_err(|e| e.to_string())?;
+    }
+    if let Some(ref aid) = case.isolate {
+        host.isolate(aid).map_err(|e| e.to_string())?;
+    }
     let peer = make_peer(case);
     // Omitted peer_profile → missing Manifest → Baseline-only (LAW §11).
     let profile = case.peer_profile.is_some().then(|| peer.profile().clone());

@@ -32,6 +32,8 @@ This file lists **what the reference runtime actually checks** and where.
 | 23 | Unknown/blank law generation → zero Ops | `law-gen-*` |
 | 24 | Batteries: refuse never leaks Ops | `batteries::*`, `scripts/batteries.sh` |
 | 25 | Recovery Cap compensation (LAW §13) | `compensation_listed_honestly`, `revoke_compensation_listed_not_silent_success`, vectors `recovery-cap-*` |
+| 26 | Context applied on submit (LAW §8) | `context_applied_on_submit`, vector `context-applied-on-submit` |
+| 27 | Over-limit / undeclared inject refuse, isolate holds | `context_over_limit_refused`, `context_undeclared_inject_fails_closed`, `context_isolate_holds`, vectors `context-*` |
 
 ## Coverage
 

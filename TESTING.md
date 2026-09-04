@@ -71,6 +71,7 @@ cargo llvm-cov --workspace --html --output-dir coverage
 
 | `ui_domain` | morph project, snapshot reverse, no-snapshot non-reversible, empty target, Peer lands | Domain pack |
 | `attenuation` | scope allow / deny / blank token | Attenuation |
+| `context` | applied on submit; over-limit refuse; undeclared inject; isolate holds | Activity / Context (LAW §8) |
 
 TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected cases stay on the Rust runner.
 

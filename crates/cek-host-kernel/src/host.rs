@@ -1,5 +1,6 @@
 //! Host kernel orchestrator — mature reference implementation.
 
+use crate::context::ContextIndex;
 use crate::project::{dispatch_ops, inverse_ops, project_authorized};
 use crate::{
     BoundAsk, HostError, HostResult, IdemBackend, IdemStore, LineageBackend, LineageStore,
@@ -62,6 +63,8 @@ pub struct Host {
     recovery: Mutex<RecoveryIndex>,
     /// Bound Peer Profile for LAW §11 project. `None` = missing Manifest → Baseline-only.
     peer_profile: Option<Profile>,
+    /// Activity-scoped Context (LAW §8). Host-mediated; not a Cap substitute.
+    pub(crate) contexts: Mutex<ContextIndex>,
 }
 
 impl Default for Host {
@@ -103,6 +106,7 @@ impl Host {
             accepted_generations: vec![LAW_GENERATION.into()],
             recovery: Mutex::new(RecoveryIndex::default()),
             peer_profile: None,
+            contexts: Mutex::new(ContextIndex::default()),
         }
     }
 
@@ -135,6 +139,7 @@ impl Host {
             accepted_generations: vec![LAW_GENERATION.into()],
             recovery: Mutex::new(RecoveryIndex::default()),
             peer_profile: None,
+            contexts: Mutex::new(ContextIndex::default()),
         }
     }
 
@@ -433,11 +438,12 @@ impl Host {
     }
 
     /// Full submit pipeline (LAW §4 / CORE 06 Host duties):
-    /// verify Cap → consume once / idempotency bind → dispatch → **record lineage**
-    /// → **project Ops** (LAW §11: ability ∪ Baseline) → Result+digest.
+    /// verify Cap → **mediate Context** (LAW §8) → consume once / idempotency bind
+    /// → dispatch → **record lineage** → **project Ops** (LAW §11: ability ∪ Baseline)
+    /// → Result+digest.
     ///
     /// Missing Peer Profile/Manifest → Baseline-only projection.
-    /// Cap refusal returns [`ResultMsg`] with `authority_refusal` and **zero** Ops.
+    /// Cap / Context refusal returns [`ResultMsg`] with `authority_refusal` and **zero** Ops.
     pub fn submit(&self, intent: Intent) -> ResultMsg {
         self.submit_for(intent, None)
     }
@@ -450,6 +456,11 @@ impl Host {
         let profile = profile.or(self.peer_profile.as_ref());
         let now = (self.clock)();
         if let Err(e) = self.verify_cap(&intent, now) {
+            return Self::err_result(e);
+        }
+        // LAW §8: Context mediation (inject / limit / isolate). Fail closed
+        // before once/dispatch — not a Cap substitute, not a new Result kind.
+        if let Err(e) = self.mediate_context(&intent) {
             return Self::err_result(e);
         }
         // Idempotency is checked after Cap verify and **before** once-ensure
@@ -533,6 +544,7 @@ impl Host {
     /// [`Host::submit`] checks idempotency **before** once-ensure.
     pub fn verify_and_bind(&self, intent: Intent, now: u64) -> HostResult<BoundAsk> {
         self.verify_cap(&intent, now)?;
+        self.mediate_context(&intent)?;
         self.once
             .ensure_available(&intent.cap.id, intent.cap.once)?;
         Ok(BoundAsk { intent, now })
@@ -649,6 +661,7 @@ impl Host {
             return Err(HostError::Lineage("empty activity_id".into()));
         }
         self.lineage.mark_ended(activity_id)?;
+        self.drop_context(activity_id);
         let entries = self.lineage.for_activity(activity_id)?;
         Ok(self.reverse_entries(entries))
     }
@@ -2059,5 +2072,129 @@ mod tests {
         assert!(r2.ops.is_empty());
         assert!(host2.revoke("c-file-rev").is_err());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn context_applied_on_submit() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ctx-ok", "kv.write", false, None);
+        host.inject("act-1", vec!["kv:greeting".into()]).unwrap();
+        let r = host.submit(intent_write(cap, "greeting", json!("hello")));
+        assert!(matches!(r.kind, ResultKind::Ok), "{:?}", r.error);
+        assert_eq!(r.ops.len(), 1);
+        assert_eq!(r.ops[0].payload.get("key"), Some(&json!("greeting")));
+        let ctx = host.context_of("act-1").unwrap();
+        assert_eq!(ctx.injected, vec!["kv:greeting".to_string()]);
+        assert!(!ctx.isolated);
+        assert!(ctx.limits.is_empty());
+    }
+
+    #[test]
+    fn context_over_limit_refused() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ctx-lim", "kv.write", false, None);
+        host.inject("act-1", vec!["kv".into()]).unwrap();
+        host.limit("act-1", vec!["kv:greeting".into()]).unwrap();
+        let r = host.submit(intent_write(cap, "other", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+        assert!(r.error.as_deref().unwrap_or("").contains("over-limit"));
+    }
+
+    #[test]
+    fn context_undeclared_inject_fails_closed() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ctx-und", "kv.write", false, None);
+        host.inject("act-1", vec!["kv:greeting".into()]).unwrap();
+        let r = host.submit(intent_write(cap, "other", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+        assert!(r
+            .error
+            .as_deref()
+            .unwrap_or("")
+            .contains("undeclared inject"));
+    }
+
+    #[test]
+    fn context_isolate_holds() {
+        let host = Host::with_clock(1000);
+        let cap_a = host.mint("c-iso-a", "kv.write", false, None);
+        let cap_b = host.mint("c-iso-b", "kv.write", false, None);
+        host.inject("act-a", vec!["kv:secret".into()]).unwrap();
+        host.isolate("act-a").unwrap();
+        let ok = host.submit({
+            let mut i = intent_write(cap_a, "secret", json!(1));
+            i.activity_id = Some("act-a".into());
+            i
+        });
+        assert!(matches!(ok.kind, ResultKind::Ok), "{:?}", ok.error);
+        let leak = host.submit({
+            let mut i = intent_write(cap_b.clone(), "secret", json!(2));
+            i.activity_id = Some("act-b".into());
+            i
+        });
+        assert!(matches!(leak.kind, ResultKind::AuthorityRefusal));
+        assert!(leak.ops.is_empty());
+        assert!(leak
+            .error
+            .as_deref()
+            .unwrap_or("")
+            .contains("isolate holds"));
+        let no_act = host.submit({
+            let mut i = intent_write(cap_b, "secret", json!(3));
+            i.activity_id = None;
+            i
+        });
+        assert!(matches!(no_act.kind, ResultKind::AuthorityRefusal));
+        assert!(no_act.ops.is_empty());
+    }
+
+    #[test]
+    fn context_limit_is_not_isolate() {
+        let host = Host::with_clock(1000);
+        let cap_b = host.mint("c-lim-b", "kv.write", false, None);
+        host.inject("act-a", vec!["kv:secret".into()]).unwrap();
+        host.limit("act-a", vec!["kv:secret".into()]).unwrap();
+        let r = host.submit({
+            let mut i = intent_write(cap_b, "secret", json!(1));
+            i.activity_id = Some("act-b".into());
+            i
+        });
+        assert!(
+            matches!(r.kind, ResultKind::Ok),
+            "limit must not isolate across Activities: {:?}",
+            r.error
+        );
+    }
+
+    #[test]
+    fn context_refuse_does_not_burn_once() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ctx-once", "kv.write", true, None);
+        host.inject("act-1", vec!["kv:greeting".into()]).unwrap();
+        let r = host.submit(intent_write(cap.clone(), "other", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(!host.once_store().is_consumed("c-ctx-once"));
+        let ok = host.submit(intent_write(cap, "greeting", json!(1)));
+        assert!(matches!(ok.kind, ResultKind::Ok));
+    }
+
+    #[test]
+    fn context_dropped_on_end_activity() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-ctx-end", "kv.write", false, None);
+        host.inject("act-1", vec!["kv:secret".into()]).unwrap();
+        host.isolate("act-1").unwrap();
+        let _ = host.submit(intent_write(cap.clone(), "secret", json!(1)));
+        host.end_activity("act-1").unwrap();
+        assert!(host.context_of("act-1").is_none());
+        let cap_b = host.mint("c-ctx-end-b", "kv.write", false, None);
+        let r = host.submit({
+            let mut i = intent_write(cap_b, "secret", json!(2));
+            i.activity_id = Some("act-b".into());
+            i
+        });
+        assert!(matches!(r.kind, ResultKind::Ok), "{:?}", r.error);
     }
 }
