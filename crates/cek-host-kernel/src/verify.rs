@@ -41,6 +41,7 @@ impl Host {
         if cap.id.is_empty() {
             return Err(HostError::Authority("empty Cap id is not allowed".into()));
         }
+        self.lineage.ensure_not_revoked(&cap.id)?;
         crate::scope::check_scopes(intent)?;
         Self::check_subject(intent)?;
         self.check_generation(&intent.cap)?;

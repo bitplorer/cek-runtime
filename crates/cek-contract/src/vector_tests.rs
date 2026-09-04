@@ -59,6 +59,10 @@ fn check_result_kind_mismatch() {
         sign_cap: false,
         ed25519_seed: None,
         accept_generations: None,
+        revoke_cap: None,
+        expect_revoke_reverse_ops: None,
+        expect_revoke_non_reversible: false,
+        revoke_again: false,
     };
     let r = ResultMsg::authority_refusal("no");
     assert!(check_result(&case, &r).is_err());
@@ -95,6 +99,10 @@ fn check_result_rejects_refusal_with_ops() {
         sign_cap: false,
         ed25519_seed: None,
         accept_generations: None,
+        revoke_cap: None,
+        expect_revoke_reverse_ops: None,
+        expect_revoke_non_reversible: false,
+        revoke_again: false,
     };
     let mut r = ResultMsg::authority_refusal("no");
     r.ops = vec![baseline::kv_set("k", json!(1))];
@@ -132,6 +140,10 @@ fn check_result_ops_empty_and_exact() {
         sign_cap: false,
         ed25519_seed: None,
         accept_generations: None,
+        revoke_cap: None,
+        expect_revoke_reverse_ops: None,
+        expect_revoke_non_reversible: false,
+        revoke_again: false,
     };
     let with_ops = ResultMsg::ok(vec![baseline::kv_set("k", json!(1))]);
     assert!(check_result(&case, &with_ops).is_err());

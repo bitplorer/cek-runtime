@@ -1,0 +1,38 @@
+{
+  "id": "cap-revoke-reverse-and-dead",
+  "family": "cap_revoke",
+  "description": "Cap revoke reverses Inverse lineage; the Cap is then dead (verify/submit refuse)",
+  "now": 1000,
+  "prior_intent": {
+    "action": "kv.write",
+    "args": { "key": "k", "value": 1 },
+    "cap": {
+      "id": "cap-revoke",
+      "action": "kv.write",
+      "once": false
+    },
+    "activity_id": "act-revoke"
+  },
+  "prior_must_ok": true,
+  "revoke_cap": "cap-revoke",
+  "expect_revoke_reverse_ops": [
+    {
+      "ns": "kv",
+      "name": "delete",
+      "payload": { "key": "k" }
+    }
+  ],
+  "revoke_again": true,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "k", "value": 2 },
+    "cap": {
+      "id": "cap-revoke",
+      "action": "kv.write",
+      "once": false
+    },
+    "activity_id": "act-revoke-2"
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

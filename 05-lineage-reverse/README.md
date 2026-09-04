@@ -35,4 +35,4 @@ Causal order: typically reverse order of causes unless compensation graph says o
 
 ## Activity end / Cap revoke
 
-Must run reverse. Failed reverse → non-reversible mark, not silent success.
+Must run reverse (LAW §9). `end_activity` is Activity-scoped; `Host::revoke` is Cap-scoped (`for_cap`). Failed reverse → NonReversible mark, not silent success. Compensation is mark-only here (Recovery Cap Intents are out of scope).

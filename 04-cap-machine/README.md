@@ -13,7 +13,7 @@ Minted → Active → Consumed(once) | Expired | Revoked
 | verify | Only Active Caps pass; Expired/Revoked/Consumed refuse |
 | once consume | **Before** dispatch side-effects; atomic vs concurrent submit |
 | replay Consumed | Refuse |
-| revoke | Triggers reverse for causes under that Cap (policy scope) |
+| revoke | `Host::revoke` — Cap is dead afterwards (`verify_cap` / submit refuse); reverse causes under that Cap (LAW §5 Active→Revoked, LAW §9) |
 
 ## Binds checked at verify
 
@@ -24,6 +24,8 @@ Minted → Active → Consumed(once) | Expired | Revoked
 - optional subject / scopes  
 
 Sealed mismatch → refuse; no side-effects.
+
+Revoked is Host registry state, not a Cap wire field.
 
 ## Key material
 

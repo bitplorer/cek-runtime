@@ -20,8 +20,10 @@ use crate::{HostError, HostResult, LineageBackend};
 pub struct LineageStore {
     seq: AtomicU64,
     by_activity: Mutex<HashMap<String, Vec<String>>>,
+    by_cap: Mutex<HashMap<String, Vec<String>>>,
     by_id: Mutex<HashMap<String, LineageEntry>>,
     ended_activities: Mutex<HashSet<String>>,
+    revoked: Mutex<HashSet<String>>,
 }
 
 impl Default for LineageStore {
@@ -29,8 +31,10 @@ impl Default for LineageStore {
         Self {
             seq: AtomicU64::new(1),
             by_activity: Mutex::new(HashMap::new()),
+            by_cap: Mutex::new(HashMap::new()),
             by_id: Mutex::new(HashMap::new()),
             ended_activities: Mutex::new(HashSet::new()),
+            revoked: Mutex::new(HashSet::new()),
         }
     }
 }
@@ -76,13 +80,18 @@ impl LineageBackend for LineageStore {
         reverse_class: ReverseClass,
         inverse_ops: Vec<Op>,
     ) -> HostResult<LineageEntry> {
-        // Fail closed: never attach a cause to an ended Activity.
+        // Fail closed: never attach a cause to an ended Activity or revoked Cap.
         if let Some(aid) = activity_id {
             if self.is_ended(aid) {
                 return Err(HostError::Lineage(format!(
                     "cannot commit to ended activity: {aid}"
                 )));
             }
+        }
+        if self.is_revoked(cap_id) {
+            return Err(HostError::Lineage(format!(
+                "cannot commit under revoked Cap: {cap_id}"
+            )));
         }
         let entry = LineageEntry {
             id: self.next_id(),
@@ -108,6 +117,16 @@ impl LineageBackend for LineageStore {
                 .map_err(|_| HostError::Lineage("lock".into()))?;
             by_act
                 .entry(aid.to_string())
+                .or_default()
+                .push(entry.id.clone());
+        }
+        {
+            let mut by_cap = self
+                .by_cap
+                .lock()
+                .map_err(|_| HostError::Lineage("lock".into()))?;
+            by_cap
+                .entry(cap_id.to_string())
                 .or_default()
                 .push(entry.id.clone());
         }
@@ -154,6 +173,52 @@ impl LineageBackend for LineageStore {
                 .map_err(|_| HostError::Lineage("lock".into()))?;
             g.get(activity_id).cloned().unwrap_or_default()
         };
+        self.entries_for_ids(ids)
+    }
+
+    fn for_cap(&self, cap_id: &str) -> HostResult<Vec<LineageEntry>> {
+        let ids = {
+            let g = self
+                .by_cap
+                .lock()
+                .map_err(|_| HostError::Lineage("lock".into()))?;
+            g.get(cap_id).cloned().unwrap_or_default()
+        };
+        self.entries_for_ids(ids)
+    }
+
+    fn mark_revoked(&self, cap_id: &str) -> HostResult<()> {
+        let mut g = self
+            .revoked
+            .lock()
+            .map_err(|_| HostError::Lineage("lock".into()))?;
+        if !g.insert(cap_id.to_string()) {
+            return Err(HostError::Lineage(format!("Cap already revoked: {cap_id}")));
+        }
+        Ok(())
+    }
+
+    fn is_revoked(&self, cap_id: &str) -> bool {
+        self.revoked
+            .lock()
+            .map(|g| g.contains(cap_id))
+            .unwrap_or(false)
+    }
+
+    fn ensure_not_revoked(&self, cap_id: &str) -> HostResult<()> {
+        let g = self
+            .revoked
+            .lock()
+            .map_err(|_| HostError::Lineage("lock".into()))?;
+        if g.contains(cap_id) {
+            return Err(HostError::Authority(format!("Cap revoked: {cap_id}")));
+        }
+        Ok(())
+    }
+}
+
+impl LineageStore {
+    fn entries_for_ids(&self, ids: Vec<String>) -> HostResult<Vec<LineageEntry>> {
         let by_id = self
             .by_id
             .lock()
@@ -165,7 +230,7 @@ impl LineageBackend for LineageStore {
     }
 }
 
-/// Outcome of reversing an Activity.
+/// Outcome of reversing an Activity or a Cap (LAW §9).
 #[derive(Debug, Clone)]
 pub struct ReverseOutcome {
     /// Ops to apply for undo (inverse / restore).

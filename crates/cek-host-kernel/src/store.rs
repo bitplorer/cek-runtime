@@ -11,7 +11,7 @@
 //! |-------|-------------|------------|
 //! | [`OnceBackend`] | store down → refuse | `ensure_available` **before** dispatch; `commit` **only after** successful dispatch |
 //! | [`IdemBackend`] | store down → refuse | same key + same digest → replay; same key + different digest → refuse |
-//! | [`LineageBackend`] | store down → error | no commit after Activity ended; landed annotation is optional |
+//! | [`LineageBackend`] | store down → error | no commit after Activity ended or Cap revoked; landed annotation is optional |
 
 use crate::{HostResult, IdemOutcome};
 use cek_contract::{LineageEntry, Op, ResultMsg, ReverseClass};
@@ -55,7 +55,10 @@ pub trait IdemBackend: Send + Sync {
 /// Implementations MUST:
 /// - reject a second [`LineageBackend::mark_ended`] for the same Activity;
 /// - reject [`LineageBackend::commit`] onto an already-ended Activity;
-/// - persist `landed_ops` from receipts so reverse can prefer landed.
+/// - reject a second [`LineageBackend::mark_revoked`] for the same Cap;
+/// - reject [`LineageBackend::commit`] under a revoked Cap;
+/// - persist `landed_ops` from receipts so reverse can prefer landed;
+/// - index causes by Cap so [`LineageBackend::for_cap`] is Cap-scoped (LAW §9).
 pub trait LineageBackend: Send + Sync {
     /// Mark Activity ended. Second end is an error.
     fn mark_ended(&self, activity_id: &str) -> HostResult<()>;
@@ -86,6 +89,18 @@ pub trait LineageBackend: Send + Sync {
 
     /// Entries for an Activity in commit order.
     fn for_activity(&self, activity_id: &str) -> HostResult<Vec<LineageEntry>>;
+
+    /// Entries for a Cap in commit order.
+    fn for_cap(&self, cap_id: &str) -> HostResult<Vec<LineageEntry>>;
+
+    /// Mark Cap revoked (LAW §5 Active→Revoked). Second revoke is an error.
+    fn mark_revoked(&self, cap_id: &str) -> HostResult<()>;
+
+    /// True if Cap was revoked. `false` if the store cannot be read.
+    fn is_revoked(&self, cap_id: &str) -> bool;
+
+    /// Refuse if this Cap is revoked. Store down is an error (fail closed).
+    fn ensure_not_revoked(&self, cap_id: &str) -> HostResult<()>;
 }
 
 #[cfg(test)]
@@ -150,11 +165,29 @@ mod tests {
                 "cap",
                 Some("act"),
                 "kv.write",
+                ops.clone(),
+                ReverseClass::Inverse,
+                inv.clone(),
+            )
+            .is_err());
+        let by_cap = b.for_cap("cap").unwrap();
+        assert_eq!(by_cap.len(), 1);
+        assert_eq!(by_cap[0].cap_id, "cap");
+        b.mark_revoked("cap").unwrap();
+        assert!(b.is_revoked("cap"));
+        assert!(b.ensure_not_revoked("cap").is_err());
+        assert!(b.mark_revoked("cap").is_err());
+        assert!(b
+            .commit(
+                "cap",
+                Some("act-2"),
+                "kv.write",
                 ops,
                 ReverseClass::Inverse,
                 inv,
             )
             .is_err());
+        b.ensure_not_revoked("other").unwrap();
     }
 
     #[test]

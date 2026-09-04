@@ -81,6 +81,18 @@ impl LineageBackend for DownLineage {
     fn for_activity(&self, _activity_id: &str) -> HostResult<Vec<LineageEntry>> {
         Err(HostError::Lineage("down".into()))
     }
+    fn for_cap(&self, _cap_id: &str) -> HostResult<Vec<LineageEntry>> {
+        Err(HostError::Lineage("down".into()))
+    }
+    fn mark_revoked(&self, _cap_id: &str) -> HostResult<()> {
+        Err(HostError::Lineage("down".into()))
+    }
+    fn is_revoked(&self, _cap_id: &str) -> bool {
+        false
+    }
+    fn ensure_not_revoked(&self, _cap_id: &str) -> HostResult<()> {
+        Err(HostError::Lineage("down".into()))
+    }
 }
 
 fn write_intent(host: &Host, id: &str, once: bool, idem: Option<&str>) -> Intent {
@@ -147,8 +159,8 @@ fn lineage_store_down_is_dispatch_error_not_ok_with_ops_committed() {
         1000,
     );
     let r = host.submit(write_intent(&host, "c-lin", false, None));
-    // Dispatch succeeded; lineage commit failed → dispatch_error, zero new world
-    // (Host does not apply; Peer never sees an ok Result).
+    // Lineage down at verify (revoke registry unreadable) or at commit →
+    // dispatch_error, zero Ops (Host does not apply).
     assert!(matches!(r.kind, ResultKind::DispatchError));
     assert!(r.ops.is_empty());
 }
@@ -167,6 +179,7 @@ fn report_receipt_and_end_fail_closed_when_lineage_down() {
     };
     assert!(host.report_receipt("act", &rec).is_err());
     assert!(host.end_activity("act").is_err());
+    assert!(host.revoke("c-lin").is_err());
 }
 
 #[test]
