@@ -1,0 +1,32 @@
+{
+  "id": "cap-revoke-non-reversible",
+  "family": "cap_revoke",
+  "description": "Cap revoke lists NonReversible honestly; never a silent clean reverse",
+  "now": 1000,
+  "prior_intent": {
+    "action": "log.append",
+    "args": { "message": "hi" },
+    "cap": {
+      "id": "cap-revoke-nr",
+      "action": "log.append",
+      "once": false
+    },
+    "activity_id": "act-revoke-nr"
+  },
+  "prior_must_ok": true,
+  "revoke_cap": "cap-revoke-nr",
+  "expect_revoke_reverse_ops": [],
+  "expect_revoke_non_reversible": true,
+  "intent": {
+    "action": "log.append",
+    "args": { "message": "again" },
+    "cap": {
+      "id": "cap-revoke-nr",
+      "action": "log.append",
+      "once": false
+    },
+    "activity_id": "act-revoke-nr-2"
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true
+}

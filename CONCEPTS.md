@@ -139,7 +139,8 @@ Minted → Active → Consumed(once) | Expired | Revoked
 |------------|------|
 | once | Atomic consume **before** effects |
 | replay Consumed | Refuse |
-| Expired/Revoked | Verify refuses |
+| Expired/Revoked | Verify refuses (revoked is Host registry state, not a Cap wire field) |
+| revoke | `Host::revoke` → reverse that Cap's lineage (LAW §9) |
 
 → [04-cap-machine](04-cap-machine/README.md)
 

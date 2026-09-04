@@ -167,7 +167,11 @@ struct LineageSnap {
     seq: u64,
     by_id: BTreeMap<String, LineageEntry>,
     by_activity: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    by_cap: BTreeMap<String, Vec<String>>,
     ended: BTreeSet<String>,
+    #[serde(default)]
+    revoked: BTreeSet<String>,
 }
 
 /// File-backed lineage store (`lineage.json` in `dir`).
@@ -185,6 +189,19 @@ impl FileLineageStore {
         let mut snap: LineageSnap = load(&path).map_err(HostError::Lineage)?;
         if snap.seq == 0 {
             snap.seq = 1;
+        }
+        if snap.by_cap.is_empty() && !snap.by_id.is_empty() {
+            let mut ids: Vec<_> = snap.by_id.keys().cloned().collect();
+            ids.sort_by_key(|id| {
+                id.strip_prefix("lin-")
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .unwrap_or(u64::MAX)
+            });
+            for id in ids {
+                if let Some(e) = snap.by_id.get(&id) {
+                    snap.by_cap.entry(e.cap_id.clone()).or_default().push(id);
+                }
+            }
         }
         Ok(Self {
             path,
@@ -239,6 +256,11 @@ impl LineageBackend for FileLineageStore {
                 )));
             }
         }
+        if g.revoked.contains(cap_id) {
+            return Err(HostError::Lineage(format!(
+                "cannot commit under revoked Cap: {cap_id}"
+            )));
+        }
         let id = format!("lin-{}", g.seq);
         g.seq = g.seq.saturating_add(1);
         let entry = LineageEntry {
@@ -253,8 +275,12 @@ impl LineageBackend for FileLineageStore {
         };
         g.by_id.insert(id.clone(), entry.clone());
         if let Some(aid) = activity_id {
-            g.by_activity.entry(aid.to_string()).or_default().push(id);
+            g.by_activity
+                .entry(aid.to_string())
+                .or_default()
+                .push(id.clone());
         }
+        g.by_cap.entry(cap_id.to_string()).or_default().push(id);
         self.flush(&g)?;
         Ok(entry)
     }
@@ -303,6 +329,48 @@ impl LineageBackend for FileLineageStore {
             .into_iter()
             .filter_map(|id| g.by_id.get(&id).cloned())
             .collect())
+    }
+
+    fn for_cap(&self, cap_id: &str) -> HostResult<Vec<LineageEntry>> {
+        let g = self
+            .inner
+            .lock()
+            .map_err(|_| HostError::Lineage("lock".into()))?;
+        let ids = g.by_cap.get(cap_id).cloned().unwrap_or_default();
+        Ok(ids
+            .into_iter()
+            .filter_map(|id| g.by_id.get(&id).cloned())
+            .collect())
+    }
+
+    fn mark_revoked(&self, cap_id: &str) -> HostResult<()> {
+        let mut g = self
+            .inner
+            .lock()
+            .map_err(|_| HostError::Lineage("lock".into()))?;
+        if !g.revoked.insert(cap_id.to_string()) {
+            return Err(HostError::Lineage(format!("Cap already revoked: {cap_id}")));
+        }
+        self.flush(&g)?;
+        Ok(())
+    }
+
+    fn is_revoked(&self, cap_id: &str) -> bool {
+        self.inner
+            .lock()
+            .map(|g| g.revoked.contains(cap_id))
+            .unwrap_or(false)
+    }
+
+    fn ensure_not_revoked(&self, cap_id: &str) -> HostResult<()> {
+        let g = self
+            .inner
+            .lock()
+            .map_err(|_| HostError::Lineage("lock".into()))?;
+        if g.revoked.contains(cap_id) {
+            return Err(HostError::Authority(format!("Cap revoked: {cap_id}")));
+        }
+        Ok(())
     }
 }
 
@@ -446,6 +514,13 @@ mod tests {
         )
         .unwrap();
         assert_eq!(lin.for_activity("a").unwrap().len(), 1);
+        lin.mark_revoked("c").unwrap();
+        assert!(lin.is_revoked("c"));
+        drop(lin);
+        let lin2 = FileLineageStore::open(dir.join("l")).unwrap();
+        assert!(lin2.is_revoked("c"));
+        assert_eq!(lin2.for_cap("c").unwrap().len(), 1);
+        assert!(lin2.ensure_not_revoked("c").is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

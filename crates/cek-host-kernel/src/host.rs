@@ -6,8 +6,8 @@ use crate::{
     OnceBackend, OnceStore, ReverseOutcome,
 };
 use cek_contract::{
-    ops_digest, result_digest, sealed_args_digest, Cap, Intent, Manifest, Op, Receipt, ResultMsg,
-    ReverseClass, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
+    ops_digest, result_digest, sealed_args_digest, Cap, Intent, LineageEntry, Manifest, Op,
+    Receipt, ResultMsg, ReverseClass, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
 };
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use serde_json::Value;
@@ -440,7 +440,7 @@ impl Host {
             .annotate_landed_latest_for_activity(activity_id, receipt.landed.clone())
     }
 
-    /// End Activity → reverse lineage.
+    /// End Activity → reverse lineage (LAW §9).
     ///
     /// Preference: if landed_ops annotated → build inverse from landed;
     /// else use inverse_ops recorded at commit; NonReversible listed honestly.
@@ -450,32 +450,51 @@ impl Host {
         }
         self.lineage.mark_ended(activity_id)?;
         let entries = self.lineage.for_activity(activity_id)?;
+        Ok(Self::reverse_entries(entries))
+    }
+
+    /// Revoke a Cap (LAW §5 Active→Revoked) and reverse causes under it (LAW §9).
+    ///
+    /// Same reverse classes as [`Host::end_activity`]: Inverse Ops, or an explicit
+    /// NonReversible listing. Compensation is mark-only (no Recovery Cap Intents).
+    pub fn revoke(&self, cap_id: &str) -> HostResult<ReverseOutcome> {
+        if cap_id.is_empty() {
+            return Err(HostError::Authority("empty Cap id is not allowed".into()));
+        }
+        self.lineage.mark_revoked(cap_id)?;
+        let entries = self.lineage.for_cap(cap_id)?;
+        Ok(Self::reverse_entries(entries))
+    }
+
+    fn reverse_entries(entries: Vec<LineageEntry>) -> ReverseOutcome {
         let mut ops = Vec::new();
         let mut non_reversible = Vec::new();
         let mut used_landed = false;
         for entry in entries.into_iter().rev() {
             match entry.reverse_class {
                 ReverseClass::Inverse => {
-                    if !entry.landed_ops.is_empty() {
+                    let inv = if !entry.landed_ops.is_empty() {
                         used_landed = true;
-                        ops.extend(inverse_ops(&entry.landed_ops));
+                        inverse_ops(&entry.landed_ops)
                     } else {
-                        ops.extend(entry.inverse_ops);
+                        entry.inverse_ops
+                    };
+                    if inv.is_empty() {
+                        non_reversible.push(entry.id);
+                    } else {
+                        ops.extend(inv);
                     }
                 }
-                ReverseClass::Compensation => {
-                    non_reversible.push(entry.id);
-                }
-                ReverseClass::NonReversible => {
+                ReverseClass::Compensation | ReverseClass::NonReversible => {
                     non_reversible.push(entry.id);
                 }
             }
         }
-        Ok(ReverseOutcome {
+        ReverseOutcome {
             ops,
             non_reversible,
             used_landed,
-        })
+        }
     }
 }
 
@@ -1253,5 +1272,213 @@ mod tests {
             lineage < project,
             "LAW §4: lineage.commit must appear before ResultMsg::ok in dispatch_and_finish"
         );
+    }
+
+    #[test]
+    fn revoke_emits_inverse_delete() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-rev", "kv.write", false, None);
+        let r = host.submit(intent_write(cap.clone(), "k", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let rev = host.revoke(&cap.id).unwrap();
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].fq(), "kv.delete");
+        assert!(rev.non_reversible.is_empty());
+    }
+
+    #[test]
+    fn revoke_cap_dead_verify_and_submit_refuse() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-dead", "kv.write", false, None);
+        let r = host.submit(intent_write(cap.clone(), "k", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        host.revoke(&cap.id).unwrap();
+        assert!(host.lineage_store().is_revoked(&cap.id));
+        assert!(host
+            .verify_and_bind(intent_write(cap.clone(), "k", json!(2)), 1000)
+            .is_err());
+        let r2 = host.submit(intent_write(cap, "k", json!(2)));
+        assert!(matches!(r2.kind, ResultKind::AuthorityRefusal));
+        assert!(r2.ops.is_empty());
+        assert!(r2.error.as_deref().unwrap().contains("revoked"));
+    }
+
+    #[test]
+    fn revoke_non_reversible_listed_honestly() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-rev-nr", "log.append", false, None);
+        let mut args = BTreeMap::new();
+        args.insert("message".into(), json!("hi"));
+        let r = host.submit(Intent {
+            action: "log.append".into(),
+            args,
+            cap: cap.clone(),
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-rev-log".into()),
+        });
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let rev = host.revoke(&cap.id).unwrap();
+        assert!(rev.ops.is_empty(), "must not claim clean reverse");
+        assert!(!rev.non_reversible.is_empty());
+        let r2 = host.submit(Intent {
+            action: "log.append".into(),
+            args: {
+                let mut a = BTreeMap::new();
+                a.insert("message".into(), json!("again"));
+                a
+            },
+            cap,
+            trace: None,
+            idempotency_key: None,
+            activity_id: Some("act-rev-log-2".into()),
+        });
+        assert!(matches!(r2.kind, ResultKind::AuthorityRefusal));
+        assert!(r2.ops.is_empty());
+    }
+
+    #[test]
+    fn revoke_compensation_listed_not_silent_success() {
+        let host = Host::with_clock(1000);
+        host.lineage_store()
+            .commit(
+                "cap-comp-rev",
+                Some("act-comp-rev"),
+                "kv.write",
+                vec![baseline::kv_set("k", json!(1))],
+                ReverseClass::Compensation,
+                vec![],
+            )
+            .unwrap();
+        let rev = host.revoke("cap-comp-rev").unwrap();
+        assert!(rev.ops.is_empty());
+        assert_eq!(rev.non_reversible.len(), 1);
+    }
+
+    #[test]
+    fn revoke_inverse_without_plan_marked_non_reversible() {
+        let host = Host::with_clock(1000);
+        host.lineage_store()
+            .commit(
+                "cap-empty-inv",
+                Some("act-empty-inv"),
+                "kv.write",
+                vec![baseline::kv_set("k", json!(1))],
+                ReverseClass::Inverse,
+                vec![],
+            )
+            .unwrap();
+        let rev = host.revoke("cap-empty-inv").unwrap();
+        assert!(rev.ops.is_empty());
+        assert_eq!(
+            rev.non_reversible.len(),
+            1,
+            "empty Inverse must not be silent clean reverse"
+        );
+    }
+
+    #[test]
+    fn double_revoke_errors() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-drev", "kv.write", false, None);
+        let _ = host.submit(intent_write(cap.clone(), "k", json!(1)));
+        assert!(host.revoke(&cap.id).is_ok());
+        assert!(host.revoke(&cap.id).is_err());
+    }
+
+    #[test]
+    fn empty_cap_id_revoke_errors() {
+        let host = Host::with_clock(1000);
+        assert!(host.revoke("").is_err());
+    }
+
+    #[test]
+    fn revoke_unused_cap_then_submit_refuses() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-unused-rev", "kv.write", false, None);
+        let rev = host.revoke(&cap.id).unwrap();
+        assert!(rev.ops.is_empty());
+        assert!(rev.non_reversible.is_empty());
+        let r = host.submit(intent_write(cap, "k", json!(1)));
+        assert!(matches!(r.kind, ResultKind::AuthorityRefusal));
+        assert!(r.ops.is_empty());
+    }
+
+    #[test]
+    fn revoke_one_cap_does_not_reverse_another() {
+        let host = Host::with_clock(1000);
+        let a = host.mint("c-a", "kv.write", false, None);
+        let b = host.mint("c-b", "kv.write", false, None);
+        let mut ia = intent_write(a.clone(), "ka", json!(1));
+        ia.activity_id = Some("act-a".into());
+        let mut ib = intent_write(b.clone(), "kb", json!(2));
+        ib.activity_id = Some("act-b".into());
+        assert!(matches!(host.submit(ia).kind, ResultKind::Ok));
+        assert!(matches!(host.submit(ib).kind, ResultKind::Ok));
+        let rev = host.revoke(&a.id).unwrap();
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(rev.ops[0].payload.get("key"), Some(&json!("ka")));
+        let r_b = host.submit({
+            let mut i = intent_write(b, "kb2", json!(3));
+            i.activity_id = Some("act-b".into());
+            i
+        });
+        assert!(matches!(r_b.kind, ResultKind::Ok));
+        let r_a = host.submit(intent_write(a, "ka2", json!(4)));
+        assert!(matches!(r_a.kind, ResultKind::AuthorityRefusal));
+        assert!(r_a.ops.is_empty());
+    }
+
+    #[test]
+    fn revoke_prefers_landed_reverse() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("c-rev-land", "kv.write", false, None);
+        let r = host.submit(intent_write(cap.clone(), "k", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let receipt = Receipt {
+            landed: r.ops.clone(),
+            failed: vec![],
+        };
+        host.report_receipt("act-1", &receipt).unwrap();
+        let rev = host.revoke(&cap.id).unwrap();
+        assert!(rev.used_landed);
+        assert_eq!(rev.ops[0].fq(), "kv.delete");
+    }
+
+    #[test]
+    fn durable_file_host_revoke_survives_reopen() {
+        static N: AtomicU64 = AtomicU64::new(1);
+        let dir = std::env::temp_dir().join(format!(
+            "cek-host-revoke-{}-{}",
+            std::process::id(),
+            N.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        {
+            let host = Host::with_stores(
+                Arc::new(FileOnceStore::open(&dir).unwrap()),
+                Arc::new(FileIdemStore::open(&dir).unwrap()),
+                Arc::new(FileLineageStore::open(&dir).unwrap()),
+                1000,
+            );
+            let cap = host.mint("c-file-rev", "kv.write", false, None);
+            let r = host.submit(intent_write(cap.clone(), "greet", json!("hi")));
+            assert!(matches!(r.kind, ResultKind::Ok));
+            let rev = host.revoke(&cap.id).unwrap();
+            assert_eq!(rev.ops[0].fq(), "kv.delete");
+        }
+        let host2 = Host::with_stores(
+            Arc::new(FileOnceStore::open(&dir).unwrap()),
+            Arc::new(FileIdemStore::open(&dir).unwrap()),
+            Arc::new(FileLineageStore::open(&dir).unwrap()),
+            1000,
+        );
+        let cap2 = host2.mint("c-file-rev", "kv.write", false, None);
+        let r2 = host2.submit(intent_write(cap2, "greet", json!("again")));
+        assert!(matches!(r2.kind, ResultKind::AuthorityRefusal));
+        assert!(r2.ops.is_empty());
+        assert!(host2.revoke("c-file-rev").is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

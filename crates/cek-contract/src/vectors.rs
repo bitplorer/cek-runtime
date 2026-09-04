@@ -91,6 +91,18 @@ pub struct VectorCase {
     /// Extra law generations the Host accepts (dual-speak).
     #[serde(default)]
     pub accept_generations: Option<Vec<String>>,
+    /// After `prior_intent` (and optional `prior_end_activity`), revoke this Cap.
+    #[serde(default)]
+    pub revoke_cap: Option<String>,
+    /// Expected reverse Ops from `revoke_cap`.
+    #[serde(default)]
+    pub expect_revoke_reverse_ops: Option<Vec<Op>>,
+    /// If true, revoke must list at least one NonReversible/Compensation entry.
+    #[serde(default)]
+    pub expect_revoke_non_reversible: bool,
+    /// Call `revoke` a second time (expects error).
+    #[serde(default)]
+    pub revoke_again: bool,
 }
 
 /// Load a single vector JSON file.

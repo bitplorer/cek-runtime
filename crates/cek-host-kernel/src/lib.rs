@@ -22,6 +22,7 @@
 //! - [`BoundAsk`] is the only token that unlocks dispatch.
 //! - Peer never lives inside this crate.
 //! - Reverse prefers **landed** Ops when a receipt was annotated.
+//! - [`Host::revoke`] marks the Cap revoked (LAW §5) and reverses Cap-scoped lineage (LAW §9).
 //! - Durable state is behind [`OnceBackend`] / [`IdemBackend`] / [`LineageBackend`].
 
 #![forbid(unsafe_code)]

@@ -26,9 +26,7 @@ fn main() {
         Some("apply") => run_apply(),
         Some("host-json") => run_host_json(),
         _ => {
-            eprintln!(
-                "Usage:\n  cek demo\n  cek vectors [dir]\n  cek apply\n  cek host-json"
-            );
+            eprintln!("Usage:\n  cek demo\n  cek vectors [dir]\n  cek apply\n  cek host-json");
             std::process::exit(2);
         }
     }
@@ -305,6 +303,23 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
     if let Some(ref aid) = case.prior_end_activity {
         host.end_activity(aid).map_err(|e| e.to_string())?;
     }
+    if let Some(ref cap_id) = case.revoke_cap {
+        let rev = host.revoke(cap_id).map_err(|e| e.to_string())?;
+        if let Some(ref expected) = case.expect_revoke_reverse_ops {
+            if &rev.ops != expected {
+                return Err(format!(
+                    "revoke reverse ops mismatch: want {expected:?} got {:?}",
+                    rev.ops
+                ));
+            }
+        }
+        if case.expect_revoke_non_reversible && rev.non_reversible.is_empty() {
+            return Err("revoke expected NonReversible listing, got none".into());
+        }
+        if case.revoke_again && host.revoke(cap_id).is_ok() {
+            return Err("second revoke unexpectedly succeeded".into());
+        }
+    }
 
     let result = if let Some(ref pr) = case.peer_result {
         pr.clone()
@@ -481,13 +496,14 @@ fn run_host_json() {
             }
         }
         "submit" => {
-            let intent: Intent = match serde_json::from_value(v.get("intent").cloned().unwrap_or(json!({}))) {
-                Ok(i) => i,
-                Err(e) => {
-                    eprintln!("intent: {e}");
-                    std::process::exit(1);
-                }
-            };
+            let intent: Intent =
+                match serde_json::from_value(v.get("intent").cloned().unwrap_or(json!({}))) {
+                    Ok(i) => i,
+                    Err(e) => {
+                        eprintln!("intent: {e}");
+                        std::process::exit(1);
+                    }
+                };
             let result = host.submit(intent);
             match serde_json::to_string(&result) {
                 Ok(s) => println!("{s}"),
