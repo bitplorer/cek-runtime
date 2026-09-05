@@ -2,15 +2,27 @@
 
 `submit` is a thin orchestrator over an ordered machine. Fail closed.
 
+Once is **two-phase** (LAW §12; Host pipeline [GUIDE §4](../GUIDE.md#4-host-pipeline-fail-closed)):
+`ensure_available` before dispatch (check only — do not burn);
+`commit` only after successful dispatch. A dispatch miss or refuse
+returns early and leaves the once-Cap unburned.
+
 ```text
 1. verify_and_bind(intent, cap) -> BoundAsk | Refuse
-2. consume_once / check_idempotency(BoundAsk) -> Ok | Refuse
+   # includes once.ensure_available — LAW §12 check only, no burn
+2. check_idempotency(BoundAsk) -> Ok | Refuse
+   # submit looks up idempotency *before* once-ensure so a once-Cap
+   # retry returns the cached Result instead of refusing
 3. reload_truth(store)                    # never trust caller world-state
-4. dispatch(BoundAsk) -> Outcome
-5. commit_lineage(authorized_ops, reverse_plan)  # when required
-6. project(Outcome, peer_profile) -> Ops
-7. Result { ops | error }
+4. dispatch(BoundAsk) -> Outcome          # miss → early return, Cap unburned
+5. once.commit                            # LAW §12: only after successful dispatch
+6. commit_lineage(authorized_ops, reverse_plan)  # when required
+7. project(Outcome, peer_profile) -> Ops
+8. Result { ops | error }
 ```
+
+LAW §4 order held: Verify → Consume/ensure → Dispatch → once.commit →
+lineage → project → Result.
 
 ## Rules
 
@@ -20,7 +32,7 @@
 | Context mediate (LAW §8) | Undeclared inject / over-limit / isolate leak → `authority_refusal`, zero Ops |
 | Once / idempotency store down | Refuse |
 | Duplicate idempotency bind | Return prior Result; no second cause |
-| Dispatch policy deny after verify | Error Result; no silent partial world change |
+| Dispatch policy deny after verify | Error Result; **no** `once.commit` (Cap unburned); no silent partial world change |
 | Required lineage write fail | Refuse (fail closed) |
 
 ## Projection

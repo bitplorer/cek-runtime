@@ -52,7 +52,7 @@ Vector checker rejects `authority_refusal` with non-empty Ops.
 
 | Trait | Must |
 |-------|------|
-| `OnceBackend` | `ensure_available` does not burn; `commit` only after project; down → refuse |
+| `OnceBackend` | `ensure_available` does not burn; `commit` only after successful dispatch (before lineage/project); down → refuse |
 | `IdemBackend` | same digest replay; different digest refuse; down → refuse |
 | `LineageBackend` | no commit after end; persist landed; down → error |
 
