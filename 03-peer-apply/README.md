@@ -13,7 +13,8 @@ fn apply(op: &Op, ctx: &mut ApplyCtx) -> Landed | Failed
 3. Unknown optional meta: ignore on Baseline.  
 4. Optional **apply receipt**: landed set + failed set. Not a Cap.  
 5. Partial apply does not invent Host truth.  
-6. No mint. No Cap keys. No lineage authority.
+6. No mint. No Cap keys. No lineage authority.  
+7. **Apply budgets** (`max_nodes` default 256, `max_depth` default 16) and **single-flight**. Pre-walk `within_budget` before mutate. Over limit → apply nothing; Receipt `landed` is empty and `failed` holds every Op (same fail-closed shape as a full FailBatch, not a new Host `ResultKind`). Concurrent `apply` returns `None` and does not mutate. Flat `Vec<Op>` walks at depth 0; the depth gate is ready for nested children later.
 
 ## ApplyCtx
 

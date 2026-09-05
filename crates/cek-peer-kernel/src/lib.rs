@@ -6,6 +6,8 @@
 //!
 //! - Apply is ordered; unknown Ops follow profile policy.
 //! - Receipts report landed vs failed — never authority.
+//! - Apply budgets: `max_nodes` / `max_depth` (defaults 256 / 16) and
+//!   single-flight. Over budget applies nothing; Receipt `failed` lists every Op.
 //! - Drivers: `cek-ops-baseline` (kv), `cek-ops-ui` (UI world).
 
 #![forbid(unsafe_code)]
@@ -17,7 +19,13 @@ use cek_contract::{
 };
 use cek_ops_baseline::KvStore;
 use cek_ops_ui::UiStore;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+
+/// Default apply node budget (flat `Vec<Op>` count today).
+pub const DEFAULT_MAX_NODES: usize = 256;
+/// Default apply depth budget. Flat lists walk at depth 0; nested children later.
+pub const DEFAULT_MAX_DEPTH: usize = 16;
 
 /// Peer kernel with in-memory Baseline (and optional UI) drivers.
 pub struct Peer {
@@ -26,6 +34,19 @@ pub struct Peer {
     log: Mutex<Vec<String>>,
     /// UI world is extension-only. Baseline Peer has none.
     ui: Option<Mutex<UiStore>>,
+    max_nodes: usize,
+    max_depth: usize,
+    /// Single-flight latch for `apply`. Module-private so unit tests can occupy it.
+    in_flight: AtomicBool,
+}
+
+/// Releases the apply single-flight latch on drop (including panic).
+struct FlightGuard<'a>(&'a AtomicBool);
+
+impl Drop for FlightGuard<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::SeqCst);
+    }
 }
 
 impl Default for Peer {
@@ -54,6 +75,9 @@ impl Peer {
             kv: Mutex::new(KvStore::new()),
             log: Mutex::new(Vec::new()),
             ui: None,
+            max_nodes: DEFAULT_MAX_NODES,
+            max_depth: DEFAULT_MAX_DEPTH,
+            in_flight: AtomicBool::new(false),
         }
     }
 
@@ -73,7 +97,27 @@ impl Peer {
             kv: Mutex::new(KvStore::new()),
             log: Mutex::new(Vec::new()),
             ui: Some(Mutex::new(UiStore::new())),
+            max_nodes: DEFAULT_MAX_NODES,
+            max_depth: DEFAULT_MAX_DEPTH,
+            in_flight: AtomicBool::new(false),
         }
+    }
+
+    /// Override apply node/depth budgets. Defaults are 256 / 16.
+    pub fn with_limits(mut self, max_nodes: usize, max_depth: usize) -> Self {
+        self.max_nodes = max_nodes;
+        self.max_depth = max_depth;
+        self
+    }
+
+    /// Configured node budget.
+    pub fn max_nodes(&self) -> usize {
+        self.max_nodes
+    }
+
+    /// Configured depth budget.
+    pub fn max_depth(&self) -> usize {
+        self.max_depth
     }
 
     /// Declared profile.
@@ -92,7 +136,20 @@ impl Peer {
     }
 
     /// Apply Result Ops in order. Authority refusals are no-ops.
+    ///
+    /// Concurrent `apply` is single-flight: a second caller gets `None` and
+    /// nothing mutates. Over budget (nodes/depth) applies **nothing** and
+    /// returns a Receipt with empty `landed` and every Op in `failed`.
     pub fn apply(&self, result: &ResultMsg) -> Option<Receipt> {
+        if self
+            .in_flight
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            return None;
+        }
+        let _flight = FlightGuard(&self.in_flight);
+
         if matches!(
             result.kind,
             ResultKind::AuthorityRefusal | ResultKind::DispatchError
@@ -100,6 +157,12 @@ impl Peer {
             return Some(Receipt {
                 landed: Vec::new(),
                 failed: Vec::new(),
+            });
+        }
+        if !self.within_budget(&result.ops) {
+            return Some(Receipt {
+                landed: Vec::new(),
+                failed: result.ops.clone(),
             });
         }
         let mut landed = Vec::new();
@@ -131,6 +194,32 @@ impl Peer {
             }
         }
         Some(Receipt { landed, failed })
+    }
+
+    /// Pre-walk before mutate. Flat `Vec<Op>` is depth 0; recurse here when
+    /// Ops grow nested children later.
+    fn within_budget(&self, ops: &[Op]) -> bool {
+        fn walk(
+            list: &[Op],
+            depth: usize,
+            max_depth: usize,
+            max_nodes: usize,
+            count: &mut usize,
+        ) -> bool {
+            if depth > max_depth {
+                return false;
+            }
+            for _ in list {
+                *count += 1;
+                if *count > max_nodes {
+                    return false;
+                }
+                // Nested children (when Op grows them) walk at `depth + 1`.
+            }
+            true
+        }
+        let mut count = 0;
+        walk(ops, 0, self.max_depth, self.max_nodes, &mut count)
     }
 
     fn can_apply(&self, op: &Op) -> bool {
@@ -348,5 +437,87 @@ mod tests {
         let rec = peer.apply(&ResultMsg::ok(vec![morph])).unwrap();
         assert_eq!(rec.failed.len(), 1);
         assert!(peer.ui_get("hdr").is_none());
+    }
+
+    #[test]
+    fn apply_over_node_budget_rejects_and_applies_nothing() {
+        let peer = Peer::baseline().with_limits(2, 16);
+        let result = ResultMsg::ok(vec![
+            baseline::kv_set("a", serde_json::json!(1)),
+            baseline::kv_set("b", serde_json::json!(2)),
+            baseline::kv_set("c", serde_json::json!(3)),
+        ]);
+        let rec = peer.apply(&result).unwrap();
+        assert!(rec.landed.is_empty());
+        assert_eq!(rec.failed.len(), 3);
+        assert!(peer.kv_get("a").is_none());
+        assert!(peer.kv_get("b").is_none());
+        assert!(peer.kv_get("c").is_none());
+    }
+
+    #[test]
+    fn apply_at_node_budget_still_lands() {
+        let peer = Peer::baseline().with_limits(2, 16);
+        let result = ResultMsg::ok(vec![
+            baseline::kv_set("a", serde_json::json!(1)),
+            baseline::kv_set("b", serde_json::json!(2)),
+        ]);
+        let rec = peer.apply(&result).unwrap();
+        assert_eq!(rec.landed.len(), 2);
+        assert!(rec.failed.is_empty());
+        assert_eq!(peer.kv_get("a"), Some(serde_json::json!(1)));
+        assert_eq!(peer.kv_get("b"), Some(serde_json::json!(2)));
+    }
+
+    #[test]
+    fn apply_defaults_are_256_nodes_and_16_depth() {
+        let peer = Peer::baseline();
+        assert_eq!(peer.max_nodes(), DEFAULT_MAX_NODES);
+        assert_eq!(peer.max_depth(), DEFAULT_MAX_DEPTH);
+        assert_eq!(DEFAULT_MAX_NODES, 256);
+        assert_eq!(DEFAULT_MAX_DEPTH, 16);
+    }
+
+    #[test]
+    fn flat_ops_use_depth_zero_so_max_depth_zero_still_applies() {
+        let peer = Peer::baseline().with_limits(256, 0);
+        let rec = peer
+            .apply(&ResultMsg::ok(vec![baseline::kv_set(
+                "a",
+                serde_json::json!(1),
+            )]))
+            .unwrap();
+        assert_eq!(rec.landed.len(), 1);
+        assert_eq!(peer.kv_get("a"), Some(serde_json::json!(1)));
+    }
+
+    #[test]
+    fn concurrent_apply_is_single_flight() {
+        use std::sync::atomic::Ordering;
+        use std::sync::Arc;
+        use std::thread;
+
+        let peer = Arc::new(Peer::baseline());
+        peer.in_flight.store(true, Ordering::SeqCst);
+        let blocked = Arc::clone(&peer);
+        let handle = thread::spawn(move || {
+            blocked.apply(&ResultMsg::ok(vec![baseline::kv_set(
+                "a",
+                serde_json::json!(1),
+            )]))
+        });
+        let rec = handle.join().expect("join");
+        assert!(rec.is_none());
+        assert!(peer.kv_get("a").is_none());
+
+        peer.in_flight.store(false, Ordering::SeqCst);
+        let rec = peer
+            .apply(&ResultMsg::ok(vec![baseline::kv_set(
+                "a",
+                serde_json::json!(1),
+            )]))
+            .unwrap();
+        assert_eq!(rec.landed.len(), 1);
+        assert_eq!(peer.kv_get("a"), Some(serde_json::json!(1)));
     }
 }
