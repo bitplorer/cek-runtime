@@ -629,6 +629,7 @@ impl Host {
                 authorized.clone(),
                 class,
                 inverse,
+                intent.trace.as_deref(),
             ) {
                 let mut rr = ResultMsg::dispatch_error(e.to_string());
                 rr.digest = Some(result_digest("dispatch_error", &[], rr.error.as_deref()));
@@ -664,6 +665,14 @@ impl Host {
         self.drop_context(activity_id);
         let entries = self.lineage.for_activity(activity_id)?;
         Ok(self.reverse_entries(entries))
+    }
+
+    /// Group lineage entries that share a trace (LAW §10).
+    ///
+    /// Correlation only: never grants authority, never reverses, never revives a Cap.
+    /// Resume still needs a fresh Cap. Empty / unknown trace → empty list.
+    pub fn for_trace(&self, trace: &str) -> HostResult<Vec<LineageEntry>> {
+        self.lineage.for_trace(trace)
     }
 
     /// Revoke a Cap (LAW §5 Active→Revoked) and reverse causes under it (LAW §9).
@@ -1138,6 +1147,7 @@ mod tests {
                 vec![baseline::log_append("hi")],
                 ReverseClass::Compensation,
                 vec![],
+                None,
             )
             .unwrap();
         let rev = host.end_activity("act-comp").unwrap();
@@ -1161,6 +1171,7 @@ mod tests {
                 vec![baseline::kv_set("k", json!(1))],
                 ReverseClass::Compensation,
                 vec![],
+                None,
             )
             .unwrap();
         let rev = host.end_activity("act-comp-bare").unwrap();
@@ -1233,6 +1244,7 @@ mod tests {
                 vec![baseline::kv_set("k", json!(1))],
                 ReverseClass::Compensation,
                 vec![],
+                None,
             )
             .unwrap();
         let rev = host.end_activity("act-boot").unwrap();
@@ -1264,6 +1276,7 @@ mod tests {
                 vec![baseline::log_append("hi")],
                 ReverseClass::Compensation,
                 vec![],
+                None,
             )
             .unwrap();
         let rev = host.end_activity("act-comp-fail").unwrap();
@@ -1918,6 +1931,7 @@ mod tests {
                 vec![baseline::log_append("hi")],
                 ReverseClass::Compensation,
                 vec![],
+                None,
             )
             .unwrap();
         let orig = host.mint("cap-comp-rev", "log.append", false, None);
@@ -1958,6 +1972,7 @@ mod tests {
                 vec![baseline::kv_set("k", json!(1))],
                 ReverseClass::Inverse,
                 vec![],
+                None,
             )
             .unwrap();
         let rev = host.revoke("cap-empty-inv").unwrap();
@@ -2216,5 +2231,153 @@ mod tests {
             i
         });
         assert!(matches!(r.kind, ResultKind::Ok), "{:?}", r.error);
+    }
+
+    fn intent_write_traced(cap: Cap, key: &str, val: Value, activity: &str, trace: &str) -> Intent {
+        let mut i = intent_write(cap, key, val);
+        i.activity_id = Some(activity.into());
+        i.trace = Some(trace.into());
+        i
+    }
+
+    /// (a) Two Caps + one shared trace → `for_trace` returns both.
+    #[test]
+    fn trace_groups_two_caps() {
+        let host = Host::with_clock(1000);
+        let cap_a = host.mint("cap-tr-a", "kv.write", false, None);
+        let cap_b = host.mint("cap-tr-b", "kv.write", false, None);
+        let r1 = host.submit(intent_write_traced(
+            cap_a,
+            "a",
+            json!(1),
+            "act-tr-a",
+            "shared-trace",
+        ));
+        let r2 = host.submit(intent_write_traced(
+            cap_b,
+            "b",
+            json!(2),
+            "act-tr-b",
+            "shared-trace",
+        ));
+        assert!(matches!(r1.kind, ResultKind::Ok), "{:?}", r1.error);
+        assert!(matches!(r2.kind, ResultKind::Ok), "{:?}", r2.error);
+        let grouped = host.for_trace("shared-trace").unwrap();
+        assert_eq!(grouped.len(), 2);
+        let caps: Vec<_> = grouped.iter().map(|e| e.cap_id.as_str()).collect();
+        assert!(caps.contains(&"cap-tr-a"));
+        assert!(caps.contains(&"cap-tr-b"));
+        assert!(grouped
+            .iter()
+            .all(|e| e.trace.as_deref() == Some("shared-trace")));
+        assert!(host.for_trace("other-trace").unwrap().is_empty());
+        assert!(host.for_trace("").unwrap().is_empty());
+        // Reverse stays Activity-scoped — not reverse-by-trace.
+        let rev = host.end_activity("act-tr-a").unwrap();
+        assert_eq!(rev.ops.len(), 1);
+        assert_eq!(host.for_trace("shared-trace").unwrap().len(), 2);
+        assert_eq!(
+            host.lineage_store().for_activity("act-tr-b").unwrap().len(),
+            1
+        );
+    }
+
+    /// (b) Shared trace still refuses without Cap / expiry / action mismatch.
+    #[test]
+    fn trace_shared_still_refuses_without_authority() {
+        let host = Host::with_clock(2000);
+        let mismatch = host.mint("cap-tr-mm", "kv.read", false, None);
+        let expired = host.mint("cap-tr-exp", "kv.write", false, Some(1500));
+        let r_mm = host.submit(intent_write_traced(
+            mismatch,
+            "k",
+            json!(1),
+            "act-tr-mm",
+            "shared-trace",
+        ));
+        let r_exp = host.submit(intent_write_traced(
+            expired,
+            "k",
+            json!(1),
+            "act-tr-exp",
+            "shared-trace",
+        ));
+        assert!(matches!(r_mm.kind, ResultKind::AuthorityRefusal));
+        assert!(r_mm.ops.is_empty());
+        assert!(matches!(r_exp.kind, ResultKind::AuthorityRefusal));
+        assert!(r_exp.ops.is_empty());
+        assert!(
+            host.for_trace("shared-trace").unwrap().is_empty(),
+            "refused Intents must not appear in the trace group"
+        );
+    }
+
+    /// (c) Resume under the same trace still requires a fresh Cap.
+    #[test]
+    fn trace_resume_needs_fresh_cap() {
+        let host = Host::with_clock(1000);
+        let spent = host.mint("cap-tr-once", "kv.write", true, None);
+        let first = host.submit(intent_write_traced(
+            spent.clone(),
+            "k",
+            json!(1),
+            "act-tr-1",
+            "resume-trace",
+        ));
+        assert!(matches!(first.kind, ResultKind::Ok));
+        assert_eq!(host.for_trace("resume-trace").unwrap().len(), 1);
+
+        let reuse = host.submit(intent_write_traced(
+            spent,
+            "k",
+            json!(2),
+            "act-tr-2",
+            "resume-trace",
+        ));
+        assert!(matches!(reuse.kind, ResultKind::AuthorityRefusal));
+        assert!(reuse.ops.is_empty());
+        assert_eq!(
+            host.for_trace("resume-trace").unwrap().len(),
+            1,
+            "failed resume must not add a cause"
+        );
+
+        let expired = host.mint("cap-tr-old", "kv.write", false, Some(500));
+        let stale = host.submit(intent_write_traced(
+            expired,
+            "k",
+            json!(3),
+            "act-tr-3",
+            "resume-trace",
+        ));
+        assert!(matches!(stale.kind, ResultKind::AuthorityRefusal));
+        assert!(stale.ops.is_empty());
+
+        let fresh = host.mint("cap-tr-fresh", "kv.write", false, None);
+        let ok = host.submit(intent_write_traced(
+            fresh,
+            "k",
+            json!(4),
+            "act-tr-4",
+            "resume-trace",
+        ));
+        assert!(matches!(ok.kind, ResultKind::Ok), "{:?}", ok.error);
+        let grouped = host.for_trace("resume-trace").unwrap();
+        assert_eq!(grouped.len(), 2);
+        let caps: Vec<_> = grouped.iter().map(|e| e.cap_id.as_str()).collect();
+        assert!(caps.contains(&"cap-tr-once"));
+        assert!(caps.contains(&"cap-tr-fresh"));
+    }
+
+    #[test]
+    fn no_trace_is_ok_and_unindexed() {
+        let host = Host::with_clock(1000);
+        let cap = host.mint("cap-no-tr", "kv.write", false, None);
+        let r = host.submit(intent_write(cap, "k", json!(1)));
+        assert!(matches!(r.kind, ResultKind::Ok));
+        let entries = host.lineage_store().for_activity("act-1").unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].trace.is_none());
+        assert!(host.for_trace("anything").unwrap().is_empty());
     }
 }

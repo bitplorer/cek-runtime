@@ -1,0 +1,33 @@
+{
+  "id": "trace-groups-two-intents",
+  "family": "trace",
+  "description": "Two Caps + one shared trace: group/query returns both (LAW §10). Correlation only.",
+  "now": 1000,
+  "prior_must_ok": true,
+  "prior_intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 1 },
+    "cap": {
+      "id": "cap-tr-a",
+      "action": "kv.write",
+      "once": false
+    },
+    "trace": "shared-trace",
+    "activity_id": "act-tr-a"
+  },
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "b", "value": 2 },
+    "cap": {
+      "id": "cap-tr-b",
+      "action": "kv.write",
+      "once": false
+    },
+    "trace": "shared-trace",
+    "activity_id": "act-tr-b"
+  },
+  "expect_kind": "ok",
+  "expect_trace": "shared-trace",
+  "expect_trace_count": 2,
+  "expect_trace_cap_ids": ["cap-tr-a", "cap-tr-b"]
+}

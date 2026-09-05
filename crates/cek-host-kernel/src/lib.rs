@@ -12,7 +12,7 @@
 //!   → BoundAsk
 //!   → dispatch (authorized Ops)
 //!   → once commit (only after successful dispatch; no burn on miss)
-//!   → lineage commit (if Activity)     // LAW §4: before project
+//!   → lineage commit (if Activity; persist optional Intent.trace)  // LAW §4: before project
 //!   → project Ops onto Result          // LAW §11: ability ∪ Baseline
 //!   → Result + digest
 //! ```
@@ -27,6 +27,8 @@
 //! - [`Host::inject`] / [`Host::limit`] / [`Host::isolate`] mediate Activity Context (LAW §8).
 //!   `limit` ≠ `isolate`. Both only narrow (A8).
 //! - Durable state is behind [`OnceBackend`] / [`IdemBackend`] / [`LineageBackend`].
+//! - [`Host::for_trace`] groups related Intents (LAW §10). Trace is never Cap,
+//!   never undo, never a resume ticket.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

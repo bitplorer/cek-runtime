@@ -65,6 +65,7 @@ impl LineageBackend for DownLineage {
         _authorized_ops: Vec<Op>,
         _reverse_class: ReverseClass,
         _inverse_ops: Vec<Op>,
+        _trace: Option<&str>,
     ) -> HostResult<LineageEntry> {
         Err(HostError::Lineage("down".into()))
     }
@@ -82,6 +83,9 @@ impl LineageBackend for DownLineage {
         Err(HostError::Lineage("down".into()))
     }
     fn for_cap(&self, _cap_id: &str) -> HostResult<Vec<LineageEntry>> {
+        Err(HostError::Lineage("down".into()))
+    }
+    fn for_trace(&self, _trace: &str) -> HostResult<Vec<LineageEntry>> {
         Err(HostError::Lineage("down".into()))
     }
     fn mark_revoked(&self, _cap_id: &str) -> HostResult<()> {
@@ -180,6 +184,7 @@ fn report_receipt_and_end_fail_closed_when_lineage_down() {
     assert!(host.report_receipt("act", &rec).is_err());
     assert!(host.end_activity("act").is_err());
     assert!(host.revoke("c-lin").is_err());
+    assert!(host.for_trace("shared-trace").is_err());
 }
 
 #[test]

@@ -45,7 +45,7 @@ Intent+Cap
   → dispatch (kv.write → authorized kv.set, …)
   → idempotency record
   → once commit (only after successful dispatch)
-  → lineage commit (if activity_id)
+  → lineage commit (if activity_id; persist optional Intent.trace)
   → project Ops onto Result
   → ResultMsg { kind, ops, digest }
 ```
@@ -95,6 +95,7 @@ I/O or lock failure is **fail closed** (never skip once). Multi-process file loc
 17. `Cap.subject` set → `args.subject` must match; blank bind refuses  
 18. Ed25519 (`ed25519:`) is Host policy; rotation via `trust_ed25519`; Peer never signs  
 19. Unknown / blank `Cap.law_generation` refuses; `accept_generation` opens a dual-speak window  
+20. Trace correlates Intents only (`Host::for_trace`); never Cap / undo / resume ticket  
 
 See [HARDENING.md](HARDENING.md), [MATURITY.md](MATURITY.md), and [INVARIANTS.md](INVARIANTS.md).
 

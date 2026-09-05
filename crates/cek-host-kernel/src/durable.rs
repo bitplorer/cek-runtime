@@ -6,6 +6,7 @@
 //! Multi-process locking and a real DB are still out of scope (see HARDENING).
 //! One store instance per directory is the supported use.
 
+use crate::store::persistable_trace;
 use crate::{HostError, HostResult, IdemBackend, IdemOutcome, LineageBackend, OnceBackend};
 use cek_contract::{LineageEntry, Op, ResultMsg, ReverseClass};
 use serde::{Deserialize, Serialize};
@@ -169,6 +170,8 @@ struct LineageSnap {
     by_activity: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     by_cap: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    by_trace: BTreeMap<String, Vec<String>>,
     ended: BTreeSet<String>,
     #[serde(default)]
     revoked: BTreeSet<String>,
@@ -200,6 +203,19 @@ impl FileLineageStore {
             for id in ids {
                 if let Some(e) = snap.by_id.get(&id) {
                     snap.by_cap.entry(e.cap_id.clone()).or_default().push(id);
+                }
+            }
+        }
+        if snap.by_trace.is_empty() && snap.by_id.values().any(|e| e.trace.is_some()) {
+            let mut ids: Vec<_> = snap.by_id.keys().cloned().collect();
+            ids.sort_by_key(|id| {
+                id.strip_prefix("lin-")
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .unwrap_or(u64::MAX)
+            });
+            for id in ids {
+                if let Some(tr) = snap.by_id.get(&id).and_then(|e| e.trace.clone()) {
+                    snap.by_trace.entry(tr).or_default().push(id);
                 }
             }
         }
@@ -244,6 +260,7 @@ impl LineageBackend for FileLineageStore {
         authorized_ops: Vec<Op>,
         reverse_class: ReverseClass,
         inverse_ops: Vec<Op>,
+        trace: Option<&str>,
     ) -> HostResult<LineageEntry> {
         let mut g = self
             .inner
@@ -263,10 +280,12 @@ impl LineageBackend for FileLineageStore {
         }
         let id = format!("lin-{}", g.seq);
         g.seq = g.seq.saturating_add(1);
+        let trace = persistable_trace(trace);
         let entry = LineageEntry {
             id: id.clone(),
             cap_id: cap_id.to_string(),
             activity_id: activity_id.map(|s| s.to_string()),
+            trace: trace.clone(),
             action: action.to_string(),
             authorized_ops,
             reverse_class,
@@ -280,7 +299,13 @@ impl LineageBackend for FileLineageStore {
                 .or_default()
                 .push(id.clone());
         }
-        g.by_cap.entry(cap_id.to_string()).or_default().push(id);
+        g.by_cap
+            .entry(cap_id.to_string())
+            .or_default()
+            .push(id.clone());
+        if let Some(tr) = trace {
+            g.by_trace.entry(tr).or_default().push(id);
+        }
         self.flush(&g)?;
         Ok(entry)
     }
@@ -337,6 +362,21 @@ impl LineageBackend for FileLineageStore {
             .lock()
             .map_err(|_| HostError::Lineage("lock".into()))?;
         let ids = g.by_cap.get(cap_id).cloned().unwrap_or_default();
+        Ok(ids
+            .into_iter()
+            .filter_map(|id| g.by_id.get(&id).cloned())
+            .collect())
+    }
+
+    fn for_trace(&self, trace: &str) -> HostResult<Vec<LineageEntry>> {
+        let Some(key) = persistable_trace(Some(trace)) else {
+            return Ok(Vec::new());
+        };
+        let g = self
+            .inner
+            .lock()
+            .map_err(|_| HostError::Lineage("lock".into()))?;
+        let ids = g.by_trace.get(&key).cloned().unwrap_or_default();
         Ok(ids
             .into_iter()
             .filter_map(|id| g.by_id.get(&id).cloned())
@@ -464,6 +504,7 @@ mod tests {
                 ops.clone(),
                 ReverseClass::Inverse,
                 inv,
+                Some("trace-reopen"),
             )
             .unwrap();
             s.annotate_landed_latest_for_activity("act", ops.clone())
@@ -473,6 +514,10 @@ mod tests {
         let got = s2.for_activity("act").unwrap();
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].landed_ops, ops);
+        assert_eq!(got[0].trace.as_deref(), Some("trace-reopen"));
+        let grouped = s2.for_trace("trace-reopen").unwrap();
+        assert_eq!(grouped.len(), 1);
+        assert_eq!(grouped[0].cap_id, "cap");
         s2.mark_ended("act").unwrap();
         drop(s2);
         let s3 = FileLineageStore::open(&dir).unwrap();
@@ -485,6 +530,7 @@ mod tests {
                 ops,
                 ReverseClass::Inverse,
                 vec![],
+                None,
             )
             .is_err());
         let _ = std::fs::remove_dir_all(&dir);
@@ -511,6 +557,7 @@ mod tests {
             vec![],
             ReverseClass::NonReversible,
             vec![],
+            Some("tr-file"),
         )
         .unwrap();
         assert_eq!(lin.for_activity("a").unwrap().len(), 1);
@@ -520,6 +567,7 @@ mod tests {
         let lin2 = FileLineageStore::open(dir.join("l")).unwrap();
         assert!(lin2.is_revoked("c"));
         assert_eq!(lin2.for_cap("c").unwrap().len(), 1);
+        assert_eq!(lin2.for_trace("tr-file").unwrap().len(), 1);
         assert!(lin2.ensure_not_revoked("c").is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }

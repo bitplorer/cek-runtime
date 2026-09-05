@@ -33,7 +33,8 @@ See [INVARIANTS.md](INVARIANTS.md) for the executable map.
 - [x] Receipt annotation  
 - [x] Landed-first reverse preference  
 - [x] Reverse classes (Inverse / Compensation / NonReversible)  
-- [x] Executable vectors (57)  
+- [x] Executable vectors (71)  
+- [x] Trace store groups related Intents (`for_trace`); never authority (LAW §10)  
 - [x] Unknown-meta ignored on the wire  
 - [x] Peer no-mint (CI + `invariants.sh`, Rust + TS + WASM)  
 - [x] Domain `ui.*` with snapshot reverse  

@@ -163,6 +163,9 @@ pub struct LineageEntry {
     /// Optional Activity.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity_id: Option<String>,
+    /// Optional Intent.trace — correlation only, never authority (LAW §10).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trace: Option<String>,
     /// Action from Intent.
     pub action: String,
     /// Authorized Ops snapshot.

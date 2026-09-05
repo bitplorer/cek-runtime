@@ -69,6 +69,9 @@ fn check_result_kind_mismatch() {
         inject: None,
         limit: None,
         isolate: None,
+        expect_trace: None,
+        expect_trace_count: None,
+        expect_trace_cap_ids: None,
     };
     let r = ResultMsg::authority_refusal("no");
     assert!(check_result(&case, &r).is_err());
@@ -115,6 +118,9 @@ fn check_result_rejects_refusal_with_ops() {
         inject: None,
         limit: None,
         isolate: None,
+        expect_trace: None,
+        expect_trace_count: None,
+        expect_trace_cap_ids: None,
     };
     let mut r = ResultMsg::authority_refusal("no");
     r.ops = vec![baseline::kv_set("k", json!(1))];
@@ -162,6 +168,9 @@ fn check_result_ops_empty_and_exact() {
         inject: None,
         limit: None,
         isolate: None,
+        expect_trace: None,
+        expect_trace_count: None,
+        expect_trace_cap_ids: None,
     };
     let with_ops = ResultMsg::ok(vec![baseline::kv_set("k", json!(1))]);
     assert!(check_result(&case, &with_ops).is_err());

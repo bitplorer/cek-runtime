@@ -121,6 +121,15 @@ pub struct VectorCase {
     /// `isolate` this Activity's Context slice before submit (LAW §8).
     #[serde(default)]
     pub isolate: Option<String>,
+    /// After submits, query this trace (LAW §10 grouping). Correlation only.
+    #[serde(default)]
+    pub expect_trace: Option<String>,
+    /// Expected lineage entry count for [`VectorCase::expect_trace`].
+    #[serde(default)]
+    pub expect_trace_count: Option<usize>,
+    /// Expected Cap ids in the grouped entries (order-insensitive).
+    #[serde(default)]
+    pub expect_trace_cap_ids: Option<Vec<String>>,
 }
 
 /// Vector fixture for [`VectorCase::inject`] / [`VectorCase::limit`] (LAW §8).

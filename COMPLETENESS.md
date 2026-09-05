@@ -12,7 +12,7 @@
 | Concept explainers | CONCEPTS.md |
 | Runtime vs kernel; wire | TOPOLOGY.md |
 | Scope vs law | SCOPE.md |
-| Contract, vectors, Baseline, manifest | 00-contract/ + `crates/cek-contract` (64 JSON vectors) |
+| Contract, vectors, Baseline, manifest | 00-contract/ + `crates/cek-contract` (71 JSON vectors) |
 | Host/Peer APIs | 01-kernels/ + `crates/cek-host-kernel` + `cek-peer-kernel` |
 | Submit pipeline | 02-host-pipeline/ + `host.rs` |
 | Peer apply + receipt | 03-peer-apply/ |

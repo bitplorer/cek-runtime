@@ -8,12 +8,14 @@
 cause_id
 cap_id
 activity_id?
-trace_id?          # correlation only
+trace_id?          # correlation only — Host::for_trace / LineageBackend::for_trace
 action
 sealed_ref
 authorized_ops     # Host authorized set
 reverse_plan       # inverse | compensation | non_reversible class
 ```
+
+`trace?` is optional association. Query groups related Intents. Trace is never permission, never execute, never undo. `end_activity` / `revoke` stay lineage- and Cap-scoped (not reverse-by-trace). Resume still needs a fresh Cap.
 
 ## Reverse plan classes
 

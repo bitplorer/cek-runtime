@@ -16,7 +16,9 @@ This file lists **what the reference runtime actually checks** and where.
 | 7 | Landed-first reverse when receipt annotated | vector `receipt-landed-first-reverse` |
 | 8 | Digests are `cek1:` + FIPS SHA-256 | `sha256_known_answers`, `prop_digest_stable_across_caps` |
 | 9 | Fail closed on store down | `fail_closed` tests |
-| 10 | Trace is not permission | `prop_trace_never_grants_authority` |
+| 10 | Trace is not permission | `prop_trace_never_grants_authority`, `trace_shared_still_refuses_without_authority`, `trace-not-authority`, `trace-expired-not-authority` |
+| 10a | Trace groups related Intents only | `trace_groups_two_caps`, `trace-groups-two-intents` |
+| 10b | Resume under the same trace still needs a fresh Cap | `trace_resume_needs_fresh_cap`, `trace-resume-needs-fresh-cap` |
 | 11 | Honest reverse | `prop_reverse_is_inverse_delete`, log.append → non_reversible |
 | 12 | Concurrent once: exactly one `ok` | `concurrent_once_only_one_ok` |
 | 13 | Scope deny / blank token → zero Ops | `prop_scope_deny_never_effects`, `empty-scope-token` |

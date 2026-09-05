@@ -67,7 +67,7 @@ cargo llvm-cov --workspace --html --output-dir coverage
 | `reverse_on_end` | inverse delete; log.append non-reversible; **kv.delete prior / no-prior** | Reverse on end |
 | `apply_receipt` | landed-first reverse | Apply receipt into lineage |
 | `idempotent_submit` | replay, conflict, once-Cap retry | Idempotent submit |
-| `trace` | shared trace does not grant authority | Trace |
+| `trace` | shared trace does not grant authority; groups related Intents; resume still needs a fresh Cap | Trace |
 
 | `ui_domain` | morph project, snapshot reverse, no-snapshot non-reversible, empty target, Peer lands | Domain pack |
 | `attenuation` | scope allow / deny / blank token | Attenuation |
@@ -88,7 +88,7 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 9. ∀ same idempotency key + same body → cached Result  
 10. ∀ same key + different body → refuse  
 11. ∀ sealed tamper → refuse; match → ok  
-12. ∀ trace → never grants authority  
+12. ∀ trace → never grants authority; grouping is query-only; resume still needs a fresh Cap  
 13. ∀ once + dispatch miss → Cap not burned  
 14. ∀ once + same idempotency key → retry is cached ok  
 15. `ui.morph` + snapshot → restore reverse  
@@ -97,7 +97,7 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **147** `#[test]` + **57** vector fixtures + TS/WASM/JS apply-only + Python Host + batteries.
+Current inventory: **152** `#[test]` + **71** vector fixtures + TS/WASM/JS apply-only + Python Host + batteries.
 
 ```bash
 ./scripts/llvm-cov.sh   # coverage/summary.txt + coverage/html

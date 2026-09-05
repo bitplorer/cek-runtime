@@ -1,0 +1,22 @@
+{
+  "id": "trace-expired-not-authority",
+  "family": "trace",
+  "description": "A shared trace never grants authority; expired Cap still refuses",
+  "now": 2000,
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 1 },
+    "cap": {
+      "id": "cap-trace-exp",
+      "action": "kv.write",
+      "once": false,
+      "not_after": 1500
+    },
+    "trace": "shared-trace",
+    "activity_id": "act-tr-exp"
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true,
+  "expect_trace": "shared-trace",
+  "expect_trace_count": 0
+}

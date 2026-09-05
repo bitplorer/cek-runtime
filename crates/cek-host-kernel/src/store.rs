@@ -58,7 +58,10 @@ pub trait IdemBackend: Send + Sync {
 /// - reject a second [`LineageBackend::mark_revoked`] for the same Cap;
 /// - reject [`LineageBackend::commit`] under a revoked Cap;
 /// - persist `landed_ops` from receipts so reverse can prefer landed;
-/// - index causes by Cap so [`LineageBackend::for_cap`] is Cap-scoped (LAW §9).
+/// - index causes by Cap so [`LineageBackend::for_cap`] is Cap-scoped (LAW §9);
+/// - persist optional `Intent.trace` and index by it so [`LineageBackend::for_trace`]
+///   groups related Intents (LAW §10). Trace is correlation only — never authority,
+///   never reverse-by-trace, never a Cap substitute.
 pub trait LineageBackend: Send + Sync {
     /// Mark Activity ended. Second end is an error.
     fn mark_ended(&self, activity_id: &str) -> HostResult<()>;
@@ -67,6 +70,10 @@ pub trait LineageBackend: Send + Sync {
     fn is_ended(&self, activity_id: &str) -> bool;
 
     /// Record an authorized cause. Must not attach to an ended Activity.
+    ///
+    /// `trace` is optional correlation (LAW §10). Empty / whitespace is stored as
+    /// absent (no-trace is OK). Implementations must not treat `trace` as
+    /// permission, undo, or a Cap substitute.
     fn commit(
         &self,
         cap_id: &str,
@@ -75,6 +82,7 @@ pub trait LineageBackend: Send + Sync {
         authorized_ops: Vec<Op>,
         reverse_class: ReverseClass,
         inverse_ops: Vec<Op>,
+        trace: Option<&str>,
     ) -> HostResult<LineageEntry>;
 
     /// Annotate an entry with Peer landed Ops (from a receipt).
@@ -93,6 +101,12 @@ pub trait LineageBackend: Send + Sync {
     /// Entries for a Cap in commit order.
     fn for_cap(&self, cap_id: &str) -> HostResult<Vec<LineageEntry>>;
 
+    /// Entries that share a trace, in commit order (LAW §10 grouping).
+    ///
+    /// Query only — never grants authority, never reverses, never revives a Cap.
+    /// Unknown / empty / no-trace returns an empty list (not an error).
+    fn for_trace(&self, trace: &str) -> HostResult<Vec<LineageEntry>>;
+
     /// Mark Cap revoked (LAW §5 Active→Revoked). Second revoke is an error.
     fn mark_revoked(&self, cap_id: &str) -> HostResult<()>;
 
@@ -101,6 +115,14 @@ pub trait LineageBackend: Send + Sync {
 
     /// Refuse if this Cap is revoked. Store down is an error (fail closed).
     fn ensure_not_revoked(&self, cap_id: &str) -> HostResult<()>;
+}
+
+/// Persistable correlation id: present and non-empty after trim. Empty is no-trace.
+pub(crate) fn persistable_trace(trace: Option<&str>) -> Option<String> {
+    trace
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
 }
 
 #[cfg(test)]
@@ -149,14 +171,21 @@ mod tests {
                 ops.clone(),
                 ReverseClass::Inverse,
                 inv.clone(),
+                Some("shared-trace"),
             )
             .unwrap();
         assert!(!e.id.is_empty());
+        assert_eq!(e.trace.as_deref(), Some("shared-trace"));
         b.annotate_landed_latest_for_activity("act", ops.clone())
             .unwrap();
         let got = b.for_activity("act").unwrap();
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].landed_ops, ops);
+        let grouped = b.for_trace("shared-trace").unwrap();
+        assert_eq!(grouped.len(), 1);
+        assert_eq!(grouped[0].cap_id, "cap");
+        assert!(b.for_trace("other-trace").unwrap().is_empty());
+        assert!(b.for_trace("").unwrap().is_empty());
         b.mark_ended("act").unwrap();
         assert!(b.is_ended("act"));
         assert!(b.mark_ended("act").is_err());
@@ -168,6 +197,7 @@ mod tests {
                 ops.clone(),
                 ReverseClass::Inverse,
                 inv.clone(),
+                Some("shared-trace"),
             )
             .is_err());
         let by_cap = b.for_cap("cap").unwrap();
@@ -185,9 +215,18 @@ mod tests {
                 ops,
                 ReverseClass::Inverse,
                 inv,
+                None,
             )
             .is_err());
         b.ensure_not_revoked("other").unwrap();
+    }
+
+    #[test]
+    fn persistable_trace_drops_empty() {
+        assert_eq!(persistable_trace(None), None);
+        assert_eq!(persistable_trace(Some("")), None);
+        assert_eq!(persistable_trace(Some("   ")), None);
+        assert_eq!(persistable_trace(Some("shared")), Some("shared".into()));
     }
 
     #[test]
