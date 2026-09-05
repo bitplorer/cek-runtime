@@ -37,7 +37,7 @@ From CORE 19 — each as versioned JSON cases:
 | Family | Must show |
 |--------|-----------|
 | Cap verify | success; bad integrity; action mismatch; sealed mismatch; expired |
-| Single-use | consume-before-effects; second use fails; store down refuses |
+| Single-use | two-phase once (LAW §12): ensure before effects, commit after successful dispatch; second use fails; miss does not burn; store down refuses |
 | Baseline apply | minimal profile applies classic Ops |
 | Baseline lowering | rich outcome → classic Ops |
 | Unknown meta | ignored on Baseline |

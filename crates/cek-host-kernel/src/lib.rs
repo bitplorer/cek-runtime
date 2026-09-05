@@ -1,6 +1,6 @@
 //! # cek-host-kernel
 //!
-//! Host is the **decide** role: mint, verify Cap, once-consume, sealed-args,
+//! Host is the **decide** role: mint, verify Cap, once (ensure/commit), sealed-args,
 //! idempotency, dispatch, lineage, project Ops, reverse.
 //!
 //! ## Pipeline (fail closed, ordered)

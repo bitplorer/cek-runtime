@@ -804,6 +804,10 @@ mod tests {
         let cap = host.mint("once-1", "kv.write", true, None);
         let r1 = host.submit(intent_write(cap.clone(), "a", json!(1)));
         assert!(matches!(r1.kind, ResultKind::Ok));
+        assert!(
+            host.once_store().is_consumed("once-1"),
+            "LAW §12: successful dispatch must commit once"
+        );
         let r2 = host.submit(intent_write(cap, "a", json!(2)));
         assert!(matches!(r2.kind, ResultKind::AuthorityRefusal));
         assert!(r2.ops.is_empty());
@@ -1841,6 +1845,60 @@ mod tests {
         assert!(
             lineage < project,
             "LAW §4: lineage.commit must appear before ResultMsg::ok in dispatch_and_finish"
+        );
+    }
+
+    /// LAW §12: `submit` ensures once before dispatch; `dispatch_and_finish`
+    /// commits only after `dispatch_ops` and before lineage. Miss returns first.
+    #[test]
+    fn law12_submit_source_ensures_once_before_dispatch() {
+        let src = include_str!("host.rs");
+        let start = src.find("pub fn submit_for").expect("submit_for");
+        let rest = &src[start..];
+        let end = rest.find("\n    fn err_result").unwrap_or(rest.len());
+        let body = &rest[..end];
+        let ensure = body
+            .find("ensure_available")
+            .expect("ensure_available in submit_for");
+        let dispatch = body
+            .find("dispatch_and_finish")
+            .expect("dispatch_and_finish in submit_for");
+        assert!(
+            ensure < dispatch,
+            "LAW §12: ensure_available must appear before dispatch_and_finish in submit"
+        );
+    }
+
+    #[test]
+    fn law12_dispatch_and_finish_source_commits_once_after_dispatch() {
+        let src = include_str!("host.rs");
+        let start = src
+            .find("fn dispatch_and_finish")
+            .expect("dispatch_and_finish");
+        let rest = &src[start..];
+        let end = rest
+            .find("\n    pub fn report_receipt")
+            .unwrap_or(rest.len());
+        let body = &rest[..end];
+        let dispatch = body
+            .find("dispatch_ops")
+            .expect("dispatch_ops in dispatch_and_finish");
+        let miss = body
+            .find("return r;")
+            .expect("dispatch miss early return in dispatch_and_finish");
+        let commit = body
+            .find("self.once.commit")
+            .expect("once.commit in dispatch_and_finish");
+        let lineage = body
+            .find("self.lineage.commit")
+            .expect("lineage.commit in dispatch_and_finish");
+        assert!(
+            dispatch < miss && miss < commit,
+            "LAW §12: dispatch miss must return before once.commit"
+        );
+        assert!(
+            commit < lineage,
+            "LAW §4/§12: once.commit must appear before lineage.commit"
         );
     }
 

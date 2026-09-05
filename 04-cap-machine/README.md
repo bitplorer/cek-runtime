@@ -11,7 +11,8 @@ Minted → Active → Consumed(once) | Expired | Revoked
 | Transition | Enforcement |
 |------------|-------------|
 | verify | Only Active Caps pass; Expired/Revoked/Consumed refuse |
-| once consume | **Before** dispatch side-effects; atomic vs concurrent submit |
+| once ensure | **Before** dispatch; refuse if already consumed; does **not** burn (LAW §12) |
+| once commit | **After** successful dispatch only; miss/refuse leaves Cap unburned |
 | replay Consumed | Refuse |
 | revoke | `Host::revoke` — Cap is dead afterwards (`verify_cap` / submit refuse); reverse causes under that Cap (LAW §5 Active→Revoked, LAW §9) |
 

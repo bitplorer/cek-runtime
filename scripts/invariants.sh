@@ -47,6 +47,16 @@ if ! grep -q 'Consume once only after successful dispatch' crates/cek-host-kerne
   fail "once-after-dispatch comment missing"
 fi
 ok "once-after-dispatch documented in Host"
+if grep -q 'consume_once' 02-host-pipeline/README.md; then
+  fail "host pipeline must not describe a single consume_once step (LAW §12 two-phase)"
+fi
+if ! grep -q 'once.commit' 02-host-pipeline/README.md; then
+  fail "host pipeline must document once.commit after dispatch (LAW §12)"
+fi
+if ! grep -q 'ensure_available' 02-host-pipeline/README.md; then
+  fail "host pipeline must document ensure_available before dispatch (LAW §12)"
+fi
+ok "host pipeline documents two-phase once (LAW §12)"
 
 # 8. LAW §4: lineage recorded before project in dispatch_and_finish.
 if ! grep -q 'LAW §4 step 4: Record lineage' crates/cek-host-kernel/src/host.rs; then

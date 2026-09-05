@@ -96,9 +96,10 @@ Manifest never grants Cap authority.
 **Token produced only after verify + once/idempotency succeed.**
 
 ```text
-Intent+Cap → verify → once/idem → BoundAsk → dispatch
-                │ refuse              │
-                └─ zero Ops           └─ only path to side effects
+Intent+Cap → verify → once.ensure/idem → BoundAsk → dispatch → once.commit
+                │ refuse                     │                    │
+                └─ zero Ops                  └─ only path         └─ LAW §12: after success
+                                                to side effects      (miss does not burn)
 ```
 
 Dispatch must not be callable without a `BoundAsk` (implementation shape).
@@ -114,15 +115,17 @@ Ordered, fail closed:
 ```text
 1 verify Cap
 2 Context mediate (LAW §8: inject / limit / isolate)
-3 once / idempotency
+3 once.ensure / idempotency     # LAW §12: check only, do not burn
 4 reload truth (Host store)
-5 dispatch
-6 lineage (if required)
-7 project Ops to profile ∪ Baseline
-8 Result
+5 dispatch                      # miss → early return, Cap unburned
+6 once.commit                   # LAW §12: only after successful dispatch
+7 lineage (if required)
+8 project Ops to profile ∪ Baseline
+9 Result
 ```
 
-Cap refuse at (1), Context refuse at (2), or store-down at (3) → **no** mutate Ops, **no** cause.
+Cap refuse at (1), Context refuse at (2), or store-down at (3) → **no** mutate Ops, **no** cause.  
+Dispatch miss at (5) → **no** `once.commit`.
 
 → [02-host-pipeline](02-host-pipeline/README.md)
 
@@ -138,7 +141,7 @@ Minted → Active → Consumed(once) | Expired | Revoked
 
 | Transition | Rule |
 |------------|------|
-| once | Atomic consume **before** effects |
+| once | Two-phase (LAW §12): `ensure` before dispatch (no burn); `commit` after success |
 | replay Consumed | Refuse |
 | Expired/Revoked | Verify refuses (revoked is Host registry state, not a Cap wire field) |
 | revoke | `Host::revoke` → reverse that Cap's lineage (LAW §9) |
