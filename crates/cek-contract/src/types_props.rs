@@ -3,8 +3,8 @@
 
 use crate::{
     baseline, is_baseline, is_legal_pair, kv_set_inverse, Cap, Context, FailClosed, Intent,
-    Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, ReverseClass, UnknownOpPolicy,
-    LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
+    LineageEntry, Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, ReverseClass,
+    UnknownOpPolicy, LAW_GENERATION, PROFILE_BASELINE, PROFILE_PRODUCTION_V1,
 };
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -60,6 +60,28 @@ fn prop_serde_roundtrip_core_types() {
     assert_eq!(cap, cap2);
     let intent2: Intent = serde_json::from_value(serde_json::to_value(&intent).unwrap()).unwrap();
     assert_eq!(intent, intent2);
+    let lin = LineageEntry {
+        id: "lin-1".into(),
+        cap_id: "c".into(),
+        activity_id: Some("a".into()),
+        trace: Some("t".into()),
+        action: "kv.write".into(),
+        authorized_ops: vec![op.clone()],
+        reverse_class: ReverseClass::Inverse,
+        inverse_ops: vec![],
+        landed_ops: vec![],
+    };
+    let lin2: LineageEntry = serde_json::from_value(serde_json::to_value(&lin).unwrap()).unwrap();
+    assert_eq!(lin, lin2);
+    let legacy = json!({
+        "id": "lin-old",
+        "cap_id": "c",
+        "action": "kv.write",
+        "authorized_ops": [],
+        "reverse_class": "inverse"
+    });
+    let old: LineageEntry = serde_json::from_value(legacy).unwrap();
+    assert!(old.trace.is_none());
 }
 
 #[test]

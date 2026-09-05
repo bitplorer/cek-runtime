@@ -13,6 +13,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
+use crate::store::persistable_trace;
 use crate::{HostError, HostResult, LineageBackend};
 
 /// Host lineage memory.
@@ -21,6 +22,7 @@ pub struct LineageStore {
     seq: AtomicU64,
     by_activity: Mutex<HashMap<String, Vec<String>>>,
     by_cap: Mutex<HashMap<String, Vec<String>>>,
+    by_trace: Mutex<HashMap<String, Vec<String>>>,
     by_id: Mutex<HashMap<String, LineageEntry>>,
     ended_activities: Mutex<HashSet<String>>,
     revoked: Mutex<HashSet<String>>,
@@ -32,6 +34,7 @@ impl Default for LineageStore {
             seq: AtomicU64::new(1),
             by_activity: Mutex::new(HashMap::new()),
             by_cap: Mutex::new(HashMap::new()),
+            by_trace: Mutex::new(HashMap::new()),
             by_id: Mutex::new(HashMap::new()),
             ended_activities: Mutex::new(HashSet::new()),
             revoked: Mutex::new(HashSet::new()),
@@ -79,8 +82,10 @@ impl LineageBackend for LineageStore {
         authorized_ops: Vec<Op>,
         reverse_class: ReverseClass,
         inverse_ops: Vec<Op>,
+        trace: Option<&str>,
     ) -> HostResult<LineageEntry> {
         // Fail closed: never attach a cause to an ended Activity or revoked Cap.
+        // Trace is never a gate here (LAW §10).
         if let Some(aid) = activity_id {
             if self.is_ended(aid) {
                 return Err(HostError::Lineage(format!(
@@ -93,10 +98,12 @@ impl LineageBackend for LineageStore {
                 "cannot commit under revoked Cap: {cap_id}"
             )));
         }
+        let trace = persistable_trace(trace);
         let entry = LineageEntry {
             id: self.next_id(),
             cap_id: cap_id.to_string(),
             activity_id: activity_id.map(|s| s.to_string()),
+            trace: trace.clone(),
             action: action.to_string(),
             authorized_ops,
             reverse_class,
@@ -129,6 +136,13 @@ impl LineageBackend for LineageStore {
                 .entry(cap_id.to_string())
                 .or_default()
                 .push(entry.id.clone());
+        }
+        if let Some(tr) = trace {
+            let mut by_tr = self
+                .by_trace
+                .lock()
+                .map_err(|_| HostError::Lineage("lock".into()))?;
+            by_tr.entry(tr).or_default().push(entry.id.clone());
         }
         Ok(entry)
     }
@@ -183,6 +197,21 @@ impl LineageBackend for LineageStore {
                 .lock()
                 .map_err(|_| HostError::Lineage("lock".into()))?;
             g.get(cap_id).cloned().unwrap_or_default()
+        };
+        self.entries_for_ids(ids)
+    }
+
+    fn for_trace(&self, trace: &str) -> HostResult<Vec<LineageEntry>> {
+        let key = persistable_trace(Some(trace));
+        let Some(key) = key else {
+            return Ok(Vec::new());
+        };
+        let ids = {
+            let g = self
+                .by_trace
+                .lock()
+                .map_err(|_| HostError::Lineage("lock".into()))?;
+            g.get(&key).cloned().unwrap_or_default()
         };
         self.entries_for_ids(ids)
     }

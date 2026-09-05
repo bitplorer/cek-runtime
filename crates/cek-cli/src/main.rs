@@ -312,6 +312,7 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
                 cc.ops.clone(),
                 ReverseClass::Compensation,
                 vec![],
+                None,
             )
             .map_err(|e| e.to_string())?;
     }
@@ -428,6 +429,35 @@ fn run_one(case: &VectorCase) -> Result<(), String> {
             } else if got.as_ref() != Some(v) {
                 return Err(format!("peer ui[{k}] want {v} got {got:?}"));
             }
+        }
+    }
+
+    if let Some(ref tr) = case.expect_trace {
+        let grouped = host.for_trace(tr).map_err(|e| e.to_string())?;
+        if let Some(want) = case.expect_trace_count {
+            if grouped.len() != want {
+                return Err(format!(
+                    "trace {tr} count want {want} got {}",
+                    grouped.len()
+                ));
+            }
+        }
+        if let Some(ref want_caps) = case.expect_trace_cap_ids {
+            let mut got: Vec<String> = grouped.iter().map(|e| e.cap_id.clone()).collect();
+            let mut want = want_caps.clone();
+            got.sort();
+            want.sort();
+            if got != want {
+                return Err(format!("trace {tr} cap ids want {want:?} got {got:?}"));
+            }
+        }
+        if grouped
+            .iter()
+            .any(|e| e.trace.as_deref() != Some(tr.as_str()))
+        {
+            return Err(format!(
+                "trace {tr} group contained an entry without that trace"
+            ));
         }
     }
 

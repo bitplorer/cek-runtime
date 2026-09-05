@@ -1,0 +1,35 @@
+{
+  "id": "trace-resume-needs-fresh-cap",
+  "family": "trace",
+  "description": "Resume under the same trace still requires a fresh Cap; consumed once-Cap refuses",
+  "now": 1000,
+  "prior_must_ok": true,
+  "prior_intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 1 },
+    "cap": {
+      "id": "cap-tr-once",
+      "action": "kv.write",
+      "once": true
+    },
+    "trace": "resume-trace",
+    "activity_id": "act-tr-1"
+  },
+  "intent": {
+    "action": "kv.write",
+    "args": { "key": "a", "value": 2 },
+    "cap": {
+      "id": "cap-tr-once",
+      "action": "kv.write",
+      "once": true
+    },
+    "trace": "resume-trace",
+    "activity_id": "act-tr-2"
+  },
+  "expect_kind": "authority_refusal",
+  "expect_ops_empty": true,
+  "expect_once_consumed": true,
+  "expect_trace": "resume-trace",
+  "expect_trace_count": 1,
+  "expect_trace_cap_ids": ["cap-tr-once"]
+}

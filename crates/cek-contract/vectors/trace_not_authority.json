@@ -14,5 +14,7 @@
     "trace": "shared-trace"
   },
   "expect_kind": "authority_refusal",
-  "expect_ops_empty": true
+  "expect_ops_empty": true,
+  "expect_trace": "shared-trace",
+  "expect_trace_count": 0
 }

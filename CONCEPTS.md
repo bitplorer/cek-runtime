@@ -197,6 +197,25 @@ DOM morph usually needs snapshot/restore (compensation) or inverse patch data ke
 
 ---
 
+## Trace (LAW §10)
+
+**Correlation of related Intents.** Optional on Intent and on the lineage entry.
+
+```text
+Intent.trace?  →  LineageEntry.trace?  →  Host::for_trace / LineageBackend::for_trace
+```
+
+| Is | Is not |
+|----|--------|
+| Group / query key | Permission, execute, or undo |
+| Optional (no-trace is OK) | A Cap, a session, or a resume ticket |
+
+Each step still needs a Cap. End reverses lineage (not reverse-by-trace). Resume needs a fresh Cap.
+
+→ [05-lineage-reverse](05-lineage-reverse/README.md)
+
+---
+
 ## Baseline Ops vs domain Ops
 
 ```text
