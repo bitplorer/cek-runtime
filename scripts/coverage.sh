@@ -48,6 +48,11 @@ if command -v node >/dev/null 2>&1; then
   fi
 fi
 
+if command -v python3 >/dev/null 2>&1 && { [ -f target/release/libcek_peer_pyo3.so ] || [ -f target/debug/libcek_peer_pyo3.so ]; }; then
+  echo "=== pyo3 peer ==="
+  bash scripts/run-pyo3-peer.sh || true
+fi
+
 echo "=== invariants ==="
 ./scripts/invariants.sh
 

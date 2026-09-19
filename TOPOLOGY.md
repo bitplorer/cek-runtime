@@ -17,6 +17,7 @@ cek-runtime            RUNTIME      this repo
   crates/cek-ops-ui                 PEER DRIVER  ui / DOM world
   crates/cek-cli                    Host+Peer in one process (demo)
   crates/cek-peer-wasm              same Peer kernel, WASM
+  crates/cek-peer-pyo3              same Peer kernel, in-process PyO3
   ports/                            other-language apply-only Peers
 ```
 
@@ -51,5 +52,6 @@ Driver catalog (payloads, addresses, what a driver must never do): **[DRIVERS.md
 | `ports/cek-peer-js` | Peer **runtime** (apply + DomTree). No mint |
 | `ports/cek-peer-ts` | Peer apply-only (same contract) |
 | `ports/cek-peer-wasm` | Peer apply-only |
+| `ports/cek-peer-pyo3` | Peer apply-only (in-process ABI; not a second kernel) |
 
 HMAC / Ed25519 / scopes / dual-speak stay in the **Host kernel** (verify). They are not drivers.

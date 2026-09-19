@@ -23,6 +23,18 @@ if [ -d crates/cek-peer-wasm ]; then
   fi
   ok "WASM Peer crate has no mint"
 fi
+if [ -d crates/cek-peer-pyo3 ]; then
+  if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|Host::mint|mint_root' crates/cek-peer-pyo3 >/dev/null; then
+    fail "PyO3 Peer crate must not mint"
+  fi
+  ok "PyO3 Peer crate has no mint"
+fi
+if [ -d ports/cek-peer-pyo3 ]; then
+  if grep -REn 'def mint|mint_root|Host::mint' ports/cek-peer-pyo3 >/dev/null; then
+    fail "PyO3 Peer port must not mint"
+  fi
+  ok "PyO3 Peer port has no mint"
+fi
 
 # 2. BoundAsk has no public constructor.
 if grep -REn 'pub[[:space:]]+(fn[[:space:]]+new|struct BoundAsk)' crates/cek-host-kernel/src/bound.rs | grep -v 'pub struct BoundAsk' >/dev/null; then

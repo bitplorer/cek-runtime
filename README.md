@@ -9,6 +9,7 @@ Reference **Host** (decide) and **Peer** (apply). No ambient power. Peer never m
 | `cek-peer-kernel` | Apply S only |
 | `cek-ops-baseline` / `cek-ops-ui` | Drivers |
 | `cek-peer-wasm` | Same Peer kernel, WASM ABI |
+| `cek-peer-pyo3` | Same Peer kernel, in-process PyO3 ABI (apply/receipt only) |
 | `cek-cli` | `cek demo` · `cek vectors` · `cek apply` · `cek host-json` |
 
 ```bash
