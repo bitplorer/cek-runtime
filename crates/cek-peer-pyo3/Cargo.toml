@@ -1,0 +1,31 @@
+[package]
+name = "cek-peer-pyo3"
+description = "CEK Peer apply-only PyO3/JSON port — no mint"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+readme = "README.md"
+homepage = "https://github.com/bitplorer/cek-runtime"
+documentation = "https://docs.rs/cek-peer-pyo3"
+keywords = ["cek", "capability", "authorization"]
+categories = ["authentication"]
+
+[lib]
+name = "cek_peer_pyo3"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cek-contract = { workspace = true }
+cek-peer-kernel = { workspace = true }
+cek-peer-wasm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+pyo3 = { version = "0.22.6", optional = true, default-features = false, features = ["macros"] }
+
+[features]
+default = []
+# CPython extension. Off for `cargo test --workspace` (no libpython).
+python = ["dep:pyo3"]
+extension-module = ["python", "pyo3/extension-module"]

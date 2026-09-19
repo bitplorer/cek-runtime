@@ -55,6 +55,7 @@ for crate in \
   cek-host-kernel \
   cek-peer-kernel \
   cek-peer-wasm \
+  cek-peer-pyo3 \
   cek-cli
 do
   publish_one "$crate"

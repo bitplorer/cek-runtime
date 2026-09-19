@@ -97,7 +97,7 @@ TS apply-only runner executes `peer_result` fixtures (same JSON). Host-projected
 
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **152** `#[test]` + **71** vector fixtures + TS/WASM/JS apply-only + Python Host + batteries.
+Current inventory: **152** `#[test]` + **71** vector fixtures + TS/WASM/JS/PyO3 apply-only + Python Host + batteries.
 
 ```bash
 ./scripts/llvm-cov.sh   # coverage/summary.txt + coverage/html
@@ -115,5 +115,5 @@ Current inventory: **152** `#[test]` + **71** vector fixtures + TS/WASM/JS apply
 
 ## CI
 
-`.github/workflows/cek.yml` runs `scripts/invariants.sh`, `cargo test --workspace`, vectors, TS Peer, and `scripts/coverage.sh`.
+`.github/workflows/cek.yml` runs `scripts/invariants.sh`, `cargo test --workspace`, vectors, TS Peer, WASM Peer, PyO3 Peer (`scripts/run-pyo3-peer.sh`; needs `python3-dev`), and `scripts/coverage.sh`.
 

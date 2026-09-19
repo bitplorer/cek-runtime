@@ -27,7 +27,8 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 TypeScript apply-only Peer: `ports/cek-peer-ts`.  
 JavaScript Peer **runtime** (apply + DomTree): `ports/cek-peer-js`.  
 Python Host **runtime (published):** `pip install cek-host`. `ports/cek-host-py` is a contract-vector sketch, not a second published Host.  
-WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm`.
+WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm`.  
+PyO3 apply-only Peer: `crates/cek-peer-pyo3` + `ports/cek-peer-pyo3` (same kernel; no mint).
 
 ## Pipeline (Host)
 
@@ -118,8 +119,10 @@ crates/cek-ops-baseline/
 crates/cek-ops-ui/         # Peer driver (UI world)
 crates/cek-cli/
 crates/cek-peer-wasm/      # JSON/WASM apply surface; no mint
+crates/cek-peer-pyo3/      # JSON/PyO3 apply surface; no mint
 ports/cek-peer-ts/
 ports/cek-peer-wasm/
+ports/cek-peer-pyo3/
 ```
 
 ## Edge cases & testing
