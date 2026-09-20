@@ -122,7 +122,7 @@ mod tests {
         serde_json::from_str(s).unwrap()
     }
 
-    fn kernel_from_req(req: &ApplyRequest) -> ApplyWorld {
+    fn apply_world_from_req(req: &ApplyRequest) -> ApplyWorld {
         apply_world(
             &req.result,
             ApplyProfileKind::from_wire(req.profile.as_deref()),
@@ -143,7 +143,7 @@ mod tests {
         );
 
         let req: ApplyRequest = serde_json::from_str(input).unwrap();
-        let world = kernel_from_req(&req);
+        let world = apply_world_from_req(&req);
         assert_eq!(via_abi.receipt, world.receipt);
         assert_eq!(via_abi.kv, world.kv);
         assert_eq!(via_abi.ui, world.ui);
