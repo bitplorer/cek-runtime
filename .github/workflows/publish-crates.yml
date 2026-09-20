@@ -6,7 +6,8 @@
 #   Workflow: publish-crates.yml
 #   Environment: crates-io
 #
-# Fallback: repo secret CARGO_REGISTRY_TOKEN (crates.io API token).
+# Token: prefer CARGO_REGISTRY_TOKEN for first publish of new crates;
+# OIDC Trusted Publishing cannot create crates. Flip back to OIDC-first after.
 #
 # Trigger: workflow_dispatch or tag vX.Y.Z
 # Order: contract → ops → kernels → rust → wasm → pyo3 → cli
@@ -36,7 +37,8 @@ jobs:
         continue-on-error: true
       - name: publish
         env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || secrets.CARGO_REGISTRY_TOKEN }}
+          # Prefer API token for first publish of new crates; OIDC cannot create crates.
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || steps.auth.outputs.token }}
         run: |
           if [ -z "${CARGO_REGISTRY_TOKEN:-}" ]; then
             echo "No OIDC token and no CARGO_REGISTRY_TOKEN secret." >&2
