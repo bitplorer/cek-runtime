@@ -176,4 +176,41 @@ if awk '
 fi
 ok "apply_world does not coerce None to empty receipt"
 
+# 13. Host runtime: host kernel only; no peer coupling; no host-pyo3.
+if [ -d crates/cek-host-pyo3 ]; then
+  fail "cek-host-pyo3 must not exist (published Cap machine stays pip install cek-host)"
+fi
+ok "no cek-host-pyo3 crate"
+host_rust_toml=crates/cek-host-rust/Cargo.toml
+if awk '
+  $0 ~ /^\[/ { d = ($0 == "[dependencies]" || $0 == "[dev-dependencies]") }
+  d && $0 ~ /^cek-host-kernel[[:space:]]*=/ { found=1 }
+  END { exit !found }
+' "$host_rust_toml"; then
+  :
+else
+  fail "cek-host-rust must depend on cek-host-kernel"
+fi
+ok "cek-host-rust depends on cek-host-kernel"
+if awk '
+  $0 ~ /^\[/ { d = ($0 == "[dependencies]" || $0 == "[dev-dependencies]") }
+  d && $0 ~ /^cek-peer-(kernel|rust|wasm|pyo3)[[:space:]]*=/ { found=1 }
+  END { exit !found }
+' "$host_rust_toml"; then
+  fail "cek-host-rust must not depend on cek-peer-* crates"
+fi
+ok "cek-host-rust does not depend on peer crates"
+if ! grep -q 'cek_host_rust::' crates/cek-cli/src/main.rs; then
+  fail "cek host-json must hop onto cek-host-rust"
+fi
+if awk '
+  /^fn run_host_json/ { p=1 }
+  p && /Host::/ { found=1 }
+  p && /^fn / && !/^fn run_host_json/ { exit }
+  END { exit !found }
+' crates/cek-cli/src/main.rs; then
+  fail "cek host-json must not construct the host kernel Host itself"
+fi
+ok "cek host-json hops onto cek-host-rust"
+
 echo "invariants ok"

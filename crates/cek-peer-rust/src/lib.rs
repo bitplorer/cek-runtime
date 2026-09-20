@@ -1,4 +1,4 @@
-//! Native Rust peer runtime: thin JSON apply/receipt door on the kernel.
+//! Native Rust peer runtime: `hop: native JSON → peer kernel`.
 //!
 //! This crate owns **this hop's** JSON wire (`apply_json` / `apply_request`).
 //! Apply is [`cek_peer_kernel::apply_world`] → [`cek_peer_kernel::Peer::apply`].
@@ -49,7 +49,7 @@ pub fn apply_json(input: &str) -> Result<String, String> {
     serde_json::to_string(&resp).map_err(|e| format!("response json: {e}"))
 }
 
-/// Apply a typed request. Serde-owned types only; engine is the kernel helper.
+    /// Apply a typed request. Serde-owned types only; engine is the peer kernel helper.
 pub fn apply_request(req: &ApplyRequest) -> ApplyResponse {
     let world = apply_world(
         &req.result,

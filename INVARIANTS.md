@@ -37,6 +37,7 @@ This file lists **what the reference runtime actually checks** and where.
 | 26 | Context applied on submit (LAW §8) | `context_applied_on_submit`, vector `context-applied-on-submit` |
 | 27 | Over-limit / undeclared inject refuse, isolate holds | `context_over_limit_refused`, `context_undeclared_inject_fails_closed`, `context_isolate_holds`, vectors `context-*` |
 | 28 | No wasm→rust / rust→wasm sibling edge | `invariants.sh` + `cek-peer-wasm`/`cek-peer-rust` `tests/dep_graph.rs` |
+| 29 | Host runtime wraps host kernel only; `cek host-json` hops onto `cek-host-rust` | `invariants.sh` + `cek-host-rust` `tests/dep_graph.rs` / `tests/cli_hop.rs` |
 
 ## Coverage
 

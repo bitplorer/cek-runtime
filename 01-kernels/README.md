@@ -7,7 +7,7 @@ L1 has exactly two implementations in this framework.
 | `cek-host-kernel` | Decide |
 | `cek-peer-kernel` | Carry out (`Peer::apply` + typed `apply_world` helper) |
 
-**Runtime vs kernel:** the kernel is the CEK core; the runtime is the process that wraps it (transport, stores, drivers). Full picture: [TOPOLOGY.md](../TOPOLOGY.md).
+**Runtime vs kernel:** a host kernel or peer kernel is the CEK core; the runtime is the process that wraps it (transport, stores, drivers). Full picture: [TOPOLOGY.md](../TOPOLOGY.md).
 
 ```text
 Host runtime ⊃ Host kernel
@@ -39,7 +39,8 @@ apply(Result) -> Option<Receipt>
 ```
 
 Typed helper **in the same crate** (not a second engine): `apply_world` (profile/policy → `Peer::apply` → receipt + snapshots).  
-`cek-peer-wasm` and `cek-peer-rust` are sibling hops that serde JSON onto that helper. PyO3 and `cek apply` hop onto rust, not wasm. See [TOPOLOGY.md](../TOPOLOGY.md).
+`cek-peer-wasm` is `hop: WASM C ABI + own JSON → peer kernel`. `cek-peer-rust` is `hop: native JSON → peer kernel`. PyO3 and `cek apply` hop onto rust, not wasm.  
+`cek-host-rust` is `hop: native JSON → host kernel`. `cek host-json` hops onto it. See [TOPOLOGY.md](../TOPOLOGY.md).
 
 Peer **must not** expose:
 

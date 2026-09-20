@@ -1,4 +1,4 @@
-//! WASM hop: C ABI + this crate's thin JSON apply/receipt wire.
+//! `hop: WASM C ABI + own JSON → peer kernel`.
 //!
 //! There is **no mint**. JSON serde lives here; apply is
 //! [`cek_peer_kernel::apply_world`] → [`cek_peer_kernel::Peer::apply`].
@@ -47,7 +47,7 @@ pub fn apply_json(input: &str) -> Result<String, String> {
     serde_json::to_string(&resp).map_err(|e| format!("response json: {e}"))
 }
 
-/// Apply a typed request. Serde-owned types only; engine is the kernel helper.
+/// Apply a typed request. Serde-owned types only; engine is the peer kernel helper.
 pub fn apply_request(req: &ApplyRequest) -> ApplyResponse {
     let world = apply_world(
         &req.result,

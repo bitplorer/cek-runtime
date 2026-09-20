@@ -6,12 +6,13 @@ Reference **Host** (decide) and **Peer** (apply). No ambient power. Peer never m
 |-------|------|
 | `cek-contract` | Types, S, vectors |
 | `cek-host-kernel` | Cap verify → dispatch → lineage → project |
+| `cek-host-rust` | hop: native JSON → host kernel |
 | `cek-peer-kernel` | Apply S + typed `apply_world` helper |
 | `cek-ops-baseline` / `cek-ops-ui` | Drivers |
-| `cek-peer-rust` | Native peer runtime (own JSON wire on kernel) |
-| `cek-peer-wasm` | WASM hop (C ABI + own JSON wire on kernel) |
+| `cek-peer-rust` | hop: native JSON → peer kernel |
+| `cek-peer-wasm` | hop: WASM C ABI + own JSON → peer kernel |
 | `cek-peer-pyo3` | PyO3 hop onto `cek-peer-rust` (apply/receipt only) |
-| `cek-cli` | `cek demo` · `cek vectors` · `cek apply` · `cek host-json` |
+| `cek-cli` | `cek apply` → `cek-peer-rust` · `cek host-json` → `cek-host-rust` |
 
 ```bash
 cargo test --workspace

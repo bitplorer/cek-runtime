@@ -1,6 +1,6 @@
 [package]
 name = "cek-peer-rust"
-description = "CEK Peer native Rust runtime — own JSON wire on kernel, no mint"
+description = "CEK Peer native Rust runtime — hop: native JSON → peer kernel, no mint"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

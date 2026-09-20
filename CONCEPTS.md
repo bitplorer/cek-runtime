@@ -42,9 +42,9 @@ Wire / in-proc = contract messages only — no third kernel in the middle
 | Name | Is | Is not |
 |------|----|--------|
 | **Host kernel** | L1 decide logic | The whole OS process |
-| **Host runtime** | Kernel + network + DB + keys | A third global “cek service” |
+| **Host runtime** | Host kernel + network + DB + keys | A third global “cek service” |
 | **Peer kernel** | L1 apply logic | Allowed to mint Caps |
-| **Peer runtime** | Kernel + drivers + transport | Cap authority |
+| **Peer runtime** | Peer kernel + drivers + transport | Cap authority |
 
 → [TOPOLOGY.md](TOPOLOGY.md) · [01-kernels](01-kernels/README.md)
 
@@ -285,21 +285,26 @@ Types live in `cek-contract`. There is no `cek-types` crate and no `*-kernel-rus
 ```text
 cek-contract
 cek-host-kernel           Host kernel
+cek-host-rust             hop: native JSON → host kernel
 cek-peer-kernel           Peer::apply + apply_world (one engine)
 cek-ops-baseline          Peer driver (kv)
 cek-ops-ui                Peer driver (DOM)
-cek-peer-wasm             hop: WASM C ABI + own JSON → kernel
-cek-peer-rust             hop: native JSON → kernel
+cek-peer-wasm             hop: WASM C ABI + own JSON → peer kernel
+cek-peer-rust             hop: native JSON → peer kernel
 cek-peer-pyo3             hop → cek-peer-rust
-cek-cli                   hop: cek apply → cek-peer-rust
+cek-cli                   hop: cek apply → peer-rust; cek host-json → host-rust
 ```
 
 Host must not depend on Peer internals. Peer must not link mint.
 
 ```text
+cek-host-kernel          ← Host decide
+└── cek-host-rust        ← hop: native JSON → host kernel
+      └── cek host-json (cli)
+
 cek-peer-kernel          ← Peer::apply + apply_world
-├── cek-peer-wasm        ← sibling; own JSON + C ABI
-└── cek-peer-rust        ← sibling; own JSON door
+├── cek-peer-wasm        ← hop: WASM C ABI + own JSON → peer kernel
+└── cek-peer-rust        ← hop: native JSON → peer kernel
       ├── cek-peer-pyo3
       └── cek apply (cli)
 ```
@@ -340,7 +345,7 @@ Red Cap-refuse vector (world changed) = not CEK-aligned.
 |------|-------------------------------|
 | Host kernel | **Rust** (`cek-host-kernel`) |
 | Peer kernel | **Rust** (`cek-peer-kernel`) — one apply engine |
-| Peer hops | wasm + rust siblings on the kernel; PyO3 + `cek apply` → rust |
+| Peer hops | wasm + rust siblings on the peer kernel; PyO3 + `cek apply` → rust |
 | Peer ports | TS apply-only, JS runtime, WASM, PyO3 — already in this tree |
 | L7 caller | Any — holds Cap, calls submit |
 

@@ -1,5 +1,11 @@
 # Implementation changelog
 
+## 2026-09-20 — Host runtime door (`cek-host-rust`)
+
+- `cek-host-rust` is the native host runtime: own JSON mint/submit wire on `cek-host-kernel`.
+- `cek host-json` hops onto that crate. Sessionful wrap; not a second decide engine; not a Python Host twin.
+- Public wire verbs stay `mint` | `submit`. Receipt/reverse stay kernel methods, off this door.
+
 ## 2026-09-20 — 0.1.3 crates.io republish
 
 - `0.1.3` — republish so peer hops see kernel `apply_world` on crates.io (registry skew fix).
@@ -20,7 +26,7 @@
 ## 2026-09-20 — Peer hop graph restore
 
 - `cek-peer-kernel` owns `Peer::apply` plus typed `apply_world` (profile/policy → apply → snapshots).
-- `cek-peer-wasm` owns WASM C ABI + its own thin JSON wire on the helper. The #10 wasm→rust edge is gone (wrong-owner).
+- `cek-peer-wasm` is `hop: WASM C ABI + own JSON → peer kernel`. The #10 wasm→rust edge is gone (wrong-owner).
 - `cek-peer-rust` stays the native peer runtime with its own thin JSON wire. PyO3 and `cek apply` stay on rust only.
 - Same JSON field names. No `cek-peer-json` crate. No twin engine.
 
