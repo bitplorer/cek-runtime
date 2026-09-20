@@ -5,5 +5,5 @@ Reference Host: verify Cap → **Context mediate (LAW §8)** → idempotency →
 `inject` / `limit` / `isolate` only narrow (A8). `limit` ≠ `isolate`. Refuse → `ops: []`. Peer does not live in this crate. Missing Manifest → Baseline-only Result Ops.
 
 ```toml
-cek-host-kernel = "0.1.2"
+cek-host-kernel = "0.1.3"
 ```
