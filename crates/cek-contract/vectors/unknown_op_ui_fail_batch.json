@@ -1,0 +1,17 @@
+{
+  "id": "unknown-op-ui-fail-batch",
+  "family": "unknown_ops",
+  "description": "UI profile honors fail_batch: unknown Op aborts the rest of the apply",
+  "peer_profile": "ui",
+  "peer_unknown_policy": "fail_batch",
+  "peer_result": {
+    "kind": "ok",
+    "ops": [
+      { "ns": "nope", "name": "x", "payload": {} },
+      { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+    ]
+  },
+  "expect_kind": "ok",
+  "peer_apply": true,
+  "expect_peer_kv": { "a": null }
+}

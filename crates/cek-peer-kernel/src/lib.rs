@@ -87,8 +87,13 @@ impl Peer {
         }
     }
 
-    /// Baseline + `ui.dom.*` apply-set (extension profile, not kernel Baseline).
+    /// Baseline + `ui.dom.*` apply-set (unknown Ops: skip).
     pub fn with_ui() -> Self {
+        Self::with_ui_and_policy(UnknownOpPolicy::Skip)
+    }
+
+    /// UI apply-set with an explicit unknown-Op policy.
+    pub fn with_ui_and_policy(unknown_op_policy: UnknownOpPolicy) -> Self {
         let mut apply: Vec<String> = baseline::BASELINE_OPS
             .iter()
             .map(|s| (*s).to_string())
@@ -98,7 +103,7 @@ impl Peer {
             profile: Profile {
                 name: PROFILE_UI.into(),
                 apply_set: apply,
-                unknown_op_policy: UnknownOpPolicy::Skip,
+                unknown_op_policy,
             },
             kv: Mutex::new(KvStore::new()),
             log: Mutex::new(Vec::new()),
