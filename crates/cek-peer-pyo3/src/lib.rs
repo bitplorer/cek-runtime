@@ -122,7 +122,7 @@ mod tests {
         serde_json::from_str(s).unwrap()
     }
 
-    fn kernel_from_req(req: &ApplyRequest) -> ApplyWorld {
+    fn apply_world_from_req(req: &ApplyRequest) -> ApplyWorld {
         apply_world(
             &req.result,
             ApplyProfileKind::from_wire(req.profile.as_deref()),
@@ -135,15 +135,15 @@ mod tests {
         let via_abi = parse_resp(&abi.apply_json(input).unwrap());
         abi.release();
 
-        let via_cli_path = parse_resp(&cek_peer_rust::apply_json(input).unwrap());
+        let via_rust_apply_json = parse_resp(&cek_peer_rust::apply_json(input).unwrap());
         assert_eq!(
             serde_json::to_value(&via_abi).unwrap(),
-            serde_json::to_value(&via_cli_path).unwrap(),
-            "PyO3 wrapper must match cek apply / rust apply_json"
+            serde_json::to_value(&via_rust_apply_json).unwrap(),
+            "PyO3 wrapper must match cek-peer-rust::apply_json"
         );
 
         let req: ApplyRequest = serde_json::from_str(input).unwrap();
-        let world = kernel_from_req(&req);
+        let world = apply_world_from_req(&req);
         assert_eq!(via_abi.receipt, world.receipt);
         assert_eq!(via_abi.kv, world.kv);
         assert_eq!(via_abi.ui, world.ui);

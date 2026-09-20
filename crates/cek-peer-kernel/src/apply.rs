@@ -52,7 +52,7 @@ pub struct ApplyWorld {
 
 /// Build a Peer from profile/policy, apply once, return receipt + snapshots.
 ///
-/// UI profile uses [`Peer::with_ui_and_policy`](crate::Peer::with_ui_and_policy).
+/// UI profile uses [`Peer::with_ui_policy`](crate::Peer::with_ui_policy).
 /// Baseline uses [`Peer::with_policy`](crate::Peer::with_policy). Engine is
 /// always [`Peer::apply`](crate::Peer::apply).
 pub fn apply_world(
@@ -61,7 +61,7 @@ pub fn apply_world(
     unknown_op_policy: UnknownOpPolicy,
 ) -> ApplyWorld {
     let peer = match profile {
-        ApplyProfileKind::Ui => Peer::with_ui_and_policy(unknown_op_policy),
+        ApplyProfileKind::Ui => Peer::with_ui_policy(unknown_op_policy),
         ApplyProfileKind::Baseline => Peer::with_policy(unknown_op_policy),
     };
     let receipt = peer.apply(result).expect(
