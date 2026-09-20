@@ -26,7 +26,7 @@
 ## 2026-09-20 — Peer hop graph restore
 
 - `cek-peer-kernel` owns `Peer::apply` plus typed `apply_world` (profile/policy → apply → snapshots).
-- `cek-peer-wasm` owns WASM C ABI + its own thin JSON wire on the helper. The #10 wasm→rust edge is gone (wrong-owner).
+- `cek-peer-wasm` is `hop: WASM C ABI + own JSON → peer kernel`. The #10 wasm→rust edge is gone (wrong-owner).
 - `cek-peer-rust` stays the native peer runtime with its own thin JSON wire. PyO3 and `cek apply` stay on rust only.
 - Same JSON field names. No `cek-peer-json` crate. No twin engine.
 

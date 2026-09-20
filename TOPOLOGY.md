@@ -12,12 +12,12 @@ cek-framework          LAW          meanings only (other repo)
 cek-runtime            RUNTIME      this repo
   crates/cek-contract               wire: Intent, Cap, Op, Result
   crates/cek-host-kernel            HOST KERNEL (decide)
-  crates/cek-host-rust              native host runtime (own JSON wire)
+  crates/cek-host-rust              hop: native JSON → host kernel
   crates/cek-peer-kernel            PEER KERNEL (Peer::apply + typed helper)
   crates/cek-ops-baseline           PEER DRIVER  kv
   crates/cek-ops-ui                 PEER DRIVER  ui / DOM world
-  crates/cek-peer-wasm              WASM hop (C ABI + own JSON wire)
-  crates/cek-peer-rust              native peer runtime (own JSON wire)
+  crates/cek-peer-wasm              hop: WASM C ABI + own JSON → peer kernel
+  crates/cek-peer-rust              hop: native JSON → peer kernel
   crates/cek-peer-pyo3              hop: in-process PyO3 → cek-peer-rust
   crates/cek-cli                    hop: demo / cek apply → peer-rust / cek host-json → host-rust
   ports/                            other-language apply-only Peers
@@ -27,7 +27,7 @@ Host decide ownership:
 
 ```text
 cek-host-kernel          ← Host decide (one engine)
-└── cek-host-rust        ← kernel only; native Rust host runtime JSON door
+└── cek-host-rust        ← hop: native JSON → host kernel
       └── cek host-json (cli)
 ```
 
@@ -35,15 +35,15 @@ Peer apply ownership (no sibling→sibling):
 
 ```text
 cek-peer-kernel          ← Peer::apply (one engine) + apply_world helper
-├── cek-peer-wasm        ← kernel only; WASM C ABI + own thin JSON wire
-└── cek-peer-rust        ← kernel only; native Rust peer runtime JSON door
+├── cek-peer-wasm        ← hop: WASM C ABI + own JSON → peer kernel
+└── cek-peer-rust        ← hop: native JSON → peer kernel
       ├── cek-peer-pyo3
       └── cek apply (cli)
 ```
 
 PR #10 pointed `cek-peer-wasm` at `cek-peer-rust` so hops shared one JSON
 door. That edge was **wrong-owner** and is gone. Each hop serde's the same
-field names onto the kernel helper. There is no `cek-peer-json` crate.
+field names onto the peer kernel helper. There is no `cek-peer-json` crate.
 
 ## Official split
 
@@ -51,7 +51,7 @@ field names onto the kernel helper. There is no `cek-peer-json` crate.
 |------|------------|
 | **Law** | Cap, Intent, Ops, Host/Peer *roles* — not code |
 | **Host kernel** | mint · verify · once · dispatch · lineage · project · reverse |
-| **Host runtime** | kernel + store + keys + clock (this process) |
+| **Host runtime** | host kernel + store + keys + clock (this process) |
 | **Peer kernel** | profile · apply Ops · receipt · typed apply helper · **no mint** |
 | **Peer driver** | the world: kv, UI/DOM, device — **outer**, not a kernel |
 | **Contract** | messages between Host and Peer |

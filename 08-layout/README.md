@@ -20,18 +20,18 @@ cek-runtime/
 
 ```text
 cek-host-kernel          ← decide engine
-└── cek-host-rust        ← kernel only; native JSON door
+└── cek-host-rust        ← hop: native JSON → host kernel
       └── cek host-json (cli)
 ```
 
 ## Peer hops (#11)
 
-One apply engine. wasm and rust are **siblings** on the kernel. PyO3 and the CLI hop onto rust. There is no wasm→rust edge (that was #10, wrong-owner, gone).
+One apply engine. wasm and rust are **siblings** on the peer kernel. PyO3 and the CLI hop onto rust. There is no wasm→rust edge (that was #10, wrong-owner, gone).
 
 ```text
 cek-peer-kernel          ← Peer::apply + apply_world
-├── cek-peer-wasm        ← kernel only; own JSON + C ABI
-└── cek-peer-rust        ← kernel only; native JSON door
+├── cek-peer-wasm        ← hop: WASM C ABI + own JSON → peer kernel
+└── cek-peer-rust        ← hop: native JSON → peer kernel
       ├── cek-peer-pyo3
       └── cek apply (cli)
 ```

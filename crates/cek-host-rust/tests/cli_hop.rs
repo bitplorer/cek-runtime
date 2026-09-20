@@ -1,4 +1,4 @@
-//! `cek host-json` hops onto this crate; it does not talk to the kernel directly.
+//! `cek host-json` hops onto this crate; it does not talk to the host kernel directly.
 
 #[test]
 fn cli_host_json_hops_onto_host_runtime() {
@@ -18,7 +18,7 @@ fn cli_host_json_hops_onto_host_runtime() {
     );
     assert!(
         !body.contains("Host::"),
-        "cek host-json must not construct the kernel Host itself"
+        "cek host-json must not construct the host kernel Host itself"
     );
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "cek-peer-wasm"
-description = "CEK Peer apply-only WASM hop — own JSON wire + C ABI, no mint"
+description = "CEK Peer apply-only WASM hop — hop: WASM C ABI + own JSON → peer kernel, no mint"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

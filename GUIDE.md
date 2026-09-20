@@ -25,11 +25,12 @@ There is **no third kernel**. A bus only moves messages.
 | Law | cek-framework (other repo) | Meanings |
 | Contract | `crates/cek-contract` | Intent, Cap, Op, Result, vectors |
 | Host kernel | `crates/cek-host-kernel` | mint, verify, project, once, reverse |
-| Host Rust runtime | `crates/cek-host-rust` | native host JSON door on kernel |
+| Host Rust runtime | `crates/cek-host-rust` | hop: native JSON → host kernel |
 | Peer kernel | `crates/cek-peer-kernel` | `Peer::apply` + typed `apply_world` helper — **no mint** |
-| Peer WASM hop | `crates/cek-peer-wasm` | C ABI + own JSON wire on kernel (not rust) |
-| Peer Rust runtime | `crates/cek-peer-rust` | native peer JSON door on kernel |
+| Peer WASM hop | `crates/cek-peer-wasm` | hop: WASM C ABI + own JSON → peer kernel |
+| Peer Rust runtime | `crates/cek-peer-rust` | hop: native JSON → peer kernel |
 | Peer PyO3 ABI | `crates/cek-peer-pyo3` | hop onto `cek-peer-rust` |
+| CLI | `crates/cek-cli` | `cek apply` → `cek-peer-rust`; `cek host-json` → `cek-host-rust` |
 | Peer driver | kv, log, UI/DOM — see [DRIVERS.md](DRIVERS.md) |
 
 Drivers in detail: **[DRIVERS.md](DRIVERS.md)**. Ports: **[PORTS.md](PORTS.md)**. Map: [TOPOLOGY.md](TOPOLOGY.md).
@@ -88,7 +89,7 @@ These stay on the Host. Peers do not implement them.
 ## 7. Run it
 
 ```bash
-# Rust kernel
+# Host + Peer kernels
 cargo test --workspace
 cargo run -p cek-cli -- demo
 cargo run -p cek-cli -- vectors crates/cek-contract/vectors
@@ -121,7 +122,7 @@ Worked example (Python Host → JS Peer, seven scenes):
 bash demo/host-peer/run.sh
 ```
 
-In-process: call the kernels.  
+In-process: call the host and peer kernels.  
 Across processes: send contract JSON (Intent+Cap / Result / receipt).  
 Python Host and JS Peer are that split in two languages.
 

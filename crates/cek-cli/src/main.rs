@@ -1,4 +1,4 @@
-//! cek CLI — demo, vectors, and runtime-wrap JSON (apply / host-json).
+//! cek CLI — demo, vectors; `cek apply` → cek-peer-rust; `cek host-json` → cek-host-rust.
 
 use cek_contract::{
     check_result, load_vector_dir, sealed_args_digest, Intent, ResultKind, ResultMsg,

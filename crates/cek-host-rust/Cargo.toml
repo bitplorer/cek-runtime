@@ -1,6 +1,6 @@
 [package]
 name = "cek-host-rust"
-description = "CEK Host native Rust runtime — own JSON wire on kernel, sessionful"
+description = "CEK Host native Rust runtime — hop: native JSON → host kernel, sessionful"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

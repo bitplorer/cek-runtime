@@ -176,7 +176,7 @@ if awk '
 fi
 ok "apply_world does not coerce None to empty receipt"
 
-# 13. Host runtime: kernel only; no peer coupling; no host-pyo3.
+# 13. Host runtime: host kernel only; no peer coupling; no host-pyo3.
 if [ -d crates/cek-host-pyo3 ]; then
   fail "cek-host-pyo3 must not exist (published Cap machine stays pip install cek-host)"
 fi
@@ -209,7 +209,7 @@ if awk '
   p && /^fn / && !/^fn run_host_json/ { exit }
   END { exit !found }
 ' crates/cek-cli/src/main.rs; then
-  fail "cek host-json must not construct the kernel Host itself"
+  fail "cek host-json must not construct the host kernel Host itself"
 fi
 ok "cek host-json hops onto cek-host-rust"
 

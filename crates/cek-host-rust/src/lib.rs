@@ -1,9 +1,9 @@
-//! Native Rust host runtime: thin JSON mint/submit door on the kernel.
+//! Native Rust host runtime: `hop: native JSON → host kernel`.
 //!
 //! This crate owns **this hop's** JSON wire (`HostRuntime::host_json`).
 //! Decide stays [`cek_host_kernel::Host`]. Sessionful: stores/keys/clock
-//! live on the kernel. Not a second decide engine. Not a Python Host twin.
-//! Cap mint stays inside the kernel.
+//! live on the host kernel. Not a second decide engine. Not a Python Host twin.
+//! Cap mint stays inside the host kernel.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
@@ -12,7 +12,7 @@ use cek_contract::{Intent, Profile};
 use cek_host_kernel::Host;
 use serde_json::json;
 
-/// Sessionful Host runtime wrapping a kernel [`Host`].
+/// Sessionful Host runtime wrapping a host kernel [`Host`].
 pub struct HostRuntime {
     host: Host,
 }
@@ -23,7 +23,7 @@ impl HostRuntime {
         Self { host: Host::new() }
     }
 
-    /// Wrap an existing kernel Host (tests / custom clock or keys).
+    /// Wrap an existing host kernel [`Host`] (tests / custom clock or keys).
     pub fn wrap(host: Host) -> Self {
         Self { host }
     }

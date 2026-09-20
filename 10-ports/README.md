@@ -1,7 +1,7 @@
 # 10 — Ports
 
 Additional Host or Peer **implementations** are allowed by law.  
-This framework’s *reference* kernels stay Rust.
+This framework’s *reference* host kernel and peer kernel stay Rust.
 
 ## When to add a Peer port
 
