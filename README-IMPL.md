@@ -10,4 +10,4 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 ./scripts/batteries.sh
 ```
 
-Host kernel / Peer kernel / Peer drivers. No third kernel. 64 vectors.
+Host kernel / Peer kernel / Peer drivers. No third kernel. **72** vector JSON files ([TESTING.md](TESTING.md)).

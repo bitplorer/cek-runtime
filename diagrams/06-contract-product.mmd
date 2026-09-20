@@ -1,12 +1,12 @@
 flowchart TB
   subgraph Contract["cek-contract"]
     SCH[schemas]
-    VEC[CORE 19 vectors]
+    VEC[72 JSON vectors]
     BASE[Baseline Ops]
     MAN[manifest]
   end
-  H[cek-host-kernel-rust] --> Contract
-  P[cek-peer-kernel-rust] --> Contract
+  H[cek-host-kernel] --> Contract
+  P[cek-peer-kernel] --> Contract
   VEC -->|CI merge gate| H
   VEC --> P
   MAN -->|handshake| H

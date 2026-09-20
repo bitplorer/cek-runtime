@@ -32,7 +32,8 @@ Peer hops (same JSON field names; no shared JSON crate; no wasm↔rust edge):
 `cek-peer-kernel` owns `Peer::apply` + typed `apply_world`.  
 `cek-peer-wasm` is the WASM hop (C ABI + **its own** thin JSON wire).  
 `cek-peer-rust` is the native peer runtime (its own thin JSON wire).  
-PyO3 / `cek apply` hop onto `cek-peer-rust` only. PR #10's wasm→rust edge was wrong-owner and is gone.
+PyO3 / `cek apply` hop onto `cek-peer-rust` only. PR #10's wasm→rust edge was wrong-owner and is gone.  
+WASM `cek_apply` rustdoc says `-1` on error; JSON/`apply_json` failures are leftover **Err-as-body** (positive length, error string). HOLD: do not reshape that C ABI. See `crates/cek-peer-wasm/README.md`.
 
 ## Pipeline (Host)
 

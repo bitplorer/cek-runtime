@@ -12,5 +12,5 @@ Rationale for decisions that are **not** CEK law.
 | Production profile = receipts + idempotency | Baseline-only forever in prod claims | Safer retries and honest reverse |
 | Peer may be process/WASM-isolated | Always same address space | Forces boundary early |
 | No second official Host language in this framework | Rust + Python Hosts | User decision: single Host kernel language |
-| Crate names `cek-host-kernel-rust` / `cek-peer-kernel-rust` | Generic `host`/`peer` | Role + language explicit |
+| Crate names `cek-host-kernel` / `cek-peer-kernel` | Generic `host`/`peer`, or phantom `*-kernel-rust` | Role explicit; the language is the crate, not a suffix. Those `-rust` names are not in this tree |
 | L7 any language | Forcing all apps in Rust | Callers hold Caps; kernels stay Rust |

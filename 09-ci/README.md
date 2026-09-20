@@ -2,7 +2,7 @@
 
 ## Merge gate
 
-Red CORE 19 vector family → block merge on Host or Peer.
+Red contract vector (the 72 JSON files in `crates/cek-contract/vectors`) → block merge on Host or Peer.
 
 ## Repo bans
 

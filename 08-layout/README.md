@@ -1,27 +1,44 @@
 # 08 — Crate layout
 
-```text
-cek-runtime/                 # this design repo (docs)
-  …
+This repo **is** the code workspace. Names below are the crates on disk — not `cek-*-kernel-rust`, and not a future adjacent tree.
 
-# Suggested code workspace (future / adjacent)
-cek/
-  cek-contract/              # schemas, vectors, law-version
-  cek-types/                 # shared Intent/Cap/Result/Op types (or inside contract)
-  cek-host-kernel-rust/      # Host kernel
-  cek-peer-kernel-rust/      # Peer kernel
-  cek-ops-baseline/          # classic Ops apply handlers
-  cek-cli/                   # run vectors, S1–S8 demos
+```text
+cek-runtime/
+  crates/cek-contract/         # types, vectors, Baseline (no cek-types crate)
+  crates/cek-host-kernel/      # Host kernel
+  crates/cek-peer-kernel/      # Peer kernel: Peer::apply + apply_world
+  crates/cek-ops-baseline/     # Peer driver: kv
+  crates/cek-ops-ui/           # Peer driver: ui / DOM
+  crates/cek-peer-wasm/        # hop: WASM C ABI + own JSON → kernel
+  crates/cek-peer-rust/        # hop: native JSON → kernel
+  crates/cek-peer-pyo3/        # hop → cek-peer-rust (not wasm)
+  crates/cek-cli/              # vectors, demo; cek apply → rust
 ```
+
+## Peer hops (#11)
+
+One apply engine. wasm and rust are **siblings** on the kernel. PyO3 and the CLI hop onto rust. There is no wasm→rust edge (that was #10, wrong-owner, gone).
+
+```text
+cek-peer-kernel          ← Peer::apply + apply_world
+├── cek-peer-wasm        ← kernel only; own JSON + C ABI
+└── cek-peer-rust        ← kernel only; native JSON door
+      ├── cek-peer-pyo3
+      └── cek apply (cli)
+```
+
+Full picture: [TOPOLOGY.md](../TOPOLOGY.md).
 
 ## Dependency rules
 
 | Crate | May depend on |
 |-------|----------------|
 | contract | nothing kernel-specific |
-| host | contract, types |
-| peer | contract, types, ops-baseline |
+| host | contract |
+| peer kernel | contract, ops-baseline, ops-ui |
+| peer wasm / rust | peer kernel (not each other) |
+| pyo3 / `cek apply` | `cek-peer-rust` |
 | host | **must not** depend on peer internals |
 | peer | **must not** depend on host mint |
 
-Shared types prevent Host/Peer drift.
+Shared types live in `cek-contract` so Host/Peer do not drift.

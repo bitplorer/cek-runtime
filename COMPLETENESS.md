@@ -12,7 +12,7 @@
 | Concept explainers | CONCEPTS.md |
 | Runtime vs kernel; wire | TOPOLOGY.md |
 | Scope vs law | SCOPE.md |
-| Contract, vectors, Baseline, manifest | 00-contract/ + `crates/cek-contract` (71 JSON vectors) |
+| Contract, vectors, Baseline, manifest | 00-contract/ + `crates/cek-contract` (72 JSON vectors — [TESTING.md](TESTING.md)) |
 | Host/Peer APIs | 01-kernels/ + `crates/cek-host-kernel` + `cek-peer-kernel` |
 | Submit pipeline | 02-host-pipeline/ + `host.rs` |
 | Peer apply + receipt | 03-peer-apply/ |
@@ -28,9 +28,9 @@
 
 ## Honest residuals (not “shipping code is next”)
 
-v0.1 **code is shipped**: Host + Peer + drivers, 64 vectors, 24 executable invariants, Python Host + JS/TS/WASM Peers, batteries. See README status table.
+v0.1 **code is shipped**: Host + Peer + drivers, **72** vector JSON files, **30** rows in [INVARIANTS.md](INVARIANTS.md) (numbers 1–28 including 10a and 10b), Python Host + JS/TS/WASM Peers, batteries. Maturity checklist: [MATURITY.md](MATURITY.md).
 
-Still not a published JSON Schema file dump (`cek-contract` types live in Rust). File-backed stores exist in the Rust kernel; Redis does not. Published crates.io kernels are Phase 3.
+Still not a published JSON Schema file dump (`cek-contract` types live in Rust). File-backed stores exist in the Rust kernel; Redis does not. Kernels are already on crates.io at workspace version **0.1.2**. What’s left to publish is the new hops `cek-peer-rust` and `cek-peer-pyo3` (Trusted Publishing / `publish-crates`).
 
 ## Verdict
 

@@ -1,17 +1,22 @@
 flowchart TB
   CT[cek-contract
-schemas vectors]
-  TY[cek-types optional]
-  H[cek-host-kernel-rust]
-  P[cek-peer-kernel-rust]
-  OPS[cek-ops-baseline]
+types vectors]
+  H[cek-host-kernel]
+  P[cek-peer-kernel
+Peer.apply + apply_world]
+  OPS[cek-ops-baseline / cek-ops-ui]
+  WASM[cek-peer-wasm]
+  RUST[cek-peer-rust]
+  PYO3[cek-peer-pyo3]
   CLI[cek-cli]
   CT --> H
   CT --> P
-  TY --> H
-  TY --> P
   OPS --> P
+  P --> WASM
+  P --> RUST
+  RUST --> PYO3
+  RUST --> CLI
   H --> CLI
-  P --> CLI
   H -.->|must not depend| P
   P -.->|must not mint| H
+  WASM -.->|no sibling edge| RUST
