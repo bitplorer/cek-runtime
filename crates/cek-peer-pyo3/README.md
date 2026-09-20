@@ -7,5 +7,5 @@ Same JSON documents: `{ result, profile, unknown_op_policy }` →
 surface.
 
 ```toml
-cek-peer-pyo3 = "0.1.2"
+cek-peer-pyo3 = "0.1.3"
 ```

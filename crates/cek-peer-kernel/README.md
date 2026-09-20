@@ -10,5 +10,5 @@ Language hops (`cek-peer-wasm`, `cek-peer-rust`) only serde JSON onto that
 helper. They do not share a JSON crate and they do not depend on each other.
 
 ```toml
-cek-peer-kernel = "0.1.2"
+cek-peer-kernel = "0.1.3"
 ```

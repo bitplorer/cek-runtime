@@ -21,5 +21,5 @@ What the function actually does (HOLD: do not reshape this C ABI):
 JSON/apply failures are leftover Err-as-body, not the documented `-1`. The Node runner (`ports/cek-peer-wasm/run-vectors.mjs`) only treats `n < 0` as failure, so an Err-as-body payload is parsed as JSON and throws at decode — it is not a second error protocol.
 
 ```toml
-cek-peer-wasm = "0.1.2"
+cek-peer-wasm = "0.1.3"
 ```

@@ -1,5 +1,9 @@
 # Implementation changelog
 
+## 2026-09-20 — 0.1.3 crates.io republish
+
+- `0.1.3` — republish so peer hops see kernel `apply_world` on crates.io (registry skew fix).
+
 ## 2026-09-20 — Internal names match CEK verbs (#13)
 
 - `with_ui_and_policy` → `with_ui_policy` (pairs with `with_policy`).

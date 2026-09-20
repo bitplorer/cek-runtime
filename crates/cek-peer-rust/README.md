@@ -12,5 +12,5 @@ wasm→rust edge was wrong-owner and is gone.
 JSON: `{ result, profile, unknown_op_policy }` → `{ receipt, kv, ui, log }`.
 
 ```toml
-cek-peer-rust = "0.1.2"
+cek-peer-rust = "0.1.3"
 ```
