@@ -527,9 +527,9 @@ fn read_stdin() -> String {
     buf
 }
 
-/// Wrap cek-peer-kernel (via cek-peer-wasm::apply_json). No mint.
+/// Wrap cek-peer-kernel (via cek-peer-rust::apply_json). No mint.
 fn run_apply() {
-    match cek_peer_wasm::apply_json(&read_stdin()) {
+    match cek_peer_rust::apply_json(&read_stdin()) {
         Ok(s) => {
             println!("{s}");
         }

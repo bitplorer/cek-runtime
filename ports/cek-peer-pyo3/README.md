@@ -2,9 +2,10 @@
 
 Apply-only Peer compiled as an in-process CPython extension. **No mint.**
 
-Uses the same Rust `cek-peer-kernel` as the native Peer and `cek-peer-wasm`
-(no second apply implementation). JSON ABI: `{ result, profile,
-unknown_op_policy }` → `{ receipt, kv, ui, log }`.
+PyO3 hop onto `cek-peer-rust` (the shared JSON apply/receipt door).
+Engine stays `Peer::apply` in `cek-peer-kernel`. No second apply
+implementation. JSON ABI: `{ result, profile, unknown_op_policy }` →
+`{ receipt, kv, ui, log }`.
 
 Lifecycle is host-native across the GIL: **construct → bind → apply →
 release**. Import only loads the module. One release door.

@@ -54,6 +54,7 @@ for crate in \
   cek-ops-ui \
   cek-host-kernel \
   cek-peer-kernel \
+  cek-peer-rust \
   cek-peer-wasm \
   cek-peer-pyo3 \
   cek-cli

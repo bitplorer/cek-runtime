@@ -6,6 +6,7 @@ members = [
     "crates/cek-peer-kernel",
     "crates/cek-ops-baseline",
     "crates/cek-ops-ui",
+    "crates/cek-peer-rust",
     "crates/cek-peer-wasm",
     "crates/cek-peer-pyo3",
     "crates/cek-cli",
@@ -22,6 +23,7 @@ rust-version = "1.70"
 cek-contract = { path = "crates/cek-contract", version = "0.1.2" }
 cek-host-kernel = { path = "crates/cek-host-kernel", version = "0.1.2" }
 cek-peer-kernel = { path = "crates/cek-peer-kernel", version = "0.1.2" }
+cek-peer-rust = { path = "crates/cek-peer-rust", version = "0.1.2" }
 cek-peer-wasm = { path = "crates/cek-peer-wasm", version = "0.1.2" }
 cek-peer-pyo3 = { path = "crates/cek-peer-pyo3", version = "0.1.2" }
 cek-ops-baseline = { path = "crates/cek-ops-baseline", version = "0.1.2" }

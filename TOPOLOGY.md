@@ -13,11 +13,12 @@ cek-runtime            RUNTIME      this repo
   crates/cek-contract               wire: Intent, Cap, Op, Result
   crates/cek-host-kernel            HOST KERNEL (decide)
   crates/cek-peer-kernel            PEER KERNEL (apply loop, no mint)
+  crates/cek-peer-rust              JSON apply door (Rust peer runtime locus)
   crates/cek-ops-baseline           PEER DRIVER  kv
   crates/cek-ops-ui                 PEER DRIVER  ui / DOM world
-  crates/cek-cli                    Host+Peer in one process (demo)
-  crates/cek-peer-wasm              same Peer kernel, WASM
-  crates/cek-peer-pyo3              same Peer kernel, in-process PyO3
+  crates/cek-cli                    hop: Host+Peer demo / cek apply
+  crates/cek-peer-wasm              hop: WASM ABI → cek-peer-rust
+  crates/cek-peer-pyo3              hop: in-process PyO3 → cek-peer-rust
   ports/                            other-language apply-only Peers
 ```
 
@@ -51,7 +52,7 @@ Driver catalog (payloads, addresses, what a driver must never do): **[DRIVERS.md
 | `ports/cek-host-py` | Historic contract-vector sketch. Published Host is `pip install cek-host` |
 | `ports/cek-peer-js` | Peer **runtime** (apply + DomTree). No mint |
 | `ports/cek-peer-ts` | Peer apply-only (same contract) |
-| `ports/cek-peer-wasm` | Peer apply-only |
-| `ports/cek-peer-pyo3` | Peer apply-only (in-process ABI; not a second kernel) |
+| `ports/cek-peer-wasm` | WASM hop onto `cek-peer-rust` |
+| `ports/cek-peer-pyo3` | PyO3 hop onto `cek-peer-rust` (not a second kernel) |
 
 HMAC / Ed25519 / scopes / dual-speak stay in the **Host kernel** (verify). They are not drivers.

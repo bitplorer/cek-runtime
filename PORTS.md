@@ -18,5 +18,5 @@ Peers never mint Caps. See cek-python `docs/ORGANIZATION.md`.
 
 In-process Python apply/receipt ABI (this repo, not a second kernel):
 `crates/cek-peer-pyo3` + `ports/cek-peer-pyo3`. Same JSON documents as
-`cek-peer-wasm` / `cek apply`. The taught Python carrier remains a
-follow-up in cek-python.
+`cek-peer-rust` / `cek apply` (wasm ABI is another hop onto that door).
+The taught Python carrier remains a follow-up in cek-python.

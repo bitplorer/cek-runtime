@@ -1,8 +1,8 @@
 //! Apply-only Peer surface for in-process Python (PyO3).
 //!
 //! There is **no mint**. Callers pass the same Host `Result` JSON documents
-//! as `cek-peer-wasm` / `cek apply`; this crate applies them through that
-//! existing path and returns a receipt plus world snapshots.
+//! as `cek-peer-rust` / `cek apply`; this crate hops onto that shared door
+//! and returns a receipt plus world snapshots.
 //!
 //! Lifecycle is explicit: **construct → bind → apply → release**. Import
 //! only registers the module. One release door.
@@ -10,12 +10,12 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-use cek_peer_wasm::{ApplyRequest, ApplyResponse};
+use cek_peer_rust::{ApplyRequest, ApplyResponse};
 
-/// Re-export the wasm JSON request (do not invent a parallel protocol).
-pub use cek_peer_wasm::{
-    apply_json as wasm_apply_json, apply_request, ApplyRequest as WasmApplyRequest,
-    ApplyResponse as WasmApplyResponse,
+/// Re-export the shared JSON request (do not invent a parallel protocol).
+pub use cek_peer_rust::{
+    apply_json as rust_apply_json, apply_request, ApplyRequest as RustApplyRequest,
+    ApplyResponse as RustApplyResponse,
 };
 
 /// Session state for the apply-only ABI handle.
@@ -31,8 +31,8 @@ pub enum AbiState {
 
 /// In-process apply-only ABI handle. Does not own a Peer world.
 ///
-/// Each [`PeerAbi::apply_json`] calls the existing `cek-peer-wasm` apply
-/// path (`Peer::apply` inside that crate). Worlds do not accumulate.
+/// Each [`PeerAbi::apply_json`] calls the shared `cek-peer-rust` apply
+/// door (`Peer::apply` inside the kernel). Worlds do not accumulate.
 pub struct PeerAbi {
     state: AbiState,
 }
@@ -62,16 +62,16 @@ impl PeerAbi {
         self.state
     }
 
-    /// Apply a wasm-shaped JSON document. Requires bind. Never mints.
+    /// Apply a rust-door JSON document. Requires bind. Never mints.
     pub fn apply_json(&self, input: &str) -> Result<String, String> {
         self.require_bound()?;
-        cek_peer_wasm::apply_json(input)
+        cek_peer_rust::apply_json(input)
     }
 
-    /// Apply a typed wasm request. Requires bind. Never mints.
+    /// Apply a typed rust-door request. Requires bind. Never mints.
     pub fn apply_request(&self, req: &ApplyRequest) -> Result<ApplyResponse, String> {
         self.require_bound()?;
-        Ok(cek_peer_wasm::apply_request(req))
+        Ok(cek_peer_rust::apply_request(req))
     }
 
     /// The only cleanup door. Idempotent.
@@ -138,11 +138,11 @@ mod tests {
         let via_abi = parse_resp(&abi.apply_json(input).unwrap());
         abi.release();
 
-        let via_cli_path = parse_resp(&cek_peer_wasm::apply_json(input).unwrap());
+        let via_cli_path = parse_resp(&cek_peer_rust::apply_json(input).unwrap());
         assert_eq!(
             serde_json::to_value(&via_abi).unwrap(),
             serde_json::to_value(&via_cli_path).unwrap(),
-            "PyO3 wrapper must match cek apply / wasm apply_json"
+            "PyO3 wrapper must match cek apply / rust apply_json"
         );
 
         let req: ApplyRequest = serde_json::from_str(input).unwrap();
@@ -276,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn peer_result_vectors_match_kernel_and_wasm() {
+    fn peer_result_vectors_match_kernel_and_rust() {
         let dir = vector_dir();
         let mut seen = 0;
         for entry in std::fs::read_dir(&dir).unwrap() {
