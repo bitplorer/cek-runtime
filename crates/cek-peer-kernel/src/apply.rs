@@ -40,7 +40,7 @@ pub fn unknown_op_policy_from_wire(policy: Option<&str>) -> UnknownOpPolicy {
 /// Receipt plus world snapshots after one [`Peer::apply`](crate::Peer::apply).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ApplyWorld {
-    /// Landed / failed Ops (empty when apply is single-flight-blocked).
+    /// Landed / failed Ops.
     pub receipt: Receipt,
     /// kv after apply.
     pub kv: BTreeMap<String, Value>,
@@ -52,7 +52,7 @@ pub struct ApplyWorld {
 
 /// Build a Peer from profile/policy, apply once, return receipt + snapshots.
 ///
-/// UI profile uses [`Peer::with_ui`](crate::Peer::with_ui) (unknown Ops: skip).
+/// UI profile uses [`Peer::with_ui_and_policy`](crate::Peer::with_ui_and_policy).
 /// Baseline uses [`Peer::with_policy`](crate::Peer::with_policy). Engine is
 /// always [`Peer::apply`](crate::Peer::apply).
 pub fn apply_world(
@@ -61,13 +61,13 @@ pub fn apply_world(
     unknown_op_policy: UnknownOpPolicy,
 ) -> ApplyWorld {
     let peer = match profile {
-        ApplyProfileKind::Ui => Peer::with_ui(),
+        ApplyProfileKind::Ui => Peer::with_ui_and_policy(unknown_op_policy),
         ApplyProfileKind::Baseline => Peer::with_policy(unknown_op_policy),
     };
-    let receipt = peer.apply(result).unwrap_or(Receipt {
-        landed: Vec::new(),
-        failed: Vec::new(),
-    });
+    let receipt = peer.apply(result).expect(
+        "one-shot apply_world: Peer::apply returned None (single-flight); \
+         a freshly constructed Peer cannot be in-flight",
+    );
     ApplyWorld {
         receipt,
         kv: peer.kv_snapshot(),
@@ -161,5 +161,31 @@ mod tests {
         assert_eq!(world.receipt.failed.len(), 2);
         assert!(world.receipt.landed.is_empty());
         assert!(world.kv.is_empty());
+    }
+
+    #[test]
+    fn apply_world_ui_fail_batch_honors_unknown_op_policy() {
+        let result = ResultMsg::ok(vec![
+            Op {
+                ns: "nope".into(),
+                name: "x".into(),
+                payload: serde_json::json!({}),
+            },
+            baseline::kv_set("a", serde_json::json!(1)),
+        ]);
+        let world = apply_world(&result, ApplyProfileKind::Ui, UnknownOpPolicy::FailBatch);
+        assert_eq!(world.receipt.failed.len(), 2);
+        assert!(world.receipt.landed.is_empty());
+        assert!(world.kv.is_empty());
+    }
+
+    #[test]
+    fn apply_world_does_not_coerce_none_to_empty_receipt() {
+        let src = include_str!("apply.rs");
+        let prod = src.split("#[cfg(test)]").next().expect("prod");
+        assert!(
+            !prod.contains("unwrap_or(Receipt"),
+            "apply_world must not map Peer::apply None to a success-shaped empty receipt"
+        );
     }
 }

@@ -158,6 +158,20 @@ mod tests {
         })
     }
 
+    fn fixture_ui_fail_batch() -> serde_json::Value {
+        serde_json::json!({
+            "result": {
+                "kind": "ok",
+                "ops": [
+                    { "ns": "nope", "name": "x", "payload": {} },
+                    { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+                ]
+            },
+            "profile": "ui",
+            "unknown_op_policy": "fail_batch"
+        })
+    }
+
     #[test]
     fn apply_json_kv_set() {
         let out: ApplyResponse =
@@ -181,6 +195,7 @@ mod tests {
             fixture_refuse(),
             fixture_ui_morph(),
             fixture_fail_batch(),
+            fixture_ui_fail_batch(),
         ] {
             let via_json: ApplyResponse =
                 serde_json::from_str(&apply_json(&body.to_string()).unwrap()).unwrap();
@@ -195,5 +210,15 @@ mod tests {
             assert_eq!(via_json.ui, world.ui);
             assert_eq!(via_json.log, world.log);
         }
+    }
+
+    #[test]
+    fn ui_fail_batch_unknown_op_aborts_rest() {
+        let out: ApplyResponse =
+            serde_json::from_str(&apply_json(&fixture_ui_fail_batch().to_string()).unwrap())
+                .unwrap();
+        assert_eq!(out.receipt.failed.len(), 2);
+        assert!(out.receipt.landed.is_empty());
+        assert!(!out.kv.contains_key("a"));
     }
 }

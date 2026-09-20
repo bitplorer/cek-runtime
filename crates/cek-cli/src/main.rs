@@ -2,10 +2,10 @@
 
 use cek_contract::{
     check_result, load_vector_dir, sealed_args_digest, Intent, Profile, ResultKind, ResultMsg,
-    ReverseClass, UnknownOpPolicy, VectorCase,
+    ReverseClass, VectorCase,
 };
 use cek_host_kernel::Host;
-use cek_peer_kernel::Peer;
+use cek_peer_kernel::{unknown_op_policy_from_wire, ApplyProfileKind, Peer};
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::env;
@@ -254,12 +254,10 @@ fn run_demo() {
 }
 
 fn make_peer(case: &VectorCase) -> Peer {
-    match case.peer_profile.as_deref() {
-        Some("ui") => Peer::with_ui(),
-        _ => match case.peer_unknown_policy.as_deref() {
-            Some("fail_batch") => Peer::with_policy(UnknownOpPolicy::FailBatch),
-            _ => Peer::with_policy(UnknownOpPolicy::Skip),
-        },
+    let policy = unknown_op_policy_from_wire(case.peer_unknown_policy.as_deref());
+    match ApplyProfileKind::from_wire(case.peer_profile.as_deref()) {
+        ApplyProfileKind::Ui => Peer::with_ui_and_policy(policy),
+        ApplyProfileKind::Baseline => Peer::with_policy(policy),
     }
 }
 

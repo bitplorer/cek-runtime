@@ -18,10 +18,7 @@ impl PyPeerAbi {
     where
         F: FnOnce(&mut PeerAbi) -> Result<T, String>,
     {
-        let mut g = self
-            .inner
-            .lock()
-            .map_err(|_| PyRuntimeError::new_err("released"))?;
+        let mut g = crate::map_mutex_lock(self.inner.lock()).map_err(PyRuntimeError::new_err)?;
         f(&mut g).map_err(PyRuntimeError::new_err)
     }
 }
@@ -50,10 +47,7 @@ impl PyPeerAbi {
             json.call_method1("dumps", (request,))?.extract()?
         };
         let out = {
-            let g = self
-                .inner
-                .lock()
-                .map_err(|_| PyRuntimeError::new_err("released"))?;
+            let g = crate::map_mutex_lock(self.inner.lock()).map_err(PyRuntimeError::new_err)?;
             py.allow_threads(|| g.apply_json(&input))
                 .map_err(PyRuntimeError::new_err)?
         };

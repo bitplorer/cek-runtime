@@ -138,4 +138,42 @@ if awk '
 fi
 ok "cek-peer-rust does not depend on cek-peer-wasm"
 
+# 11. Twin JSON wire field freeze (hops own serde; no shared JSON crate).
+rust_lib=crates/cek-peer-rust/src/lib.rs
+wasm_lib=crates/cek-peer-wasm/src/lib.rs
+for struct_name in ApplyRequest ApplyResponse; do
+  rust_fields=$(awk -v n="$struct_name" '
+    $0 ~ "pub struct " n { p=1 }
+    p && /pub [a-z_]+[[:space:]]*:/ {
+      gsub(/^.*pub[[:space:]]+/, "")
+      gsub(/[[:space:]]*:.*/, "")
+      print
+    }
+    p && /^}/ { exit }
+  ' "$rust_lib")
+  wasm_fields=$(awk -v n="$struct_name" '
+    $0 ~ "pub struct " n { p=1 }
+    p && /pub [a-z_]+[[:space:]]*:/ {
+      gsub(/^.*pub[[:space:]]+/, "")
+      gsub(/[[:space:]]*:.*/, "")
+      print
+    }
+    p && /^}/ { exit }
+  ' "$wasm_lib")
+  if [ "$rust_fields" != "$wasm_fields" ]; then
+    fail "cek-peer-rust and cek-peer-wasm $struct_name fields drifted"
+  fi
+done
+ok "rust/wasm ApplyRequest+ApplyResponse fields match"
+
+# 12. One-shot apply_world must not coerce Peer::apply None to empty success.
+if awk '
+  /^#\[cfg\(test\)\]/ { exit }
+  /unwrap_or\(Receipt/ { found=1 }
+  END { exit !found }
+' crates/cek-peer-kernel/src/apply.rs; then
+  fail "apply_world must not map Peer::apply None via unwrap_or(Receipt"
+fi
+ok "apply_world does not coerce None to empty receipt"
+
 echo "invariants ok"

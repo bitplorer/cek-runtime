@@ -94,14 +94,19 @@ impl Drop for PeerAbi {
     }
 }
 
+/// Map a mutex lock. Poison is a distinct failure from post-release.
+pub(crate) fn map_mutex_lock<T>(r: std::sync::LockResult<T>) -> Result<T, String> {
+    r.map_err(|_| "poisoned".into())
+}
+
 #[cfg(feature = "python")]
 mod python;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cek_contract::{Receipt, ResultMsg, UnknownOpPolicy};
-    use cek_peer_kernel::Peer;
+    use cek_contract::ResultMsg;
+    use cek_peer_kernel::{apply_world, unknown_op_policy_from_wire, ApplyProfileKind, ApplyWorld};
     use serde_json::{json, Value};
     use std::path::PathBuf;
     use std::process::{Command, Stdio};
@@ -116,21 +121,12 @@ mod tests {
         serde_json::from_str(s).unwrap()
     }
 
-    fn kernel_from_req(req: &ApplyRequest) -> (Receipt, Peer) {
-        let policy = match req.unknown_op_policy.as_deref() {
-            Some("fail_batch") => UnknownOpPolicy::FailBatch,
-            _ => UnknownOpPolicy::Skip,
-        };
-        let peer = if req.profile.as_deref() == Some("ui") {
-            Peer::with_ui()
-        } else {
-            Peer::with_policy(policy)
-        };
-        let receipt = peer.apply(&req.result).unwrap_or(Receipt {
-            landed: Vec::new(),
-            failed: Vec::new(),
-        });
-        (receipt, peer)
+    fn kernel_from_req(req: &ApplyRequest) -> ApplyWorld {
+        apply_world(
+            &req.result,
+            ApplyProfileKind::from_wire(req.profile.as_deref()),
+            unknown_op_policy_from_wire(req.unknown_op_policy.as_deref()),
+        )
     }
 
     fn assert_parity(input: &str) {
@@ -146,11 +142,11 @@ mod tests {
         );
 
         let req: ApplyRequest = serde_json::from_str(input).unwrap();
-        let (receipt, peer) = kernel_from_req(&req);
-        assert_eq!(via_abi.receipt, receipt);
-        assert_eq!(via_abi.kv, peer.kv_snapshot());
-        assert_eq!(via_abi.ui, peer.ui_snapshot());
-        assert_eq!(via_abi.log, peer.log_lines());
+        let world = kernel_from_req(&req);
+        assert_eq!(via_abi.receipt, world.receipt);
+        assert_eq!(via_abi.kv, world.kv);
+        assert_eq!(via_abi.ui, world.ui);
+        assert_eq!(via_abi.log, world.log);
     }
 
     #[test]
@@ -171,6 +167,31 @@ mod tests {
         assert_eq!(abi.state(), AbiState::Released);
         assert_eq!(abi.apply_json("{}").unwrap_err(), "released");
         assert_eq!(abi.bind().unwrap_err(), "released");
+    }
+
+    #[test]
+    fn mutex_poison_is_not_released() {
+        let m = std::sync::Mutex::new(0u8);
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _g = m.lock().unwrap();
+            panic!("poison");
+        }));
+        let err = super::map_mutex_lock(m.lock()).unwrap_err();
+        assert_eq!(err, "poisoned");
+        assert_ne!(err, "released");
+    }
+
+    #[test]
+    fn python_lock_poison_does_not_say_released() {
+        let src = include_str!("python.rs");
+        assert!(
+            !src.contains("new_err(\"released\")"),
+            "PyO3 mutex poison must not be reported as released"
+        );
+        assert!(
+            src.contains("map_mutex_lock"),
+            "PyO3 lock path must distinguish poison via map_mutex_lock"
+        );
     }
 
     #[test]
@@ -242,6 +263,26 @@ mod tests {
         assert_eq!(out.receipt.landed.len(), 2);
         assert_eq!(out.kv.get("a"), Some(&json!(1)));
         assert_eq!(out.ui.get("hdr"), Some(&json!({"t": "n"})));
+    }
+
+    #[test]
+    fn apply_json_ui_fail_batch_unknown_op_aborts_rest() {
+        let req = json!({
+            "result": {
+                "kind": "ok",
+                "ops": [
+                    { "ns": "nope", "name": "x", "payload": {} },
+                    { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+                ]
+            },
+            "profile": "ui",
+            "unknown_op_policy": "fail_batch"
+        });
+        assert_parity(&req.to_string());
+        let out = parse_resp(&bound().apply_json(&req.to_string()).unwrap());
+        assert_eq!(out.receipt.failed.len(), 2);
+        assert!(out.receipt.landed.is_empty());
+        assert!(!out.kv.contains_key("a"));
     }
 
     #[test]
