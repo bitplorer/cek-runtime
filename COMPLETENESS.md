@@ -30,7 +30,7 @@
 
 v0.1 **code is shipped**: Host + Peer + drivers, **72** vector JSON files, **31** rows in [INVARIANTS.md](INVARIANTS.md) (numbers 1–29 including 10a and 10b), Python Host + JS/TS/WASM Peers, batteries. Maturity checklist: [MATURITY.md](MATURITY.md).
 
-Still not a published JSON Schema file dump (`cek-contract` types live in Rust). File-backed stores exist in the host kernel; Redis does not. Workspace is **0.1.3**. crates.io already has the host and peer kernels plus `cek-peer-rust` / `cek-peer-wasm` / `cek-peer-pyo3` at **0.1.3**. `cek-host-rust` is workspace **0.1.3**, unpublished until **publish-crates**.
+Still not a published JSON Schema file dump (`cek-contract` types live in Rust). File-backed stores exist in the host kernel; Redis does not. Workspace is **0.1.3**. crates.io already has the host and peer kernels plus `cek-host-rust` / `cek-peer-rust` / `cek-peer-wasm` / `cek-peer-pyo3` at **0.1.3**.
 
 ## Verdict
 

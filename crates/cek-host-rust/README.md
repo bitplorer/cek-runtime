@@ -12,4 +12,8 @@ decide engine. Not a Python Host twin.
 
 JSON: `{cmd:mint|submit, ...}` → Cap or Result.
 
-Workspace **0.1.3**, unpublished until **publish-crates**. Peer hops already live at **0.1.3** on crates.io.
+Live on crates.io at **0.1.3**, alongside the peer hops.
+
+```toml
+cek-host-rust = "0.1.3"
+```
