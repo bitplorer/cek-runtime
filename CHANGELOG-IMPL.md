@@ -1,5 +1,18 @@
 # Implementation changelog
 
+## 2026-09-20 — Internal names match CEK verbs (#13)
+
+- `with_ui_and_policy` → `with_ui_policy` (pairs with `with_policy`).
+- PyO3 private helper `kernel_from_req` → `apply_world_from_req` (it wraps `apply_world`).
+- PyO3 parity local `via_cli_path` → `via_rust_apply_json` (names the rust hop, not CLI).
+- Public JSON field names and `PeerAbi` unchanged.
+
+## 2026-09-20 — UI policy + fail-closed one-shot (#12)
+
+- UI profile honors wire `unknown_op_policy` (`with_ui_policy` / `apply_world`); it no longer drops FailBatch by building `Peer::with_ui()` (Skip).
+- One-shot apply no longer maps `Peer::apply` `None` to an empty success receipt (fail closed).
+- Vector `unknown_op_ui_fail_batch` plus hop parity tests lock this. CLI / PyO3 share `apply_world`.
+
 ## 2026-09-20 — Peer hop graph restore
 
 - `cek-peer-kernel` owns `Peer::apply` plus typed `apply_world` (profile/policy → apply → snapshots).
