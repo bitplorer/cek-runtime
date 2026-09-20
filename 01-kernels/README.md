@@ -4,8 +4,8 @@ L1 has exactly two implementations in this framework.
 
 | Crate | Role |
 |-------|------|
-| `cek-host-kernel-rust` | Decide |
-| `cek-peer-kernel-rust` | Carry out |
+| `cek-host-kernel` | Decide |
+| `cek-peer-kernel` | Carry out (`Peer::apply` + typed `apply_world` helper) |
 
 **Runtime vs kernel:** the kernel is the CEK core; the runtime is the process that wraps it (transport, stores, drivers). Full picture: [TOPOLOGY.md](../TOPOLOGY.md).
 
@@ -37,6 +37,9 @@ Host **must not** expose a free world-mutate path outside Ops emission + lineage
 profile() -> Profile
 apply(Result) -> Option<Receipt>
 ```
+
+Typed helper **in the same crate** (not a second engine): `apply_world` (profile/policy → `Peer::apply` → receipt + snapshots).  
+`cek-peer-wasm` and `cek-peer-rust` are sibling hops that serde JSON onto that helper. PyO3 and `cek apply` hop onto rust, not wasm. See [TOPOLOGY.md](../TOPOLOGY.md).
 
 Peer **must not** expose:
 

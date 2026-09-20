@@ -7,7 +7,7 @@ This repository is the **implementation playbook** for CEK. It must not redefine
 - Clearer docs and diagrams (keep plain-text readable without Mermaid)  
 - Stronger edge-case notes aligned with [cek-framework](https://github.com/bitplorer/cek-framework) CORE 24  
 - Contract/vector drafts that test existing law  
-- Future: Rust Host/Peer code that passes vectors  
+- Rust Host/Peer code that passes vectors (this tree)  
 
 ## Do not
 

@@ -278,18 +278,33 @@ WASM Peer     → Host feeds Ops into component
 
 ---
 
-## Crate layout (reference)
+## Crate layout (this tree)
+
+Types live in `cek-contract`. There is no `cek-types` crate and no `*-kernel-rust` crate.
 
 ```text
 cek-contract
-cek-types                 (optional; or inside contract)
-cek-host-kernel-rust
-cek-peer-kernel-rust
-cek-ops-baseline
-cek-cli                   vectors + demos
+cek-host-kernel           Host kernel
+cek-peer-kernel           Peer::apply + apply_world (one engine)
+cek-ops-baseline          Peer driver (kv)
+cek-ops-ui                Peer driver (DOM)
+cek-peer-wasm             hop: WASM C ABI + own JSON → kernel
+cek-peer-rust             hop: native JSON → kernel
+cek-peer-pyo3             hop → cek-peer-rust
+cek-cli                   hop: cek apply → cek-peer-rust
 ```
 
 Host must not depend on Peer internals. Peer must not link mint.
+
+```text
+cek-peer-kernel          ← Peer::apply + apply_world
+├── cek-peer-wasm        ← sibling; own JSON + C ABI
+└── cek-peer-rust        ← sibling; own JSON door
+      ├── cek-peer-pyo3
+      └── cek apply (cli)
+```
+
+One Peer engine. wasm and rust do not depend on each other. See [TOPOLOGY.md](TOPOLOGY.md).
 
 → [08-layout](08-layout/README.md)
 
@@ -323,8 +338,10 @@ Red Cap-refuse vector (world changed) = not CEK-aligned.
 
 | Role | Languages in *this* framework |
 |------|-------------------------------|
-| Host kernel | **Rust only** |
-| Peer kernel | **Rust only** (other Peer *ports* later) |
+| Host kernel | **Rust** (`cek-host-kernel`) |
+| Peer kernel | **Rust** (`cek-peer-kernel`) — one apply engine |
+| Peer hops | wasm + rust siblings on the kernel; PyO3 + `cek apply` → rust |
+| Peer ports | TS apply-only, JS runtime, WASM, PyO3 — already in this tree |
 | L7 caller | Any — holds Cap, calls submit |
 
 → [10-ports](10-ports/README.md)

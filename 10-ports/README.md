@@ -7,8 +7,8 @@ This framework’s *reference* kernels stay Rust.
 
 | Surface | Example port |
 |---------|----------------|
-| Browser DOM | TypeScript Peer later |
-| Agent / server already in Python | Python Peer port (not Host) |
+| Browser DOM | **Shipped:** TypeScript apply-only (`ports/cek-peer-ts`), JS runtime (`ports/cek-peer-js`), WASM hop (`crates/cek-peer-wasm` + `ports/cek-peer-wasm`) |
+| Agent / server already in Python | **Shipped in-process ABI:** `cek-peer-pyo3` hops onto `cek-peer-rust` (not wasm, not a second kernel). A taught Python carrier remains a follow-up in cek-python |
 | MCU / device | C/Rust embedded Peer with tiny profile |
 
 Each port:
@@ -17,10 +17,13 @@ Each port:
 2. Passes applicable vector families  
 3. Never mints root Caps  
 
+Hops are not extra engines. wasm and rust serde onto `cek-peer-kernel::apply_world`. PyO3 and `cek apply` hop onto rust. [TOPOLOGY.md](../TOPOLOGY.md).
+
 ## Host ports
 
 A second Host language is **out of scope** for this framework’s reference path (user choice: Rust only).  
-If added later: same vectors, same Cap binds, explicit cross-Host trust policy.
+If added later: same vectors, same Cap binds, explicit cross-Host trust policy.  
+Published Python Host is `pip install cek-host` ([cek-python](https://github.com/bitplorer/cek-python)); `ports/cek-host-py` is a contract-vector sketch, not a second kernel.
 
 ## L7 callers
 
