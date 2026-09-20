@@ -256,7 +256,7 @@ fn run_demo() {
 fn make_peer(case: &VectorCase) -> Peer {
     let policy = unknown_op_policy_from_wire(case.peer_unknown_policy.as_deref());
     match ApplyProfileKind::from_wire(case.peer_profile.as_deref()) {
-        ApplyProfileKind::Ui => Peer::with_ui_and_policy(policy),
+        ApplyProfileKind::Ui => Peer::with_ui_policy(policy),
         ApplyProfileKind::Baseline => Peer::with_policy(policy),
     }
 }

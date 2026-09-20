@@ -89,11 +89,11 @@ impl Peer {
 
     /// Baseline + `ui.dom.*` apply-set (unknown Ops: skip).
     pub fn with_ui() -> Self {
-        Self::with_ui_and_policy(UnknownOpPolicy::Skip)
+        Self::with_ui_policy(UnknownOpPolicy::Skip)
     }
 
     /// UI apply-set with an explicit unknown-Op policy.
-    pub fn with_ui_and_policy(unknown_op_policy: UnknownOpPolicy) -> Self {
+    pub fn with_ui_policy(unknown_op_policy: UnknownOpPolicy) -> Self {
         let mut apply: Vec<String> = baseline::BASELINE_OPS
             .iter()
             .map(|s| (*s).to_string())
