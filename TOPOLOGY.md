@@ -12,14 +12,23 @@ cek-framework          LAW          meanings only (other repo)
 cek-runtime            RUNTIME      this repo
   crates/cek-contract               wire: Intent, Cap, Op, Result
   crates/cek-host-kernel            HOST KERNEL (decide)
+  crates/cek-host-rust              native host runtime (own JSON wire)
   crates/cek-peer-kernel            PEER KERNEL (Peer::apply + typed helper)
   crates/cek-ops-baseline           PEER DRIVER  kv
   crates/cek-ops-ui                 PEER DRIVER  ui / DOM world
   crates/cek-peer-wasm              WASM hop (C ABI + own JSON wire)
   crates/cek-peer-rust              native peer runtime (own JSON wire)
   crates/cek-peer-pyo3              hop: in-process PyO3 → cek-peer-rust
-  crates/cek-cli                    hop: Host+Peer demo / cek apply → rust
+  crates/cek-cli                    hop: demo / cek apply → peer-rust / cek host-json → host-rust
   ports/                            other-language apply-only Peers
+```
+
+Host decide ownership:
+
+```text
+cek-host-kernel          ← Host decide (one engine)
+└── cek-host-rust        ← kernel only; native Rust host runtime JSON door
+      └── cek host-json (cli)
 ```
 
 Peer apply ownership (no sibling→sibling):

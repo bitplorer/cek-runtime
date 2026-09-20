@@ -28,7 +28,7 @@ for k,v in sorted(c.items()):
 # 16 families; 72 files
 ```
 
-**250** `#[test]` attributes under `crates/` (same walk as `scripts/coverage.sh`: leading whitespace, then `#[test]`):
+**261** `#[test]` attributes under `crates/` (same walk as `scripts/coverage.sh`: leading whitespace, then `#[test]`):
 
 ```bash
 python3 - <<'PY'
@@ -43,7 +43,7 @@ for dirpath, _, files in os.walk("crates"):
             n += sum(1 for line in text.splitlines() if re.match(r"\s*#\[test\]", line))
 print(n, "#[test] functions")
 PY
-# 250 #[test] functions
+# 261 #[test] functions
 ```
 
 `cargo test --workspace` may print a different “test” total (doctests, bins). The SSoT here is the attribute count, not that runner’s summary.
@@ -139,7 +139,7 @@ Law CORE/19 is the catalog in [cek-framework](https://github.com/bitplorer/cek-f
 17. Attenuate cannot widen  
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **250** `#[test]` + **72** vector fixtures + TS/WASM/JS/PyO3 apply-only + Python Host + batteries.
+Current inventory: **261** `#[test]` + **72** vector fixtures + TS/WASM/JS/PyO3 apply-only + Python Host + batteries.
 
 ## Coverage targets
 

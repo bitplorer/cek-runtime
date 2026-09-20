@@ -1,6 +1,6 @@
 [package]
-name = "cek-cli"
-description = "CEK demo + vector runner"
+name = "cek-host-rust"
+description = "CEK Host native Rust runtime — own JSON wire on kernel, sessionful"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,18 +8,11 @@ rust-version.workspace = true
 
 readme = "README.md"
 homepage = "https://github.com/bitplorer/cek-runtime"
-documentation = "https://docs.rs/cek-cli"
+documentation = "https://docs.rs/cek-host-rust"
 keywords = ["cek", "capability", "authorization"]
 categories = ["authentication"]
-
-[[bin]]
-name = "cek"
-path = "src/main.rs"
 
 [dependencies]
 cek-contract = { workspace = true }
 cek-host-kernel = { workspace = true }
-cek-host-rust = { workspace = true }
-cek-peer-kernel = { workspace = true }
-cek-peer-rust = { workspace = true }
 serde_json = { workspace = true }

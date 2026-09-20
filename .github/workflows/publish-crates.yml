@@ -10,7 +10,7 @@
 # OIDC Trusted Publishing cannot create crates. Flip back to OIDC-first after.
 #
 # Trigger: workflow_dispatch or tag vX.Y.Z
-# Order: contract → ops → kernels → rust → wasm → pyo3 → cli
+# Order: contract → ops → kernels → host-rust / peer hops → cli
 
 name: publish-crates
 

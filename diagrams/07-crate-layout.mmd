@@ -2,6 +2,7 @@ flowchart TB
   CT[cek-contract
 types vectors]
   H[cek-host-kernel]
+  HR[cek-host-rust]
   P[cek-peer-kernel
 Peer.apply + apply_world]
   OPS[cek-ops-baseline / cek-ops-ui]
@@ -11,6 +12,8 @@ Peer.apply + apply_world]
   CLI[cek-cli]
   CT --> H
   CT --> P
+  H --> HR
+  HR --> CLI
   OPS --> P
   P --> WASM
   P --> RUST

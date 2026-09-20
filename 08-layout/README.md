@@ -6,13 +6,22 @@ This repo **is** the code workspace. Names below are the crates on disk — not 
 cek-runtime/
   crates/cek-contract/         # types, vectors, Baseline (no cek-types crate)
   crates/cek-host-kernel/      # Host kernel
+  crates/cek-host-rust/        # hop: native JSON → host kernel
   crates/cek-peer-kernel/      # Peer kernel: Peer::apply + apply_world
   crates/cek-ops-baseline/     # Peer driver: kv
   crates/cek-ops-ui/           # Peer driver: ui / DOM
   crates/cek-peer-wasm/        # hop: WASM C ABI + own JSON → kernel
   crates/cek-peer-rust/        # hop: native JSON → kernel
   crates/cek-peer-pyo3/        # hop → cek-peer-rust (not wasm)
-  crates/cek-cli/              # vectors, demo; cek apply → rust
+  crates/cek-cli/              # vectors, demo; cek apply → peer-rust; cek host-json → host-rust
+```
+
+## Host / Peer hops
+
+```text
+cek-host-kernel          ← decide engine
+└── cek-host-rust        ← kernel only; native JSON door
+      └── cek host-json (cli)
 ```
 
 ## Peer hops (#11)
@@ -38,6 +47,7 @@ Full picture: [TOPOLOGY.md](../TOPOLOGY.md).
 | peer kernel | contract, ops-baseline, ops-ui |
 | peer wasm / rust | peer kernel (not each other) |
 | pyo3 / `cek apply` | `cek-peer-rust` |
+| host rust / `cek host-json` | host kernel (not peer crates) |
 | host | **must not** depend on peer internals |
 | peer | **must not** depend on host mint |
 

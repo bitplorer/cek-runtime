@@ -1,7 +1,7 @@
-//! cek CLI — demo, vectors, and kernel-wrap JSON (apply / host-json).
+//! cek CLI — demo, vectors, and runtime-wrap JSON (apply / host-json).
 
 use cek_contract::{
-    check_result, load_vector_dir, sealed_args_digest, Intent, Profile, ResultKind, ResultMsg,
+    check_result, load_vector_dir, sealed_args_digest, Intent, ResultKind, ResultMsg,
     ReverseClass, VectorCase,
 };
 use cek_host_kernel::Host;
@@ -538,66 +538,24 @@ fn run_apply() {
     }
 }
 
-/// Wrap cek-host-kernel over JSON. Commands: mint | submit.
+/// Wrap cek-host-kernel via cek-host-rust::HostRuntime::host_json (native host door).
+/// Commands: mint | submit.
 ///
 /// mint:    {"cmd":"mint","id":"...","action":"kv.write","once":false}
 /// submit:  {"cmd":"submit","intent":{...Intent...},"profile":{...Profile...}?}
 ///          omitted profile → missing Manifest → Baseline-only (LAW §11).
 fn run_host_json() {
-    let v: serde_json::Value = match serde_json::from_str(&read_stdin()) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("json: {e}");
-            std::process::exit(1);
+    match cek_host_rust::HostRuntime::new().host_json(&read_stdin()) {
+        Ok(s) => {
+            println!("{s}");
         }
-    };
-    let cmd = v.get("cmd").and_then(|c| c.as_str()).unwrap_or("");
-    let host = Host::new();
-    match cmd {
-        "mint" => {
-            let id = v.get("id").and_then(|x| x.as_str()).unwrap_or("cap");
-            let action = v.get("action").and_then(|x| x.as_str()).unwrap_or("");
-            let once = v.get("once").and_then(|x| x.as_bool()).unwrap_or(false);
-            let cap = host.mint(id, action, once, None);
-            match serde_json::to_string(&cap) {
-                Ok(s) => println!("{s}"),
-                Err(e) => {
-                    eprintln!("{e}");
-                    std::process::exit(1);
-                }
-            }
-        }
-        "submit" => {
-            let intent: Intent =
-                match serde_json::from_value(v.get("intent").cloned().unwrap_or(json!({}))) {
-                    Ok(i) => i,
-                    Err(e) => {
-                        eprintln!("intent: {e}");
-                        std::process::exit(1);
-                    }
-                };
-            let profile: Option<Profile> = match v.get("profile") {
-                None | Some(serde_json::Value::Null) => None,
-                Some(p) => match serde_json::from_value(p.clone()) {
-                    Ok(p) => Some(p),
-                    Err(e) => {
-                        eprintln!("profile: {e}");
-                        std::process::exit(1);
-                    }
-                },
-            };
-            let result = host.submit_for(intent, profile.as_ref());
-            match serde_json::to_string(&result) {
-                Ok(s) => println!("{s}"),
-                Err(e) => {
-                    eprintln!("{e}");
-                    std::process::exit(1);
-                }
-            }
-        }
-        _ => {
-            eprintln!("cmd must be mint|submit");
+        Err(e) if e == "cmd must be mint|submit" => {
+            eprintln!("{e}");
             std::process::exit(2);
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            std::process::exit(1);
         }
     }
 }

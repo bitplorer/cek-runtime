@@ -285,18 +285,23 @@ Types live in `cek-contract`. There is no `cek-types` crate and no `*-kernel-rus
 ```text
 cek-contract
 cek-host-kernel           Host kernel
+cek-host-rust             hop: native JSON → host kernel
 cek-peer-kernel           Peer::apply + apply_world (one engine)
 cek-ops-baseline          Peer driver (kv)
 cek-ops-ui                Peer driver (DOM)
 cek-peer-wasm             hop: WASM C ABI + own JSON → kernel
 cek-peer-rust             hop: native JSON → kernel
 cek-peer-pyo3             hop → cek-peer-rust
-cek-cli                   hop: cek apply → cek-peer-rust
+cek-cli                   hop: cek apply → peer-rust; cek host-json → host-rust
 ```
 
 Host must not depend on Peer internals. Peer must not link mint.
 
 ```text
+cek-host-kernel          ← Host decide
+└── cek-host-rust        ← kernel only; native JSON door
+      └── cek host-json (cli)
+
 cek-peer-kernel          ← Peer::apply + apply_world
 ├── cek-peer-wasm        ← sibling; own JSON + C ABI
 └── cek-peer-rust        ← sibling; own JSON door

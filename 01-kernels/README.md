@@ -39,7 +39,8 @@ apply(Result) -> Option<Receipt>
 ```
 
 Typed helper **in the same crate** (not a second engine): `apply_world` (profile/policy → `Peer::apply` → receipt + snapshots).  
-`cek-peer-wasm` and `cek-peer-rust` are sibling hops that serde JSON onto that helper. PyO3 and `cek apply` hop onto rust, not wasm. See [TOPOLOGY.md](../TOPOLOGY.md).
+`cek-peer-wasm` and `cek-peer-rust` are sibling hops that serde JSON onto that helper. PyO3 and `cek apply` hop onto rust, not wasm.  
+`cek-host-rust` is the native host JSON door on `cek-host-kernel`. `cek host-json` hops onto it. See [TOPOLOGY.md](../TOPOLOGY.md).
 
 Peer **must not** expose:
 

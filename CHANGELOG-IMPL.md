@@ -1,5 +1,11 @@
 # Implementation changelog
 
+## 2026-09-20 — Host runtime door (`cek-host-rust`)
+
+- `cek-host-rust` is the native host runtime: own JSON mint/submit wire on `cek-host-kernel`.
+- `cek host-json` hops onto that crate. Sessionful wrap; not a second decide engine; not a Python Host twin.
+- Public wire verbs stay `mint` | `submit`. Receipt/reverse stay kernel methods, off this door.
+
 ## 2026-09-20 — 0.1.3 crates.io republish
 
 - `0.1.3` — republish so peer hops see kernel `apply_world` on crates.io (registry skew fix).

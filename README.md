@@ -6,6 +6,7 @@ Reference **Host** (decide) and **Peer** (apply). No ambient power. Peer never m
 |-------|------|
 | `cek-contract` | Types, S, vectors |
 | `cek-host-kernel` | Cap verify → dispatch → lineage → project |
+| `cek-host-rust` | Native host runtime (own JSON wire on kernel) |
 | `cek-peer-kernel` | Apply S + typed `apply_world` helper |
 | `cek-ops-baseline` / `cek-ops-ui` | Drivers |
 | `cek-peer-rust` | Native peer runtime (own JSON wire on kernel) |

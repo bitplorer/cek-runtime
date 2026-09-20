@@ -25,6 +25,7 @@ There is **no third kernel**. A bus only moves messages.
 | Law | cek-framework (other repo) | Meanings |
 | Contract | `crates/cek-contract` | Intent, Cap, Op, Result, vectors |
 | Host kernel | `crates/cek-host-kernel` | mint, verify, project, once, reverse |
+| Host Rust runtime | `crates/cek-host-rust` | native host JSON door on kernel |
 | Peer kernel | `crates/cek-peer-kernel` | `Peer::apply` + typed `apply_world` helper — **no mint** |
 | Peer WASM hop | `crates/cek-peer-wasm` | C ABI + own JSON wire on kernel (not rust) |
 | Peer Rust runtime | `crates/cek-peer-rust` | native peer JSON door on kernel |
@@ -101,7 +102,7 @@ node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-Expect **250** `#[test]` and **72** vector JSON files (how counted: [TESTING.md](TESTING.md)). Batteries green.  
+Expect **261** `#[test]` and **72** vector JSON files (how counted: [TESTING.md](TESTING.md)). Batteries green.  
 Python Host skips Peer-only fixtures (Ed25519 is implemented). JS Peer runs apply-only fixtures.
 
 ## 8. Use it from an app

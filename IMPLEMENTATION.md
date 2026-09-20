@@ -19,11 +19,12 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 |-------|----------------|
 | `cek-contract` | Types, Baseline Ops, digests, vector load/check, law_generation |
 | `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, dispatch, lineage, project, receipts, reverse, **store traits + file backends** |
+| `cek-host-rust` | Native host runtime; own thin JSON wire on kernel |
 | `cek-peer-kernel` | profile, apply, receipt, typed `apply_world` helper — **no mint** |
 | `cek-peer-rust` | Native peer runtime; own thin JSON wire on kernel |
 | `cek-ops-baseline` | Peer **driver**: in-memory kv — [DRIVERS.md](DRIVERS.md) |
 | `cek-ops-ui` | Peer **driver**: UI map + `DomTree` — [DRIVERS.md](DRIVERS.md) |
-| `cek-cli` | Demo + vector runner; `cek apply` hops onto `cek-peer-rust` |
+| `cek-cli` | Demo + vector runner; `cek apply` → `cek-peer-rust`; `cek host-json` → `cek-host-rust` |
 
 TypeScript apply-only Peer: `ports/cek-peer-ts`.  
 JavaScript Peer **runtime** (apply + DomTree): `ports/cek-peer-js`.  
@@ -33,6 +34,7 @@ Peer hops (same JSON field names; no shared JSON crate; no wasm↔rust edge):
 `cek-peer-wasm` is the WASM hop (C ABI + **its own** thin JSON wire).  
 `cek-peer-rust` is the native peer runtime (its own thin JSON wire).  
 PyO3 / `cek apply` hop onto `cek-peer-rust` only. PR #10's wasm→rust edge was wrong-owner and is gone.  
+`cek-host-rust` is the native host runtime (its own thin JSON wire). `cek host-json` hops onto it. Not a third kernel.  
 WASM `cek_apply` rustdoc says `-1` on error; JSON/`apply_json` failures are leftover **Err-as-body** (positive length, error string). HOLD: do not reshape that C ABI. See `crates/cek-peer-wasm/README.md`.
 
 ## Pipeline (Host)
@@ -119,11 +121,12 @@ scripts/invariants.sh
 scripts/coverage.sh
 crates/cek-contract/       # types, actions, Baseline, ui, vectors
 crates/cek-host-kernel/    # verify, BoundAsk, project, stores
+crates/cek-host-rust/      # native host runtime JSON door
 crates/cek-peer-kernel/    # apply engine + typed helper — no mint
 crates/cek-peer-rust/      # native peer runtime JSON door; no mint
 crates/cek-ops-baseline/
 crates/cek-ops-ui/         # Peer driver (UI world)
-crates/cek-cli/            # hop: cek apply → cek-peer-rust
+crates/cek-cli/            # hop: cek apply → peer-rust; cek host-json → host-rust
 crates/cek-peer-wasm/      # hop: WASM C ABI + own JSON → kernel
 crates/cek-peer-pyo3/      # hop: PyO3 ABI → cek-peer-rust
 ports/cek-peer-ts/
