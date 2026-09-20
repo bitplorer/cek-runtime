@@ -127,7 +127,7 @@ crates/cek-peer-rust/      # native peer runtime JSON door; no mint
 crates/cek-ops-baseline/
 crates/cek-ops-ui/         # Peer driver (UI world)
 crates/cek-cli/            # hop: cek apply → peer-rust; cek host-json → host-rust
-crates/cek-peer-wasm/      # hop: WASM C ABI + own JSON → kernel
+crates/cek-peer-wasm/      # hop: WASM C ABI + own JSON → peer kernel
 crates/cek-peer-pyo3/      # hop: PyO3 ABI → cek-peer-rust
 ports/cek-peer-ts/
 ports/cek-peer-wasm/

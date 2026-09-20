@@ -289,8 +289,8 @@ cek-host-rust             hop: native JSON → host kernel
 cek-peer-kernel           Peer::apply + apply_world (one engine)
 cek-ops-baseline          Peer driver (kv)
 cek-ops-ui                Peer driver (DOM)
-cek-peer-wasm             hop: WASM C ABI + own JSON → kernel
-cek-peer-rust             hop: native JSON → kernel
+cek-peer-wasm             hop: WASM C ABI + own JSON → peer kernel
+cek-peer-rust             hop: native JSON → peer kernel
 cek-peer-pyo3             hop → cek-peer-rust
 cek-cli                   hop: cek apply → peer-rust; cek host-json → host-rust
 ```
