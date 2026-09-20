@@ -11,7 +11,7 @@ If it is not in the contract (schemas + vectors + Baseline Ops + law generation)
 ```text
 cek-contract/
   schemas/           # Intent Cap Result Op lineage receipt profile manifest
-  vectors/           # CORE 19 families as JSON
+  vectors/           # this tree: 72 JSON files, 16 family values (TESTING.md)
   baseline-ops/      # classic Op catalog + lowering rules
   law-version.txt    # law generation id
 ```
@@ -32,7 +32,7 @@ cek-contract/
 
 ## Vector families (must be executable)
 
-From CORE 19 — each as versioned JSON cases:
+Law CORE/19 is the catalog in cek-framework. **This tree** ships **72** JSON files with **16** `family` values (how counted: [TESTING.md](TESTING.md)). Families that must stay executable include:
 
 | Family | Must show |
 |--------|-----------|

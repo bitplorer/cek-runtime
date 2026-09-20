@@ -101,7 +101,7 @@ node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-Expect about **190** Rust tests, **64** vectors, batteries green.  
+Expect **250** `#[test]` and **72** vector JSON files (how counted: [TESTING.md](TESTING.md)). Batteries green.  
 Python Host skips Peer-only fixtures (Ed25519 is implemented). JS Peer runs apply-only fixtures.
 
 ## 8. Use it from an app

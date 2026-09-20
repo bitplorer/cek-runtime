@@ -57,7 +57,7 @@ Wire / in-proc = contract messages only — no third kernel in the middle
 ```text
 cek-contract/
   schemas/       Intent Cap Result Op lineage receipt profile manifest
-  vectors/       CORE 19 families as executable cases
+  vectors/       72 JSON files, 16 family values (TESTING.md)
   baseline-ops/  classic data-only Ops + lowering rules
   law-version    which law generation this pack claims
 ```

@@ -17,12 +17,11 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 bash scripts/run-wasm-peer.sh
-```
-
 python3 ports/cek-host-py/run_vectors.py crates/cek-contract/vectors
 node ports/cek-peer-js/run-vectors.mjs crates/cek-contract/vectors
+```
 
-Expected: **147** Rust tests; **57** vectors; batteries (`./scripts/batteries.sh`) green.
+Expected: **250** `#[test]`; **72** vector JSON files (how counted: [TESTING.md](TESTING.md)); batteries (`./scripts/batteries.sh`) green.
 
 ## Current maturity
 
