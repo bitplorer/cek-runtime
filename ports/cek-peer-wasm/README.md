@@ -7,6 +7,11 @@ Engine stays `Peer::apply` via `apply_world`. No second apply
 implementation. Does not depend on `cek-peer-rust`. JSON ABI:
 `{ result, profile, unknown_op_policy }` → `{ receipt, kv, ui, log }`.
 
+**C ABI honesty:** `cek_apply` rustdoc says length or `-1` on error. `-1` is only
+null pointer / non-UTF-8. `apply_json` `Err` is returned as a **positive-length
+error string** (Err-as-body). HOLD: do not reshape the C ABI. Details:
+[crate README](../../crates/cek-peer-wasm/README.md).
+
 ```bash
 # from workspace root
 rustup target add wasm32-unknown-unknown
