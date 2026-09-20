@@ -2,7 +2,7 @@
 
 ## How this tree is counted (SSoT)
 
-Numbers below are from the tree at `e0d211bc7ca744b376184271f366d0abd69e6c9b` (current `main` HEAD). Do not cite 43, 57, 64, 71, 147, 152, or 190 — those are stale.
+Numbers below are from the tree at `7ad82df65d70ad66c72f928e8754d74631c489d2` (current `main` HEAD after #17). Do not cite 43, 57, 64, 71, 147, 152, or 190 — those are stale.
 
 **72** JSON fixtures under `crates/cek-contract/vectors/`:
 
@@ -150,6 +150,10 @@ Current inventory: **261** `#[test]` + **72** vector fixtures + TS/WASM/JS/PyO3 
 | cek-peer-kernel | ≥ 70% lines |
 | cek-ops-baseline | ≥ 70% lines |
 | cek-ops-ui | ≥ 70% lines |
+| cek-host-rust | hop door (`native JSON → host kernel`); no line-coverage target |
+| cek-peer-rust | hop door (`native JSON → peer kernel`); no line-coverage target |
+| cek-peer-wasm | hop door (`WASM C ABI + own JSON → peer kernel`); no line-coverage target |
+| cek-peer-pyo3 | hop door onto `cek-peer-rust`; no line-coverage target |
 
 ## CI
 
