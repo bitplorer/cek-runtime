@@ -41,7 +41,7 @@ impl PyPeerAbi {
         self.with_inner(|abi| abi.bind())
     }
 
-    /// Apply a wasm JSON document (`str` or mapping). Returns `{ receipt, kv, ui, log }`.
+    /// Apply a shared JSON document (`str` or mapping). Returns `{ receipt, kv, ui, log }`.
     fn apply(&self, py: Python<'_>, request: Bound<'_, PyAny>) -> PyResult<PyObject> {
         let json = py.import_bound("json")?;
         let input: String = if let Ok(s) = request.extract::<String>() {

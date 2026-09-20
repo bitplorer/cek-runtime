@@ -20,15 +20,17 @@ cargo run -p cek-cli -- vectors crates/cek-contract/vectors
 | `cek-contract` | Types, Baseline Ops, digests, vector load/check, law_generation |
 | `cek-host-kernel` | mint, verify, sealed-args, once, idempotency, BoundAsk, dispatch, lineage, project, receipts, reverse, **store traits + file backends** |
 | `cek-peer-kernel` | profile, apply, receipt — **no mint** |
+| `cek-peer-rust` | Shared JSON apply/receipt door (future Rust peer runtime locus) |
 | `cek-ops-baseline` | Peer **driver**: in-memory kv — [DRIVERS.md](DRIVERS.md) |
 | `cek-ops-ui` | Peer **driver**: UI map + `DomTree` — [DRIVERS.md](DRIVERS.md) |
-| `cek-cli` | Demo + vector runner |
+| `cek-cli` | Demo + vector runner; `cek apply` hops onto `cek-peer-rust` |
 
 TypeScript apply-only Peer: `ports/cek-peer-ts`.  
 JavaScript Peer **runtime** (apply + DomTree): `ports/cek-peer-js`.  
 Python Host **runtime (published):** `pip install cek-host`. `ports/cek-host-py` is a contract-vector sketch, not a second published Host.  
-WASM apply-only Peer: `crates/cek-peer-wasm` + `ports/cek-peer-wasm`.  
-PyO3 apply-only Peer: `crates/cek-peer-pyo3` + `ports/cek-peer-pyo3` (same kernel; no mint).
+Shared JSON apply door: `crates/cek-peer-rust` (hops: wasm ABI, PyO3, `cek apply`).  
+WASM apply-only hop: `crates/cek-peer-wasm` + `ports/cek-peer-wasm`.  
+PyO3 apply-only hop: `crates/cek-peer-pyo3` + `ports/cek-peer-pyo3` (same door; no mint).
 
 ## Pipeline (Host)
 
@@ -115,11 +117,12 @@ scripts/coverage.sh
 crates/cek-contract/       # types, actions, Baseline, ui, vectors
 crates/cek-host-kernel/    # verify, BoundAsk, project, stores
 crates/cek-peer-kernel/    # apply only — no mint
+crates/cek-peer-rust/      # shared JSON apply/receipt door; no mint
 crates/cek-ops-baseline/
 crates/cek-ops-ui/         # Peer driver (UI world)
-crates/cek-cli/
-crates/cek-peer-wasm/      # JSON/WASM apply surface; no mint
-crates/cek-peer-pyo3/      # JSON/PyO3 apply surface; no mint
+crates/cek-cli/            # hop: cek apply → cek-peer-rust
+crates/cek-peer-wasm/      # hop: WASM ABI → cek-peer-rust
+crates/cek-peer-pyo3/      # hop: PyO3 ABI → cek-peer-rust
 ports/cek-peer-ts/
 ports/cek-peer-wasm/
 ports/cek-peer-pyo3/

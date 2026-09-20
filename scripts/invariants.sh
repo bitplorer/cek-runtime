@@ -17,6 +17,12 @@ if [ -d ports/cek-peer-js ]; then
   fi
   ok "JS Peer has no mint"
 fi
+if [ -d crates/cek-peer-rust ]; then
+  if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|Host::mint|mint_root' crates/cek-peer-rust >/dev/null; then
+    fail "Peer rust JSON door must not mint"
+  fi
+  ok "Peer rust JSON door has no mint"
+fi
 if [ -d crates/cek-peer-wasm ]; then
   if grep -REn 'pub[[:space:]]+fn[[:space:]]+mint|Host::mint|mint_root' crates/cek-peer-wasm >/dev/null; then
     fail "WASM Peer crate must not mint"

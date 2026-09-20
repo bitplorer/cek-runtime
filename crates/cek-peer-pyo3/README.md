@@ -1,8 +1,8 @@
 # cek-peer-pyo3
 
-Same `cek-peer-kernel`, JSON/PyO3 ABI. Apply/receipt only. No mint.
+PyO3 hop onto `cek-peer-rust`. Apply/receipt only. No mint.
 
-Uses the wasm JSON documents: `{ result, profile, unknown_op_policy }` →
+Same JSON documents: `{ result, profile, unknown_op_policy }` →
 `{ receipt, kv, ui, log }`. Not a second Peer kernel and not a Cap mint
 surface.
 

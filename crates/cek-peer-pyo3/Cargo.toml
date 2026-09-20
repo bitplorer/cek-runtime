@@ -1,6 +1,6 @@
 [package]
 name = "cek-peer-pyo3"
-description = "CEK Peer apply-only PyO3/JSON port — no mint"
+description = "CEK Peer apply-only PyO3 hop onto cek-peer-rust — no mint"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -17,12 +17,13 @@ name = "cek_peer_pyo3"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+cek-peer-rust = { workspace = true }
+pyo3 = { version = "0.22.6", optional = true, default-features = false, features = ["macros"] }
+
+[dev-dependencies]
 cek-contract = { workspace = true }
 cek-peer-kernel = { workspace = true }
-cek-peer-wasm = { workspace = true }
-serde = { workspace = true }
 serde_json = { workspace = true }
-pyo3 = { version = "0.22.6", optional = true, default-features = false, features = ["macros"] }
 
 [features]
 default = []

@@ -60,7 +60,7 @@ File backends write JSON via temp + rename. They are not a multi-process lock.
 
 ## Peer
 
-- No `mint` / `mint_root` (Rust crate, `ports/cek-peer-ts`, `cek-peer-wasm`, and `cek-peer-pyo3`).  
+- No `mint` / `mint_root` (Rust crate, `ports/cek-peer-ts`, `cek-peer-rust`, `cek-peer-wasm`, and `cek-peer-pyo3`).  
 - Unknown Ops: profile policy (`Skip` or `FailBatch`).  
 - `Peer::with_ui()` adds `ui.dom.morph` / `ui.dom.restore` to apply-set.  
 - Authority refusal Result → no world change.

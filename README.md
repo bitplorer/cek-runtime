@@ -8,8 +8,9 @@ Reference **Host** (decide) and **Peer** (apply). No ambient power. Peer never m
 | `cek-host-kernel` | Cap verify → dispatch → lineage → project |
 | `cek-peer-kernel` | Apply S only |
 | `cek-ops-baseline` / `cek-ops-ui` | Drivers |
-| `cek-peer-wasm` | Same Peer kernel, WASM ABI |
-| `cek-peer-pyo3` | Same Peer kernel, in-process PyO3 ABI (apply/receipt only) |
+| `cek-peer-rust` | Shared JSON apply/receipt door (Rust peer runtime locus) |
+| `cek-peer-wasm` | WASM ABI hop onto `cek-peer-rust` |
+| `cek-peer-pyo3` | PyO3 hop onto `cek-peer-rust` (apply/receipt only) |
 | `cek-cli` | `cek demo` · `cek vectors` · `cek apply` · `cek host-json` |
 
 ```bash

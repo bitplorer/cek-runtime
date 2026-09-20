@@ -9,7 +9,7 @@
 # Fallback: repo secret CARGO_REGISTRY_TOKEN (crates.io API token).
 #
 # Trigger: workflow_dispatch or tag vX.Y.Z
-# Order: contract → ops → kernels → wasm → pyo3 → cli
+# Order: contract → ops → kernels → rust → wasm → pyo3 → cli
 
 name: publish-crates
 
