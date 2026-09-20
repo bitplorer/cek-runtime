@@ -12,6 +12,8 @@ decide engine. Not a Python Host twin.
 
 JSON: `{cmd:mint|submit, ...}` → Cap or Result.
 
+Live on crates.io at **0.1.3**, alongside the peer hops.
+
 ```toml
 cek-host-rust = "0.1.3"
 ```

@@ -23,4 +23,4 @@ Law: [cek-framework](https://github.com/bitplorer/cek-framework) · Python: [cek
 
 S = `kv.set` `kv.delete` `log.append` `ui.dom.morph` `ui.dom.restore`. Pair identity is `(ns, name)`.
 
-Publish (crates.io): tag `v*` or Actions → **publish-crates**. Trusted publishers must use environment `crates-io` (see workflow header).
+Publish (crates.io): tag `v*` or Actions → **publish-crates**. Trusted publishers must use environment `crates-io` (see workflow header). `cek-host-rust` is live at **0.1.3** alongside the peer hops.
