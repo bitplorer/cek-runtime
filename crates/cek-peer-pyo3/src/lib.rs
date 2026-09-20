@@ -1,8 +1,8 @@
 //! Apply-only Peer surface for in-process Python (PyO3).
 //!
 //! There is **no mint**. Callers pass the same Host `Result` JSON documents
-//! as `cek-peer-rust` / `cek apply`; this crate hops onto that shared door
-//! and returns a receipt plus world snapshots.
+//! as `cek-peer-rust` / `cek apply`; this crate hops onto that native
+//! peer door and returns a receipt plus world snapshots.
 //!
 //! Lifecycle is explicit: **construct → bind → apply → release**. Import
 //! only registers the module. One release door.
@@ -31,8 +31,8 @@ pub enum AbiState {
 
 /// In-process apply-only ABI handle. Does not own a Peer world.
 ///
-/// Each [`PeerAbi::apply_json`] calls the shared `cek-peer-rust` apply
-/// door (`Peer::apply` inside the kernel). Worlds do not accumulate.
+/// Each [`PeerAbi::apply_json`] calls `cek-peer-rust` (`apply_world` →
+/// `Peer::apply` inside the kernel). Worlds do not accumulate.
 pub struct PeerAbi {
     state: AbiState,
 }

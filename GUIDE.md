@@ -25,8 +25,9 @@ There is **no third kernel**. A bus only moves messages.
 | Law | cek-framework (other repo) | Meanings |
 | Contract | `crates/cek-contract` | Intent, Cap, Op, Result, vectors |
 | Host kernel | `crates/cek-host-kernel` | mint, verify, project, once, reverse |
-| Peer kernel | `crates/cek-peer-kernel` | apply loop — **no mint** |
-| Peer Rust JSON door | `crates/cek-peer-rust` | shared apply/receipt JSON port |
+| Peer kernel | `crates/cek-peer-kernel` | `Peer::apply` + typed `apply_world` helper — **no mint** |
+| Peer WASM hop | `crates/cek-peer-wasm` | C ABI + own JSON wire on kernel (not rust) |
+| Peer Rust runtime | `crates/cek-peer-rust` | native peer JSON door on kernel |
 | Peer PyO3 ABI | `crates/cek-peer-pyo3` | hop onto `cek-peer-rust` |
 | Peer driver | kv, log, UI/DOM — see [DRIVERS.md](DRIVERS.md) |
 
