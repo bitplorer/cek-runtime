@@ -95,6 +95,7 @@ impl Drop for PeerAbi {
 }
 
 /// Map a mutex lock. Poison is a distinct failure from post-release.
+#[cfg(any(test, feature = "python"))]
 pub(crate) fn map_mutex_lock<T>(r: std::sync::LockResult<T>) -> Result<T, String> {
     r.map_err(|_| "poisoned".into())
 }
