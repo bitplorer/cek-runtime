@@ -9,9 +9,15 @@
 //! - Apply budgets: `max_nodes` / `max_depth` (defaults 256 / 16) and
 //!   single-flight. Over budget applies nothing; Receipt `failed` lists every Op.
 //! - Drivers: `cek-ops-baseline` (kv), `cek-ops-ui` (UI world).
+//! - Typed one-shot helper: [`apply_world`] (profile/policy → [`Peer::apply`]
+//!   → snapshots). Hops only serde JSON onto that helper.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+
+mod apply;
+
+pub use apply::{apply_world, unknown_op_policy_from_wire, ApplyProfileKind, ApplyWorld};
 
 use cek_contract::{
     baseline, ui, Manifest, Op, Profile, Receipt, ResultKind, ResultMsg, UnknownOpPolicy,

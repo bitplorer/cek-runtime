@@ -12,15 +12,29 @@ cek-framework          LAW          meanings only (other repo)
 cek-runtime            RUNTIME      this repo
   crates/cek-contract               wire: Intent, Cap, Op, Result
   crates/cek-host-kernel            HOST KERNEL (decide)
-  crates/cek-peer-kernel            PEER KERNEL (apply loop, no mint)
-  crates/cek-peer-rust              JSON apply door (Rust peer runtime locus)
+  crates/cek-peer-kernel            PEER KERNEL (Peer::apply + typed helper)
   crates/cek-ops-baseline           PEER DRIVER  kv
   crates/cek-ops-ui                 PEER DRIVER  ui / DOM world
-  crates/cek-cli                    hop: Host+Peer demo / cek apply
-  crates/cek-peer-wasm              hop: WASM ABI → cek-peer-rust
+  crates/cek-peer-wasm              WASM hop (C ABI + own JSON wire)
+  crates/cek-peer-rust              native peer runtime (own JSON wire)
   crates/cek-peer-pyo3              hop: in-process PyO3 → cek-peer-rust
+  crates/cek-cli                    hop: Host+Peer demo / cek apply → rust
   ports/                            other-language apply-only Peers
 ```
+
+Peer apply ownership (no sibling→sibling):
+
+```text
+cek-peer-kernel          ← Peer::apply (one engine) + apply_world helper
+├── cek-peer-wasm        ← kernel only; WASM C ABI + own thin JSON wire
+└── cek-peer-rust        ← kernel only; native Rust peer runtime JSON door
+      ├── cek-peer-pyo3
+      └── cek apply (cli)
+```
+
+PR #10 pointed `cek-peer-wasm` at `cek-peer-rust` so hops shared one JSON
+door. That edge was **wrong-owner** and is gone. Each hop serde's the same
+field names onto the kernel helper. There is no `cek-peer-json` crate.
 
 ## Official split
 
@@ -29,7 +43,7 @@ cek-runtime            RUNTIME      this repo
 | **Law** | Cap, Intent, Ops, Host/Peer *roles* — not code |
 | **Host kernel** | mint · verify · once · dispatch · lineage · project · reverse |
 | **Host runtime** | kernel + store + keys + clock (this process) |
-| **Peer kernel** | profile · apply Ops · receipt · **no mint** |
+| **Peer kernel** | profile · apply Ops · receipt · typed apply helper · **no mint** |
 | **Peer driver** | the world: kv, UI/DOM, device — **outer**, not a kernel |
 | **Contract** | messages between Host and Peer |
 
@@ -52,7 +66,7 @@ Driver catalog (payloads, addresses, what a driver must never do): **[DRIVERS.md
 | `ports/cek-host-py` | Historic contract-vector sketch. Published Host is `pip install cek-host` |
 | `ports/cek-peer-js` | Peer **runtime** (apply + DomTree). No mint |
 | `ports/cek-peer-ts` | Peer apply-only (same contract) |
-| `ports/cek-peer-wasm` | WASM hop onto `cek-peer-rust` |
+| `ports/cek-peer-wasm` | WASM hop onto `cek-peer-kernel` (own JSON + C ABI) |
 | `ports/cek-peer-pyo3` | PyO3 hop onto `cek-peer-rust` (not a second kernel) |
 
 HMAC / Ed25519 / scopes / dual-speak stay in the **Host kernel** (verify). They are not drivers.

@@ -2,10 +2,10 @@
 
 Apply-only Peer compiled to `wasm32-unknown-unknown`. **No mint.**
 
-WASM ABI hop onto `cek-peer-rust` (the shared JSON apply/receipt door).
-Engine stays `Peer::apply` in `cek-peer-kernel`. No second apply
-implementation. JSON ABI: `{ result, profile, unknown_op_policy }` →
-`{ receipt, kv, ui, log }`.
+WASM hop onto `cek-peer-kernel` (C ABI + this crate's thin JSON wire).
+Engine stays `Peer::apply` via `apply_world`. No second apply
+implementation. Does not depend on `cek-peer-rust`. JSON ABI:
+`{ result, profile, unknown_op_policy }` → `{ receipt, kv, ui, log }`.
 
 ```bash
 # from workspace root

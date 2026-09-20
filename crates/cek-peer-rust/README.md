@@ -1,12 +1,13 @@
 # cek-peer-rust
 
-Shared JSON apply/receipt door for Peer hops. Future Rust peer runtime locus.
+Native Rust peer runtime. Thin JSON apply/receipt wire on `cek-peer-kernel`.
 
-Engine stays `Peer::apply` in `cek-peer-kernel`. This crate owns the JSON
-port (`apply_json` / `apply_request`). No mint.
+Engine stays `Peer::apply` (via `apply_world`). This crate owns **its own**
+JSON port (`apply_json` / `apply_request`). No mint. Not a second kernel.
 
-Hops (`cek-peer-wasm` ABI, `cek-peer-pyo3`, `cek apply`) call this crate.
-They do not own a second apply contract.
+`cek-peer-pyo3` and `cek apply` hop onto this crate. `cek-peer-wasm` does
+**not** — it owns a sibling JSON wire on the same kernel helper. PR #10's
+wasm→rust edge was wrong-owner and is gone.
 
 JSON: `{ result, profile, unknown_op_policy }` → `{ receipt, kv, ui, log }`.
 

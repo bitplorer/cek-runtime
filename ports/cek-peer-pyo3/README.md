@@ -2,8 +2,8 @@
 
 Apply-only Peer compiled as an in-process CPython extension. **No mint.**
 
-PyO3 hop onto `cek-peer-rust` (the shared JSON apply/receipt door).
-Engine stays `Peer::apply` in `cek-peer-kernel`. No second apply
+PyO3 hop onto `cek-peer-rust` (native peer JSON door on the kernel).
+Engine stays `Peer::apply` via `apply_world`. No second apply
 implementation. JSON ABI: `{ result, profile, unknown_op_policy }` →
 `{ receipt, kv, ui, log }`.
 

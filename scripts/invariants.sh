@@ -101,4 +101,41 @@ if ! grep -q 'Actions are never applied' crates/cek-contract/src/actions.rs; the
 fi
 ok "action vs Op split documented"
 
+# 9. No sibling shared JSON package (hops own their wire).
+if [ -d crates/cek-peer-json ]; then
+  fail "cek-peer-json must not exist (hops own JSON; kernel owns typed apply)"
+fi
+ok "no cek-peer-json crate"
+
+# 10. Peer hop graph: no sibling→sibling (wasm ↛ rust, rust ↛ wasm).
+# #10 moved JSON into rust and pointed wasm at it (wrong owner). Restored.
+wasm_toml=crates/cek-peer-wasm/Cargo.toml
+rust_toml=crates/cek-peer-rust/Cargo.toml
+if awk '
+  $0 ~ /^\[/ { d = ($0 == "[dependencies]" || $0 == "[dev-dependencies]") }
+  d && $0 ~ /^cek-peer-rust[[:space:]]*=/ { found=1 }
+  END { exit !found }
+' "$wasm_toml"; then
+  fail "cek-peer-wasm must not depend on cek-peer-rust (sibling→sibling; #10 wrong-owner)"
+fi
+ok "cek-peer-wasm does not depend on cek-peer-rust"
+if awk '
+  $0 ~ /^\[/ { d = ($0 == "[dependencies]" || $0 == "[dev-dependencies]") }
+  d && $0 ~ /^cek-peer-kernel[[:space:]]*=/ { found=1 }
+  END { exit !found }
+' "$wasm_toml"; then
+  :
+else
+  fail "cek-peer-wasm must depend on cek-peer-kernel"
+fi
+ok "cek-peer-wasm depends on cek-peer-kernel"
+if awk '
+  $0 ~ /^\[/ { d = ($0 == "[dependencies]" || $0 == "[dev-dependencies]") }
+  d && $0 ~ /^cek-peer-wasm[[:space:]]*=/ { found=1 }
+  END { exit !found }
+' "$rust_toml"; then
+  fail "cek-peer-rust must not depend on cek-peer-wasm (sibling→sibling)"
+fi
+ok "cek-peer-rust does not depend on cek-peer-wasm"
+
 echo "invariants ok"
