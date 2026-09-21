@@ -33,7 +33,9 @@ Peer hops (same JSON field names; no shared JSON crate; no wasm↔rust edge):
 `cek-peer-kernel` owns `Peer::apply` + typed `apply_world`.  
 `cek-peer-wasm` is `hop: WASM C ABI + own JSON → peer kernel`.  
 `cek-peer-rust` is `hop: native JSON → peer kernel`.  
-PyO3 / `cek apply` hop onto `cek-peer-rust` only. PR #10's wasm→rust edge was wrong-owner and is gone.  
+PyO3 / `cek apply` hop onto `cek-peer-rust` only. PyO3 has two transports on
+that hop: JSON text (`apply`, Door A) and owned extract (`apply_ops`, Door B).
+Same `apply_world` algebra. PR #10's wasm→rust edge was wrong-owner and is gone.  
 `cek-host-rust` is `hop: native JSON → host kernel`. `cek host-json` hops onto it. Not a third kernel.  
 WASM `cek_apply` rustdoc says `-1` on error; JSON/`apply_json` failures are leftover **Err-as-body** (positive length, error string). HOLD: do not reshape that C ABI. See `crates/cek-peer-wasm/README.md`.
 

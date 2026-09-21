@@ -21,12 +21,12 @@ python3 ports/cek-host-py/run_vectors.py crates/cek-contract/vectors
 node ports/cek-peer-js/run-vectors.mjs crates/cek-contract/vectors
 ```
 
-Expected: **261** `#[test]`; **72** vector JSON files (how counted: [TESTING.md](TESTING.md)); batteries (`./scripts/batteries.sh`) green.
+Expected: **266** `#[test]`; **72** vector JSON files (how counted: [TESTING.md](TESTING.md)); batteries (`./scripts/batteries.sh`) green.
 
 ## Peer hops (#11) / Host runtime door
 
 One apply engine: `cek-peer-kernel` `Peer::apply` + `apply_world`.  
-wasm and rust are siblings on the peer kernel (`hop: native JSON → peer kernel` / `hop: WASM C ABI + own JSON → peer kernel`). PyO3 and `cek apply` hop onto rust.  
+wasm and rust are siblings on the peer kernel (`hop: native JSON → peer kernel` / `hop: WASM C ABI + own JSON → peer kernel`). PyO3 and `cek apply` hop onto rust. PyO3 Door A is JSON text (`apply`); Door B is owned extract (`apply_ops`) in the pyo3 hop only.  
 No second Peer engine. No wasm→rust dep (that was #10, wrong-owner, gone).
 
 Host: `cek-host-rust` is `hop: native JSON → host kernel`.  

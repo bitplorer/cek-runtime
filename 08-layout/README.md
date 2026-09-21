@@ -12,7 +12,7 @@ cek-runtime/
   crates/cek-ops-ui/           # Peer driver: ui / DOM
   crates/cek-peer-wasm/        # hop: WASM C ABI + own JSON → peer kernel
   crates/cek-peer-rust/        # hop: native JSON → peer kernel
-  crates/cek-peer-pyo3/        # hop → cek-peer-rust (not wasm)
+  crates/cek-peer-pyo3/        # hop → cek-peer-rust (JSON text A + owned extract B; not wasm)
   crates/cek-cli/              # vectors, demo; cek apply → peer-rust; cek host-json → host-rust
 ```
 

@@ -2,10 +2,18 @@
 
 Apply-only Peer compiled as an in-process CPython extension. **No mint.**
 
-PyO3 hop onto `cek-peer-rust` (`hop: native JSON → peer kernel`).
-Engine stays `Peer::apply` via `apply_world`. No second apply
-implementation. JSON ABI: `{ result, profile, unknown_op_policy }` →
-`{ receipt, kv, ui, log }`.
+PyO3 hop onto `cek-peer-rust`. Engine stays `Peer::apply` via `apply_world`.
+No second apply implementation.
+
+Two transports, same algebra (`Op = {ns, name, payload}` → receipt + snapshots):
+
+| Door | Call | Transport |
+|------|------|-----------|
+| **A** | `PeerAbi.apply(str \| mapping)` | JSON text → `apply_json` (open, locked) |
+| **B** | `PeerAbi.apply_ops(ops list or apply-request mapping)` | owned extract → `apply_request` |
+
+Door B does not `json.dumps`. Extract stays in this hop. The peer kernel never
+sees a live `PyDict`. GIL is released across `apply_world`.
 
 Lifecycle is host-native across the GIL: **construct → bind → apply →
 release**. Import only loads the module. One release door.

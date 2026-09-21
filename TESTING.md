@@ -2,7 +2,7 @@
 
 ## How this tree is counted (SSoT)
 
-Numbers below are from the tree at `7ad82df65d70ad66c72f928e8754d74631c489d2` (current `main` HEAD after #17). Do not cite 43, 57, 64, 71, 147, 152, or 190 — those are stale.
+Numbers below are from this tree (PyO3 Door B). Do not cite 43, 57, 64, 71, 147, 152, 190, or 261 — those are stale.
 
 **72** JSON fixtures under `crates/cek-contract/vectors/`:
 
@@ -28,7 +28,7 @@ for k,v in sorted(c.items()):
 # 16 families; 72 files
 ```
 
-**261** `#[test]` attributes under `crates/` (same walk as `scripts/coverage.sh`: leading whitespace, then `#[test]`):
+**266** `#[test]` attributes under `crates/` (same walk as `scripts/coverage.sh`: leading whitespace, then `#[test]`):
 
 ```bash
 python3 - <<'PY'
@@ -43,7 +43,7 @@ for dirpath, _, files in os.walk("crates"):
             n += sum(1 for line in text.splitlines() if re.match(r"\s*#\[test\]", line))
 print(n, "#[test] functions")
 PY
-# 261 #[test] functions
+# 266 #[test] functions
 ```
 
 `cargo test --workspace` may print a different “test” total (doctests, bins). The SSoT here is the attribute count, not that runner’s summary.
@@ -139,7 +139,7 @@ Law CORE/19 is the catalog in [cek-framework](https://github.com/bitplorer/cek-f
 17. Attenuate cannot widen  
 18. `kv.delete` + prior → `kv.set` reverse; without → non-reversible  
 
-Current inventory: **261** `#[test]` + **72** vector fixtures + TS/WASM/JS/PyO3 apply-only + Python Host + batteries.
+Current inventory: **266** `#[test]` + **72** vector fixtures + TS/WASM/JS/PyO3 apply-only + Python Host + batteries.
 
 ## Coverage targets
 
@@ -153,7 +153,7 @@ Current inventory: **261** `#[test]` + **72** vector fixtures + TS/WASM/JS/PyO3 
 | cek-host-rust | hop door (`native JSON → host kernel`); no line-coverage target |
 | cek-peer-rust | hop door (`native JSON → peer kernel`); no line-coverage target |
 | cek-peer-wasm | hop door (`WASM C ABI + own JSON → peer kernel`); no line-coverage target |
-| cek-peer-pyo3 | hop door onto `cek-peer-rust`; no line-coverage target |
+| cek-peer-pyo3 | hop door onto `cek-peer-rust` (JSON text A + owned extract B); no line-coverage target |
 
 ## CI
 

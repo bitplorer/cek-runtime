@@ -1,8 +1,13 @@
 //! Apply-only Peer surface for in-process Python (PyO3).
 //!
-//! There is **no mint**. Callers pass the same Host `Result` JSON documents
-//! as `cek-peer-rust` / `cek apply`; this crate hops onto that
-//! `hop: native JSON → peer kernel` door and returns a receipt plus world snapshots.
+//! There is **no mint**. This crate hops onto `cek-peer-rust`
+//! (`apply_world` → `Peer::apply`) and returns a receipt plus world snapshots.
+//! Two transports, same Cap algebra:
+//!
+//! - **Door A** — JSON text: [`PeerAbi::apply_json`] (Python `apply`)
+//! - **Door B** — owned extract: [`PeerAbi::apply_request`] / [`PeerAbi::apply_ops`]
+//!   (Python `apply_ops`). Extract stays in this hop. No live `PyDict` in the
+//!   peer kernel.
 //!
 //! Lifecycle is explicit: **construct → bind → apply → release**. Import
 //! only registers the module. One release door.
@@ -10,6 +15,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+use cek_contract::{Op, ResultKind, ResultMsg};
 use cek_peer_rust::{ApplyRequest, ApplyResponse};
 
 /// Re-export the shared JSON request (do not invent a parallel protocol).
@@ -74,6 +80,22 @@ impl PeerAbi {
         Ok(cek_peer_rust::apply_request(req))
     }
 
+    /// Door B: apply owned Ops (`kind = ok`). Requires bind. Never mints.
+    pub fn apply_ops(
+        &self,
+        ops: Vec<Op>,
+        profile: Option<String>,
+        unknown_op_policy: Option<String>,
+    ) -> Result<ApplyResponse, String> {
+        self.apply_request(&apply_request_from_ops(
+            ops,
+            profile,
+            unknown_op_policy,
+            ResultKind::Ok,
+            None,
+        ))
+    }
+
     /// The only cleanup door. Idempotent.
     pub fn release(&mut self) {
         self.state = AbiState::Released;
@@ -100,13 +122,38 @@ pub(crate) fn map_mutex_lock<T>(r: std::sync::LockResult<T>) -> Result<T, String
     r.map_err(|_| "poisoned".into())
 }
 
+/// Build a typed apply-request from owned Ops and envelope fields.
+///
+/// Used by Door B (`apply_ops`). Kind defaults are the caller's; this does not
+/// invent a second Result type.
+pub fn apply_request_from_ops(
+    ops: Vec<Op>,
+    profile: Option<String>,
+    unknown_op_policy: Option<String>,
+    kind: ResultKind,
+    error: Option<String>,
+) -> ApplyRequest {
+    ApplyRequest {
+        result: ResultMsg {
+            kind,
+            ops,
+            error,
+            digest: None,
+        },
+        profile,
+        unknown_op_policy,
+    }
+}
+
+#[cfg(feature = "python")]
+mod extract;
 #[cfg(feature = "python")]
 mod python;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cek_contract::ResultMsg;
+    use cek_contract::{Op, ResultKind, ResultMsg};
     use cek_peer_kernel::{apply_world, unknown_op_policy_from_wire, ApplyProfileKind, ApplyWorld};
     use serde_json::{json, Value};
     use std::path::PathBuf;
@@ -456,5 +503,159 @@ mod tests {
             unknown_op_policy: None,
         };
         assert_eq!(abi.apply_request(&req).unwrap_err(), "not bound");
+        assert_eq!(abi.apply_ops(vec![], None, None).unwrap_err(), "not bound");
+    }
+
+    fn kv_set_op() -> Op {
+        Op {
+            ns: "kv".into(),
+            name: "set".into(),
+            payload: json!({ "key": "a", "value": 1 }),
+        }
+    }
+
+    fn assert_door_b_matches_json(req: &Value, via_ops: &ApplyResponse) {
+        let via_json = parse_resp(&bound().apply_json(&req.to_string()).unwrap());
+        assert_eq!(
+            serde_json::to_value(via_ops).unwrap(),
+            serde_json::to_value(&via_json).unwrap(),
+            "Door B apply_ops / apply_request must match Door A apply_json"
+        );
+        assert_parity(&req.to_string());
+    }
+
+    #[test]
+    fn apply_ops_kv_set_matches_apply_json() {
+        let req = json!({
+            "result": {
+                "kind": "ok",
+                "ops": [{ "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }]
+            },
+            "profile": "baseline"
+        });
+        let via_ops = bound()
+            .apply_ops(vec![kv_set_op()], Some("baseline".into()), None)
+            .unwrap();
+        assert_eq!(via_ops.receipt.landed.len(), 1);
+        assert_eq!(via_ops.kv.get("a"), Some(&json!(1)));
+        assert_door_b_matches_json(&req, &via_ops);
+    }
+
+    #[test]
+    fn apply_ops_refuse_is_noop() {
+        let req = json!({
+            "result": { "kind": "authority_refusal", "ops": [], "error": "no" }
+        });
+        let via_ops = bound()
+            .apply_request(&apply_request_from_ops(
+                vec![],
+                None,
+                None,
+                ResultKind::AuthorityRefusal,
+                Some("no".into()),
+            ))
+            .unwrap();
+        assert!(via_ops.kv.is_empty());
+        assert!(via_ops.receipt.landed.is_empty());
+        assert_door_b_matches_json(&req, &via_ops);
+    }
+
+    #[test]
+    fn apply_ops_ui_fail_batch_unknown_op_aborts_rest() {
+        let req = json!({
+            "result": {
+                "kind": "ok",
+                "ops": [
+                    { "ns": "nope", "name": "x", "payload": {} },
+                    { "ns": "kv", "name": "set", "payload": { "key": "a", "value": 1 } }
+                ]
+            },
+            "profile": "ui",
+            "unknown_op_policy": "fail_batch"
+        });
+        let ops = vec![
+            Op {
+                ns: "nope".into(),
+                name: "x".into(),
+                payload: json!({}),
+            },
+            kv_set_op(),
+        ];
+        let via_ops = bound()
+            .apply_ops(ops, Some("ui".into()), Some("fail_batch".into()))
+            .unwrap();
+        assert_eq!(via_ops.receipt.failed.len(), 2);
+        assert!(via_ops.receipt.landed.is_empty());
+        assert!(!via_ops.kv.contains_key("a"));
+        assert_door_b_matches_json(&req, &via_ops);
+    }
+
+    #[test]
+    fn door_b_python_extract_is_not_json_text() {
+        let src = include_str!("extract.rs");
+        for needle in ["dumps", "loads", "apply_json", "import_bound(\"json\")"] {
+            assert!(!src.contains(needle), "Door B extract must not {needle}");
+        }
+        let py = include_str!("python.rs");
+        assert!(
+            py.contains("fn apply_ops"),
+            "Python Door B method apply_ops must exist"
+        );
+        assert!(
+            py.contains("extract_apply_request"),
+            "Python apply_ops must extract owned types before apply"
+        );
+        assert!(
+            py.contains("apply_response_to_py"),
+            "Python apply_ops must build a dict from owned ApplyResponse"
+        );
+        let apply_ops = py
+            .split("fn apply_ops")
+            .nth(1)
+            .and_then(|rest| rest.split("fn release").next())
+            .expect("apply_ops body");
+        assert!(
+            apply_ops.contains("allow_threads"),
+            "Door B must release the GIL across apply_request / apply_world"
+        );
+        assert!(
+            apply_ops.contains("apply_request"),
+            "Door B must call typed apply_request"
+        );
+        assert!(
+            !apply_ops.contains("apply_json"),
+            "Door B must not call apply_json"
+        );
+        assert!(!apply_ops.contains("dumps"), "Door B must not json.dumps");
+    }
+
+    #[test]
+    fn peer_kernel_sources_have_no_pyo3() {
+        let kernel = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../cek-peer-kernel");
+        let mut files = 0;
+        fn walk(dir: &std::path::Path, files: &mut usize) {
+            for entry in std::fs::read_dir(dir).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    walk(&path, files);
+                    continue;
+                }
+                let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+                if !(name.ends_with(".rs") || name == "Cargo.toml") {
+                    continue;
+                }
+                *files += 1;
+                let text = std::fs::read_to_string(&path).unwrap();
+                for needle in ["pyo3", "PyDict", "PyAny"] {
+                    assert!(
+                        !text.contains(needle),
+                        "{} must not contain {needle}",
+                        path.display()
+                    );
+                }
+            }
+        }
+        walk(&kernel, &mut files);
+        assert!(files >= 2, "expected kernel sources, got {files}");
     }
 }

@@ -29,7 +29,7 @@ There is **no third kernel**. A bus only moves messages.
 | Peer kernel | `crates/cek-peer-kernel` | `Peer::apply` + typed `apply_world` helper — **no mint** |
 | Peer WASM hop | `crates/cek-peer-wasm` | hop: WASM C ABI + own JSON → peer kernel |
 | Peer Rust runtime | `crates/cek-peer-rust` | hop: native JSON → peer kernel |
-| Peer PyO3 ABI | `crates/cek-peer-pyo3` | hop onto `cek-peer-rust` |
+| Peer PyO3 ABI | `crates/cek-peer-pyo3` | hop onto `cek-peer-rust` — JSON text (Door A) + owned extract (Door B) |
 | CLI | `crates/cek-cli` | `cek apply` → `cek-peer-rust`; `cek host-json` → `cek-host-rust` |
 | Peer driver | kv, log, UI/DOM — see [DRIVERS.md](DRIVERS.md) |
 
@@ -103,7 +103,7 @@ node --experimental-strip-types --no-warnings \
   ports/cek-peer-ts/src/run-vectors.ts crates/cek-contract/vectors
 ```
 
-Expect **261** `#[test]` and **72** vector JSON files (how counted: [TESTING.md](TESTING.md)). Batteries green.  
+Expect **266** `#[test]` and **72** vector JSON files (how counted: [TESTING.md](TESTING.md)). Batteries green.  
 Python Host skips Peer-only fixtures (Ed25519 is implemented). JS Peer runs apply-only fixtures.
 
 ## 8. Use it from an app
