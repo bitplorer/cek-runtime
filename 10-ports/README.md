@@ -8,7 +8,7 @@ This framework’s *reference* host kernel and peer kernel stay Rust.
 | Surface | Example port |
 |---------|----------------|
 | Browser DOM | **Shipped:** TypeScript apply-only (`ports/cek-peer-ts`), JS runtime (`ports/cek-peer-js`), WASM hop (`crates/cek-peer-wasm` + `ports/cek-peer-wasm`) |
-| Agent / server already in Python | **Shipped in-process ABI:** `cek-peer-pyo3` hops onto `cek-peer-rust` (not wasm, not a second kernel). A taught Python carrier remains a follow-up in cek-python |
+| Agent / server already in Python | **Shipped in-process ABI:** `cek-peer-pyo3` hops onto `cek-peer-rust` (JSON text A + owned extract B; not wasm, not a second kernel). A taught Python carrier remains a follow-up in cek-python |
 | MCU / device | C/Rust embedded Peer with tiny profile |
 
 Each port:

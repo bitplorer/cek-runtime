@@ -17,13 +17,13 @@ name = "cek_peer_pyo3"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+cek-contract = { workspace = true }
 cek-peer-rust = { workspace = true }
+serde_json = { workspace = true }
 pyo3 = { version = "0.22.6", optional = true, default-features = false, features = ["macros"] }
 
 [dev-dependencies]
-cek-contract = { workspace = true }
 cek-peer-kernel = { workspace = true }
-serde_json = { workspace = true }
 
 [features]
 default = []

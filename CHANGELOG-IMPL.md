@@ -1,5 +1,13 @@
 # Implementation changelog
 
+## 2026-09-21 — PyO3 Cap Door B (owned extract)
+
+- `cek-peer-pyo3` `apply_ops`: Python `list[dict]` / apply-request mapping → owned
+  `Op` / `ApplyRequest` in the pyo3 hop → `apply_request` / `apply_world`.
+- Door A `apply` / `apply_json` stays open (JSON text). Same Cap algebra. No live
+  `PyDict` in `cek-peer-kernel`. GIL released across kernel apply.
+- Not a second Peer. Not ux-valio. No workspace version bump.
+
 ## 2026-09-20 — Host runtime door (`cek-host-rust`)
 
 - `cek-host-rust` is the native host runtime: own JSON mint/submit wire on `cek-host-kernel`.

@@ -11,7 +11,7 @@ Reference **Host** (decide) and **Peer** (apply). No ambient power. Peer never m
 | `cek-ops-baseline` / `cek-ops-ui` | Drivers |
 | `cek-peer-rust` | hop: native JSON → peer kernel |
 | `cek-peer-wasm` | hop: WASM C ABI + own JSON → peer kernel |
-| `cek-peer-pyo3` | PyO3 hop onto `cek-peer-rust` (apply/receipt only) |
+| `cek-peer-pyo3` | PyO3 hop onto `cek-peer-rust` — JSON text (A) + owned extract (B) |
 | `cek-cli` | `cek apply` → `cek-peer-rust` · `cek host-json` → `cek-host-rust` |
 
 ```bash
